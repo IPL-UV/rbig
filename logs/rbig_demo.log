@@ -1,0 +1,17 @@
+2017-09-25 18:37:45,343: root         INFO    : Running: run_demo ...
+2017-09-25 18:37:45,343: root         INFO    : Calling: generate_data ...
+2017-09-25 18:37:45,366: root         DEBUG   : Size of data_auxilary: (1, 1000)
+2017-09-25 18:37:45,366: root         DEBUG   : Size of data: (1000, 2)
+2017-09-25 18:37:45,367: root         DEBUG   : data : [[ 1.06790763 -0.01683474]
+ [ 0.58935658 -0.16332947]
+ [ 0.57138848 -0.22519103]
+ [ 1.085406    0.0092067 ]
+ [ 0.89071043 -0.15273108]
+ [ 0.98012023 -0.07702387]
+ [ 0.69875567 -0.22860961]
+ [ 0.64996202 -0.19036629]
+ [ 1.0249246  -0.0117621 ]
+ [ 0.30714286 -0.2198762 ]]
+2017-09-25 18:37:45,367: root         INFO    : Calling: rbig function ...
+2017-09-25 18:37:45,367: root         INFO    : Calling: rbig transformation function ...
+2017-09-25 18:37:45,367: root         INFO    : Calling: rbig inverse transformation function ...
