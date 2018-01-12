@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 from sklearn.utils import check_random_state
 from scipy.stats import norm
 from scipy import linalg
-from scipy.stats import invgauss
-from scipy.interpolate import interp1d
 import logging
 
 logging.basicConfig(filename="logs/rbig_demo.log",
@@ -13,11 +11,11 @@ logging.basicConfig(filename="logs/rbig_demo.log",
                     filemode='w')
 
 class RBIG(object):
-    def __init__(self, precision=1000, domain_prnt=10, transformation='pca',
+    def __init__(self, precision=1000, porc=10, transformation='pca',
                  n_layers=1000, tol_samples=None, tol_dimensions=None,
                  random_state=None):
         self.precision = precision
-        self.domain_prnt = domain_prnt
+        self.porc = porc
         self.transformation = transformation
         self.n_layers = n_layers
         self.tol_samples = tol_samples
@@ -33,12 +31,7 @@ class RBIG(object):
                                        noise=noise,
                                        random_state=random_state)
 
-        logging.info('Calling: plot_toydata() ...')
-
-        # self.plot_toydata()
-
         logging.info('Calling: rbig function ...')
-        self.rbig(self.data, n_samples=num_points)
 
         logging.info('Calling: rbig transformation function ...')
 
@@ -67,12 +60,10 @@ class RBIG(object):
 
     def plot_toydata(self):
 
-        # check for data attribute
         if not hasattr(self, 'data'):
             self.generate_data()
 
-        logging.info('Plotting toy data ...')
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(10, 8))
 
         ax.scatter(self.data[:, 0], self.data[:, 1], s=10, c='k', label='Toy Data')
         ax.set_title('Toy Data: Raw')
@@ -138,6 +129,7 @@ class RBIG(object):
 
     def _calculate_tolerance(self, n_errors=1000):
 
+        n_errors = 1000
         ee = np.zeros(n_errors)
 
         for rep in np.arange(0, n_errors):
@@ -170,14 +162,21 @@ class RBIG(object):
 
         return None
 
-    def _marginal_gaussianization(self, data, precision=None):
+    def _marginal_gaussianization(self, data, porc=None, precision=None):
 
         if precision is None:
             precision = np.round(np.sqrt(len(data)) + 1)
 
-        data_uniform, params = marginal_uniformization(data, self.domain_prnt, precision)
+        data_uniform = self._marginal_uniformization(data, T, precision)
 
-        return norm.ppf(data_uniform), params
+        return norm.ppf(data_uniform)
+
+    def _marginal_uniformization(self, data, porc=None, precision=None):
+
+        if precision is None:
+            precision = 1000
+
+        return np.interp(T.R, T.C, data)
 
     def _inv_marginal_gaussianization(self, data, precision=None):
 
@@ -190,6 +189,8 @@ class RBIG(object):
     def rbig(self, data, n_samples=1000):
 
         n_samples, n_dimensions = data.shape
+
+
 
         transform = []
         transform_t = []
@@ -209,6 +210,7 @@ class RBIG(object):
                 # perform gaussian marginalization
                 data[:, idimension], T = \
                     self._marginal_gaussianization(data[:, idimension],
+                                                   self.porc,
                                                    self.precision)
 
 
@@ -226,9 +228,7 @@ class RBIG(object):
                 data = V.T * data
 
             elif self.transformation in ['pca', 'PCA']:
-                print(data)
-                C = data.T @ data / data.shape[0]
-                print(C)
+                C = data * data.T / data.shape[0]
                 V, D = linalg.eig(C)
                 data = V.T * data
 
@@ -243,45 +243,38 @@ class RBIG(object):
                                                        self.tol_dimensions))
 
 
+
+
+
+
         return None
 
 
-def information_reduction(x_data, y_data, tol_dimensions, random_state=None):
+def information_reduction(data, aux_data, tol_samples, tol_dimensions,
+                          random_state=None):
+    generator = check_random_state(random_state)
+    dimensions, n_samples = data.shape
 
-    # get dimensions of x,y data
-    n_xdimensions, n_xsamples = x_data.shape
-    n_ydimensions, n_ysamples = y_data.shape
-
-    # check if same dimensions
-    if n_xsamples is not n_ysamples:
-        raise ValueError('number of x samples is not equal to number of y samples.')
-
-    # preallocate data
-    hx = np.zeros(n_xdimensions)
-    hy = hx.copy()
-
-    # loop through dimensions
-    for n in np.arange(0, n_xdimensions):
-
+    hx = np.zeros(n)
+    for n in np.arange(0, dimensions):
         # calculate entropy in X direction
-        [hist_x, bin_edges_x] = np.histogram(a=x_data[n, :], bins=np.sqrt(n_xsamples))
-        delta = bin_edges_x[2] - bin_edges_x[1]
-        hx[n] = entropy(hist_x) + np.log(delta)
+        [p, R] = np.histogram(a=data[n, :], np.sqrt(n_samples))
+        delta = R[2] - R[1]
+        hx[n] = entropy(p) + np.log(delta)
 
         # calculate entropy in Y direction
-        [hist_y, bin_edges_y] = np.histogram(a=y_data[n, :], bins=np.sqrt(n_ysamples))
-        delta_y = bin_edges_y[2] - bin_edges_y[1]
-        hy[n] = entropy(hist_y) + np.log(delta_y)
+        [p, R] = np.histogram(a=Y[n, :], np.sqrt(n_samples))
+        delta = R[2] - R[1]
+        hy[n]
 
     I = np.sum(hy) - np.sum(hx)
-    II= np.sqrt(np.sum(hy - hx) ** 2)
+    II = np.sqrt(np.sum((hy - hx) ** 2))
     p = 0.25
 
-    if np.abs(II) < np.sqrt(n_xdimensions * p * tol_dimensions ** 2):
+    if np.abs(II) < np.sqrt(dimensions * p * tol_d ** 2):
         I = 0
 
     return I
-
 
 def entropy(counts):
     # MLE estimator with miller-maddow correction
@@ -292,7 +285,6 @@ def entropy(counts):
     H = -np.sum(counts[idx != 0]) * np.log(counts[idx != 0]) + constant
 
     return H
-
 
 def rbig(data, precision=100, domain_prnt=10, transformation='pca',
          number_layers=1000, tolerance_m=None, tolerance_d=None,
@@ -318,7 +310,6 @@ def rbig(data, precision=100, domain_prnt=10, transformation='pca',
         print('Tolerance m: ', tolerance_m)
         print('Tolerance d: ', tolerance_d)
     return
-
 
 def calculate_tolerance(n_samples):
 
@@ -357,81 +348,9 @@ def calculate_tolerance(n_samples):
     return (tolerance_m, tolerance_d)
 
 
-def marginal_uniformization(data, domain_prnt=None, precision=None):
-
-    if precision is None:
-        precision = 1000
-
-    params = {}
-
-    # make aux probs and bin edges
-    probability_aux = (domain_prnt / 100) * np.abs(data.max() - data.min())
-    bin_edges_aux = np.linspace(data.min(), data.max(),
-                        num=2 * np.sqrt(len(data)) + 1)
-
-    bin_edges = 0.5 * (bin_edges_aux[:-1]+ bin_edges_aux[1:])
-
-    [hist, bin_edges] = np.histogram(a=data, bins=bin_edges)
-
-    # get bin centers
-    bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
-
-    bin_delta = bin_centers[2] - bin_centers[1]
-
-    bin_center_ant = np.hstack((bin_centers[0]- bin_delta,
-                                bin_centers,
-                                bin_centers[-1] + bin_delta))
-    hist_ant = np.hstack((0,
-                          hist / (np.sum(hist) * (bin_centers[3] - bin_centers[2])), 0))
-
-    params['bin_center_ant'] = bin_center_ant
-    params['prob_ant'] = hist_ant
-
-    C = np.cumsum(hist)
-    N = C.max()
-
-    C = (1 - 1/N) * C / N
-
-    bin_incr = (bin_edges[1] - bin_edges[0]) / 2
-
-    bin_centers = np.hstack((data.min() - probability_aux,
-                             data.min(),
-                             bin_centers[:-1] + bin_incr,
-                             data.max(),
-                             probability_aux + bin_incr))
-
-    C = np.hstack((0, 1 / N, C, 1))
-
-    Range_2 = np.linspace(bin_centers[0], bin_centers[-1], num=precision)
-
-    C_2 = make_monotonic(np.interp( Range_2, bin_centers, C))
-    C_2 = C_2 / C_2.max()
-    x_lin = np.interp(data, Range_2, C_2)
-
-    params['C_2'] = C_2
-    params['bin_centers'] = bin_centers
-
-    return x_lin, params
-
-
-def make_monotonic(f):
-    fn = f
-    for nn in np.arange(2, len(fn)):
-        if fn[nn] <= fn[nn - 1]:
-            if abs(fn[nn - 1]) > 1e-14:
-                fn[nn] = fn[nn - 1] + 1.0e-14
-            elif fn[nn - 1] == 0:
-                fn[nn] = 1e-80
-            else:
-                fn[nn] == fn[nn - 1] + 10 ** (np.log(abs(fn[nn - 1])))
-
-    return fn
-
-
 def run_rbigdemo():
     demo = RBIG()
     demo.run_demo()
-
 
 if __name__ == "__main__":
 
