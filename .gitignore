@@ -1,2 +1,8 @@
 
-code_through/\.ipynb_checkpoints/
+code_through/
+\.ipynb_checkpoints/
+\.idea/
+\__pycache__/
+*.log
+*.png
+*.tex
