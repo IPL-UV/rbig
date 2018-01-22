@@ -6,3 +6,6 @@ code_through/
 *.log
 *.png
 *.tex
+.idea/misc.xml
+.idea/rbig.iml
+.idea/workspace.xml
