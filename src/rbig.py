@@ -43,7 +43,7 @@ class RBIG(object):
             Gaussianizer = QuantileTransformer(n_quantiles=self.precision,
                                                subsample=self.subsample,
                                                random_state=self.random_state,
-                                               output_distribution='uniform')
+                                               output_distribution='normal')
 
             # Fit and Transform Gaussian(-izer) Model the data
             data_gauss = Gaussianizer.fit_transform(data_transformed)
