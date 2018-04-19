@@ -9,3 +9,6 @@ code_through/
 .idea/misc.xml
 .idea/rbig.iml
 .idea/workspace.xml
+
+# ignore the RBIG folder.
+\RBIG/
