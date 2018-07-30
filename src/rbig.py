@@ -10,14 +10,15 @@ from scipy.interpolate import interp1d
 import warnings
 import logging
 
-warnings.filterwarnings('ignore') # get rid of annoying warnings
+warnings.filterwarnings('ignore')  # get rid of annoying warnings
 logging.basicConfig(filename="rbig_demo.log",
                     level=logging.DEBUG,
                     format="%(asctime)s: %(name)-12s %(levelname)-8s: %(message)s",
                     filemode='w')
 
+
 class RBIG(object):
-    def __init__(self, n_layers=50, rotation_type='PCA', pdf_resolution=1000, 
+    def __init__(self, n_layers=50, rotation_type='PCA', pdf_resolution=1000,
                  pdf_extension=0.1, random_state=None, verbose=None):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
@@ -85,7 +86,7 @@ class RBIG(object):
         for layer in range(self.n_layers):
 
             if self.verbose is not None:
-                print("Completed {} iterations of RBIG.".format(layer+1))
+                print("Completed {} iterations of RBIG.".format(layer + 1))
 
             # ------------------
             # Gaussian(-ization)
@@ -113,7 +114,7 @@ class RBIG(object):
                 rotation_matrix[layer] = rand_ortho_matrix
 
             elif self.rotation_type == 'PCA':
-                if n_dimensions > n_samples or n_dimensions > 10**6:
+                if n_dimensions > n_samples or n_dimensions > 10 ** 6:
                     # If the dimensionality of each datapoint is high, we probably
                     # want to compute the SVD of the data directly to avoid forming a huge
                     # covariance matrix
@@ -189,10 +190,10 @@ class RBIG(object):
         sampled_data = np.copy(data)
 
         total_iters = 0
-        for layer in range(self.n_layers-1, -1, -1):
+        for layer in range(self.n_layers - 1, -1, -1):
 
             if self.verbose is not None:
-                print("Completed {} inverse iterations of RBIG.".format(layer+1))
+                print("Completed {} inverse iterations of RBIG.".format(layer + 1))
 
             sampled_data = np.dot(sampled_data, self.rotation_matrix[layer])
             
@@ -230,6 +231,7 @@ def univariate_make_normal(uni_data, extension, precision):
     """
     data_uniform, params = univariate_make_uniform(uni_data.T, extension, precision)
     return norm.ppf(data_uniform).T, params
+
 
 def univariate_make_uniform(uni_data, extension, precision):
     """
@@ -289,6 +291,7 @@ def univariate_make_uniform(uni_data, extension, precision):
                             'uniform_cdf_support': new_support,
                             'uniform_cdf': uniform_cdf}
 
+
 def univariate_invert_normalization(uni_gaussian_data, trans_params):
     """
     Inverts the marginal normalization
@@ -306,6 +309,7 @@ def univariate_invert_uniformization(uni_uniform_data, trans_params):
     # simple, we just interpolate based on the saved CDF
     return interp1d(trans_params['uniform_cdf'],
                   trans_params['uniform_cdf_support'])(uni_uniform_data)
+
 
 def make_cdf_monotonic(cdf):
     """
@@ -330,9 +334,9 @@ def make_cdf_monotonic(cdf):
                                     10**(np.log10(abs(corrected_cdf[i-1]))))
     return corrected_cdf
 
-  # my version
-  # I think actually i need to make sure i is strictly increasing....
-  # return np.maximum.accumulate(cdf)
+    # my version
+    # I think actually i need to make sure i is strictly increasing....
+    # return np.maximum.accumulate(cdf)
 
 def information_reduction(x_data, y_data, tol_dimensions=None):
     """Computes the multi-information (total correlation) reduction after a linear
@@ -416,8 +420,8 @@ def entropy(hist_counts, correction=None):
     H = -np.sum(hist_counts[idx] * np.log2(hist_counts[idx])) + constant
     return H
 
-def generate_data(num_points=1000, noise=0.2, random_state=None):
 
+def generate_data(num_points=1000, noise=0.2, random_state=None):
     generator = check_random_state(random_state)
 
     data_auxilary = generator.randn(1, num_points)
@@ -433,8 +437,8 @@ def generate_data(num_points=1000, noise=0.2, random_state=None):
 
     return data
 
-def plot_toydata(data, title=None):
 
+def plot_toydata(data, title=None):
     fig, ax = plt.subplots()
 
     ax.scatter(data[:, 0], data[:, 1], s=10, c='k', label='Toy Data')
@@ -446,9 +450,8 @@ def plot_toydata(data, title=None):
 
     return None
 
+
 def run_demo():
-
-
     logging.info('Running: run_demo ...')
     logging.info('Calling: generate_data ...')
 
@@ -547,6 +550,6 @@ def run_demo():
 
     return None
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     run_demo()
