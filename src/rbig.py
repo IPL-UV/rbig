@@ -76,6 +76,7 @@ class RBIG(object):
         
         logging.debug('Data (shape): {}'.format(np.shape(gauss_data)))
 
+        # Initialize stopping criteria (residual information)
         residual_info = np.empty(shape=(self.n_layers))
         mutual_information = np.empty(shape=(self.n_layers, n_dimensions))
         gauss_params = [None] * self.n_layers
@@ -105,10 +106,12 @@ class RBIG(object):
                 layer_params.append(temp_params)
 
             gauss_params[layer] = layer_params
+            gauss_data_prerotation = gauss_data.copy()
             # --------
             # Rotation
             # --------
             if self.rotation_type == 'random':
+
                 rand_ortho_matrix = ortho_group.rvs(n_dimensions)
                 gauss_data = np.dot(gauss_data, rand_ortho_matrix)
                 rotation_matrix[layer] = rand_ortho_matrix
@@ -128,17 +131,16 @@ class RBIG(object):
                 
                 logging.debug('Size of V: {}'.format(V.shape))
                 logging.debug('Size of gauss_data: {}'.format(gauss_data.shape))
-                
-                gauss_data_prerotation = gauss_data.copy()
+
                 gauss_data = np.dot(gauss_data, V.T)
                 rotation_matrix[layer] = V.T
 
             else:
                 raise ValueError('Rotation type ' + self.rotation_type + ' not recognized')
                 
-            # ---------------------
-            # Information Reduction
-            # ---------------------
+            # --------------------------------
+            # Information Reduction (Emmanuel)
+            # --------------------------------
             residual_info[layer] = information_reduction(gauss_data, gauss_data_prerotation)
             
         # save necessary parameters
@@ -207,6 +209,13 @@ class RBIG(object):
 
         return sampled_data
 
+    def _get_information_tolerance(self, n_samples):
+        """Precompute some tolerances for the tails."""
+        xxx = np.linspace(2, 8, 7)
+        yyy = [0.1571, 0.0468, 0.0046, 0.0014, 0.0001, 0.00001]
+        tol_d = np.interp(n_samples, xxx, yyy)
+
+        return tol_d
 
 def univariate_make_normal(uni_data, extension, precision):
     """
@@ -231,7 +240,6 @@ def univariate_make_normal(uni_data, extension, precision):
     """
     data_uniform, params = univariate_make_uniform(uni_data.T, extension, precision)
     return norm.ppf(data_uniform).T, params
-
 
 def univariate_make_uniform(uni_data, extension, precision):
     """
@@ -291,7 +299,6 @@ def univariate_make_uniform(uni_data, extension, precision):
                             'uniform_cdf_support': new_support,
                             'uniform_cdf': uniform_cdf}
 
-
 def univariate_invert_normalization(uni_gaussian_data, trans_params):
     """
     Inverts the marginal normalization
@@ -309,7 +316,6 @@ def univariate_invert_uniformization(uni_uniform_data, trans_params):
     # simple, we just interpolate based on the saved CDF
     return interp1d(trans_params['uniform_cdf'],
                   trans_params['uniform_cdf_support'])(uni_uniform_data)
-
 
 def make_cdf_monotonic(cdf):
     """
@@ -382,7 +388,7 @@ def information_reduction(x_data, y_data, tol_dimensions=None):
 
     # preallocate data
     hx = np.zeros(n_dimensions)
-    hy = hx.copy()
+    hy = np.zeros(n_dimensions)
     
     # number of bins
     n_bins = int(round(np.sqrt(n_samples)))
@@ -421,135 +427,9 @@ def entropy(hist_counts, correction=None):
     return H
 
 
-def generate_data(num_points=1000, noise=0.2, random_state=None):
-    generator = check_random_state(random_state)
-
-    data_auxilary = generator.randn(1, num_points)
-
-    data = np.cos(data_auxilary)
-    data = np.vstack((data, np.sinc(data_auxilary)))
-
-    data = data + noise * generator.rand(2, num_points)
-    data = np.dot(np.array([[0.5, 0.5], [-0.5, 0.5]]), data).T
-
-    logging.debug('Size of data_auxilary: {}'.format(data_auxilary.shape))
-    logging.debug('Size of data: {}'.format(data.shape))
-
-    return data
-
-
-def plot_toydata(data, title=None):
-    fig, ax = plt.subplots()
-
-    ax.scatter(data[:, 0], data[:, 1], s=10, c='k', label='Toy Data')
-
-    if title is not None:
-        ax.set_title(title)
-
-    plt.show()
-
-    return None
-
-
-def run_demo():
-    logging.info('Running: run_demo ...')
-    logging.info('Calling: generate_data ...')
-
-    num_points = 2000
-    noise = 0.2
-    random_state = 123
-
-    data = generate_data(num_points=num_points,
-                         noise=noise,
-                         random_state=random_state)
-
-    # split into training and testing
-    train_percent = 0.5
-    x_train, x_test = train_test_split(data,
-                                       train_size=train_percent,
-                                       random_state=random_state)
-
-    logging.info('Calling: plot_toydata() ...')
-
-    logging.info('Plotting toy data ...')
-    title = 'Raw Toy Data'
-    plot_toydata(x_train, title)
-
-    # initialize RBIG function
-    logging.info('Initialzing RBIG Function ...')
-
-    n_layers = 75
-    rotation_type = 'PCA'
-    pdf_resolution = 1000
-    pdf_extension = 0.1
-    verbose = None
-    random_state = 123
-
-    RBIG_model = RBIG(n_layers=n_layers,
-                    rotation_type=rotation_type,
-                    pdf_resolution=pdf_resolution,
-                    pdf_extension=pdf_extension,
-                    verbose=verbose,
-                    random_state=random_state)
-
-    # Fit to data
-    logging.info('Calling: RBIG function ...')
-
-    RBIG_model.fit(x_train);
-
-    logging.debug('Shape of Gauss Data: {}'.format(RBIG_model.gauss_data.shape))
-    logging.debug('Shape of Rotations: {}'.format(len(RBIG_model.rotation_matrix)))
-    logging.debug('Shape of Gauss Parameters: {}'.format(len(RBIG_model.gauss_params)))
-    x_transformed = RBIG_model.gauss_data
-
-
-    logging.debug('Shape of Transformed Gauss Data: {}'.format(x_transformed.shape))
-
-    title = 'Original Transformed Data'
-    plot_toydata(x_transformed, title)
-
-    # Residual Information (Multi-Information)
-    residual_info = RBIG_model.residual_info
-
-    title = 'Residual Information'
-    fig, ax = plt.subplots()
-
-    ax.plot(np.cumsum(residual_info))
-    ax.set_title(title)
-    plt.show()
-
-
-    # Transform New Data
-    logging.info('Calling: rbig transformation function ...')
-
-    x_test_transformed = RBIG_model.transform(x_test)
-
-    logging.debug('Shape of TransformedGauss Data: {}'.format(x_test_transformed.shape))
-
-    logging.info('Calling: rbig inverse transformation function ...')
-
-    title = 'New Transformed Data'
-    plot_toydata(x_test_transformed, title)
-
-    # Synthetic Data
-    # create a random matrix with a normal distribution
-    generator = check_random_state(random_state)
-    x_random = generator.randn(num_points, x_train.shape[1])
-
-    title = 'Synthetic Gaussian Data'
-    plot_toydata(x_random, title)
-
-    
-
-    logging.info('Calling: rbig inverse transformation function ...')
-
-    x_synthetic = RBIG_model.inverse_transform(x_random)
-
-    title = 'Synthetic Data'
-    plot_toydata(x_synthetic, title)
-
-    return None
+def main():
+    pass
 
 
 if __name__ == "__main__":
-    run_demo()
+    main()
