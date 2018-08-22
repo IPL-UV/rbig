@@ -217,6 +217,137 @@ class RBIG(object):
 
         return tol_d
 
+    def jacobian(self, data):
+        """Calculates the jacobian matrix"""
+        n_samples, n_components = data.shape
+
+        # initialize jacobian matrix
+        jacobian = np.zeros((n_samples, n_components, n_components))
+
+        data_rbig = data.copy()
+
+        XX = np.zeros(shape=(n_samples, n_components))
+        XX[:, 0] = np.ones(shape=n_samples)
+
+        # initialize gaussian pdf
+        gaussian_pdf = np.zeros(shape=(n_samples, n_components, self.n_layers))
+        igaussian_pdf = np.zeros(shape=(n_samples, n_components))
+
+        # TODO: I feel like this is repeating a part of the transform operation
+        for ilayer in range(self.n_layers):
+
+            for idim in range(n_components):
+
+                # Marginal Uniformization
+                data_uniform = interp1d(
+                    self.gauss_params[ilayer][idim]['uniform_cdf_support'],
+                    self.gauss_params[ilayer][idim]['uniform_cdf'],
+                    fill_value='extrapolate')(
+                        data_rbig[:, idim]
+                    )
+
+                # Marginal Gaussianization
+                igaussian_pdf[:, idim] = norm.ppf(data_uniform)
+
+                # Gaussian PDF
+                gaussian_pdf[:, idim, ilayer] = interp1d(
+                    self.gauss_params[ilayer][idim]['empirical_pdf_support'],
+                    self.gauss_params[ilayer][idim]['empirical_pdf'],
+                    fill_value='extrapolate')(
+                        data_rbig[:, idim]
+                    ) * (1 / norm.pdf(igaussian_pdf[:, idim]))
+
+
+            XX = np.dot(gaussian_pdf[:, :, ilayer] * XX, self.rotation_matrix[ilayer])
+
+            data_rbig = np.dot(igaussian_pdf, self.rotation_matrix[ilayer])
+        jacobian[:, :, 0] = XX
+
+        if n_components > 1:
+
+            for idim in range(n_components):
+
+                XX = np.zeros(shape=(n_samples, n_components))
+                XX[:, idim] = np.ones(n_samples)
+
+                for ilayer in range(self.n_layers):
+
+                    XX = np.dot(gaussian_pdf[:, :, ilayer]*XX, self.rotation_matrix[ilayer])
+
+                jacobian[:, :, idim] = XX
+        return jacobian, data_rbig
+
+    def estimate_prob(self, data, n_trials=1, chunksize=2000, domain='input'):
+
+        component_wise_std = np.std(data, axis=0) / 20
+
+        n_samples, n_components = data.shape
+
+        prob_data_gaussian_domain = np.zeros(shape=(n_samples, n_trials))
+        prob_data_input_domain = np.zeros(shape=(n_samples, n_trials))
+
+        for itrial in range(n_trials):
+
+            jacobians = np.zeros(shape=(n_samples, n_components, n_components))
+
+            if itrial < n_trials:
+                data_aux = data + component_wise_std[None, :]
+            else:
+                data_aux = data
+
+            data_temp = np.zeros(data_aux.shape)
+
+            for start_idx, end_idx in generate_batches(n_samples, chunksize):
+
+                jacobians[start_idx:end_idx, :, :], data_temp[start_idx:end_idx, :] = \
+                    self.jacobian(data_aux[start_idx:end_idx, :])
+
+            # set all nans to zero
+            jacobians[np.isnan(jacobians)] = 0.0
+
+            # print(f"Jacobians - min: {jacobians.min()}, max: {jacobians.max()}")
+            # print(f"Shape of Jacobians: {jacobians.shape}")
+            det_jacobians = np.linalg.det(jacobians)
+            # print('Det:', det_jacobians.shape)
+
+            # Probability in Gaussian Domain
+            prob_data_gaussian_domain[:, itrial] = np.prod(
+                (1 / np.sqrt(2 * np.pi)) * np.exp(-0.5 * np.power(data_temp, 2)), axis=1
+            )
+
+            # set all nans to zero
+            prob_data_gaussian_domain[np.isnan(prob_data_gaussian_domain)] = 0.0
+
+            # compute determinant for each sample's jacobian
+            prob_data_input_domain[:, itrial] = (
+                prob_data_gaussian_domain[:, itrial] * np.abs(det_jacobians)
+            )
+
+            # set all nans to zero
+            prob_data_input_domain[np.isnan(prob_data_input_domain)] = 0.0
+
+
+
+        # Average all the jacobians we calculate
+        # print(prob_data_input_domain.shape)
+        # print(prob_data_gaussian_domain.shape)
+        # print(det_jacobians.shape)
+        prob_data_input_domain = prob_data_input_domain.mean(axis=1)
+        prob_data_gaussian_domain = prob_data_gaussian_domain.mean(axis=1)
+        det_jacobians = det_jacobians.mean()
+
+        # save the jacobians
+        self.jacobians = jacobians
+        self.det_jacobians = det_jacobians
+
+        if domain == 'input':
+            return prob_data_input_domain
+        elif domain == 'transform':
+            return prob_data_gaussian_domain
+        elif domain == 'both':
+            return prob_data_input_domain, prob_data_gaussian_domain
+
+
 def univariate_make_normal(uni_data, extension, precision):
     """
     Takes univariate data and transforms it to have approximately normal dist
@@ -425,6 +556,51 @@ def entropy(hist_counts, correction=None):
     
     H = -np.sum(hist_counts[idx] * np.log2(hist_counts[idx])) + constant
     return H
+
+def generate_batches(n_samples, batch_size):
+    """A generator to split an array of 0 to n_samples
+    into an array of batch_size each.
+
+    Parameters
+    ----------
+    n_samples : int
+        the number of samples
+
+    batch_size : int,
+        the size of each batch
+
+
+    Returns
+    -------
+    start_index, end_index : int, int
+        the start and end indices for the batch
+
+    Source:
+        https://github.com/scikit-learn/scikit-learn/blob/master
+        /sklearn/utils/__init__.py#L374
+    """
+    start_index = 0
+
+    # calculate number of batches
+    n_batches = int(n_samples // batch_size)
+
+    for _ in range(n_batches):
+
+        # calculate the end coordinate
+        end_index = start_index + batch_size
+
+        # yield the start and end coordinate for batch
+        yield start_index, end_index
+
+        # start index becomes new end index
+        start_index = end_index
+
+    # special case at the end of the segment
+    if start_index < n_samples:
+
+        # yield the remaining indices
+        yield start_index, n_samples
+
 
 
 def main():
