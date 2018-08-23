@@ -602,7 +602,6 @@ def generate_batches(n_samples, batch_size):
         yield start_index, n_samples
 
 
-
 def main():
     pass
 
