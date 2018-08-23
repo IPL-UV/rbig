@@ -7,7 +7,8 @@ A method that provides a transformation scheme from any distribution to a gaussi
 ### Resources
 
 * Original Webpage - [ISP](http://isp.uv.es/rbig.html)
-* Original Code - [matlab code](http://isp.uv.es/code/featureextraction/RBIG_toolbox.zip)
+* Original MATLAB Code - [webpage](http://isp.uv.es/code/featureextraction/RBIG_toolbox.zip)
+* Original Python Code - [github](https://github.com/spencerkent/pyRBIG)
 * [Paper](https://arxiv.org/abs/1602.00229) - Iterative Gaussianization: from ICA to Random Rotations
 
 Abstract From Paper
