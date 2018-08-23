@@ -18,6 +18,59 @@ logging.basicConfig(filename="rbig_demo.log",
 
 
 class RBIG(object):
+    """ Rotation-Based Iterative Gaussian-ization (RBIG_)
+    Parameters
+    ----------
+    n_layers : int, optional (default 50)
+        The number of steps to run the sequence of marginal gaussianization
+        and then rotation
+
+    rotation_type : {'PCA', 'random'}
+        The rotation applied to the Gaussian-ized data at each iteration.
+        - 'pca'     : a principal components analysis rotation (PCA)
+        - 'random'  : random rotations
+
+    pdf_resolution : int, optional (default 1000)
+        The number of points at which to compute the gaussianized marginal pdfs.
+        The functions that map from original data to gaussianized data at each
+        iteration have to be stored so that we can invert them later - if working
+        with high-dimensional data consider reducing this resolution to shorten
+        computation time.
+
+    pdf_extension : int, optional (default 0.1)
+        The fraction by which to extend the support of the Gaussian-ized marginal
+        pdf compared to the empirical marginal PDF.
+
+    verbose : int, optional
+        If specified, report the RBIG iteration number every
+        progress_report_interval iterations.
+
+    Attributes
+    ----------
+    gauss_data : array, (n_samples x d_dimensions)
+        The gaussianized data after the RBIG transformation
+
+    residual_info : array, (n_layers)
+        The cumulative amount of information between layers. It should exhibit
+        a curve with a plateau to indicate convergence.
+
+    rotation_matrix = dict, (n_layers)
+        A rotation matrix that was calculated and saved for each layer.
+
+    gauss_params = dict, (n_layers)
+        The cdf and pdf for the gaussianization parameters used for each layer.
+
+    References
+    ----------
+    * Original Paper : Iterative Gaussianization: from ICA to Random Rotations
+        https://arxiv.org/abs/1602.00229
+
+    * Original MATLAB Implementation
+        http://isp.uv.es/rbig.html
+
+    * Original Python Implementation
+        https://github.com/spencerkent/pyRBIG
+    """
     def __init__(self, n_layers=50, rotation_type='PCA', pdf_resolution=1000,
                  pdf_extension=0.1, random_state=None, verbose=None):
         self.n_layers = n_layers
@@ -26,33 +79,6 @@ class RBIG(object):
         self.pdf_extension = pdf_extension
         self.random_state = random_state
         self.verbose = verbose
-        """ Rotation-Based Iterative Gaussian-ization (RBIG_)
-        Parameters
-        ----------
-        n_layers : int, optional (default 50)
-            The number of steps to run the sequence of marginal gaussianization
-            and then rotation
-        
-        rotation_type : str {'PCA', 'random'}
-            The rotation applied to the Gaussian-ized data at each iteration.
-            PCA : 
-            random :
-        pdf_resolution : int, optional (default 1000)
-            The number of points at which to compute the gaussianized marginal pdfs.
-            The functions that map from original data to gaussianized data at each
-            iteration have to be stored so that we can invert them later - if working
-            with high-dimensional data consider reducing this resolution to shorten
-            computation time.
-        pdf_extension : int, optional (default 0.1)
-            The fraction by which to extend the support of the Gaussian-ized marginal
-            pdf compared to the empirical marginal PDF.
-        verbose : int, optional
-            If specified, report the RBIG iteration number every
-            progress_report_interval iterations.
-        Attributes
-        ----------
-        """
-
     def fit(self, X):
         """ Fit the model with X.
         Parameters
@@ -69,7 +95,17 @@ class RBIG(object):
         return self
 
     def _fit(self, data):
-        
+        """ Fit the model with X.
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Training data, where n_samples in the number of samples
+            and n_features is the number of features.
+        Returns
+        -------
+        self : object
+            Returns the instance itself.
+        """
         gauss_data = np.copy(data)
         
         n_samples, n_dimensions = np.shape(gauss_data)
@@ -78,7 +114,6 @@ class RBIG(object):
 
         # Initialize stopping criteria (residual information)
         residual_info = np.empty(shape=(self.n_layers))
-        mutual_information = np.empty(shape=(self.n_layers, n_dimensions))
         gauss_params = [None] * self.n_layers
         rotation_matrix = [None] * self.n_layers
 
@@ -116,7 +151,7 @@ class RBIG(object):
                 gauss_data = np.dot(gauss_data, rand_ortho_matrix)
                 rotation_matrix[layer] = rand_ortho_matrix
 
-            elif self.rotation_type == 'PCA':
+            elif self.rotation_type.lower() == 'pca':
                 if n_dimensions > n_samples or n_dimensions > 10 ** 6:
                     # If the dimensionality of each datapoint is high, we probably
                     # want to compute the SVD of the data directly to avoid forming a huge
@@ -151,63 +186,90 @@ class RBIG(object):
 
         return self
 
-    def transform(self, data):
+    def transform(self, X):
+        """Complete transformation of X given the learned Gaussianization parameters.
+        This assumes that the data follows a similar distribution as the data that
+        was original used to fit the RBIG Gaussian-ization parameters.
+        
+        Parameters 
+        ----------
+        X : array, (n_samples, n_dimensions)
+            The data to be transformed (Gaussianized)
+            
+        Returns
+        -------
+        X_transformed : array, (n_samples, n_dimensions)
+            The new transformed data in the Gaussian domain
 
-        # get the dimensions of the data
-        n_samples, n_dimensions = np.shape(data)
-        rbig_transformed = np.copy(data)
+        """
+        n_samples, n_dimensions = np.shape(X)
+        X_transformed = np.copy(X)
 
         for layer in range(self.n_layers):
             
             # ----------------------------
             # Marginal Uniformization
             # ----------------------------
-            data_layer = rbig_transformed.T
+            data_layer = X_transformed
+
             for idim in range(n_dimensions):
-                
-                
+
                 # marginal uniformization                
-                data_layer[idim, :] = interp1d(
+                data_layer[:, idim] = interp1d(
                     self.gauss_params[layer][idim]['uniform_cdf_support'],
                     self.gauss_params[layer][idim]['uniform_cdf'],
                     fill_value='extrapolate')(
-                        data_layer[idim, :]
+                        data_layer[:, idim]
                     )
 
                 # marginal gaussianization
-                data_layer[idim, :] = norm.ppf(
-                    data_layer[idim, :]
+                data_layer[:, idim] = norm.ppf(
+                    data_layer[:, idim]
                 )
                 
             # ----------------------
             # Rotation
             # ----------------------
-            rbig_transformed = np.dot(
-                data_layer.T, self.rotation_matrix[layer] 
+            X_transformed = np.dot(
+                data_layer, self.rotation_matrix[layer]
             )
-        return rbig_transformed
 
-    def inverse_transform(self, data):
-        n_samples, n_dimensions = np.shape(data)
-        sampled_data = np.copy(data)
+        return X_transformed
 
-        total_iters = 0
+    def inverse_transform(self, X):
+        """Complete transformation of X in the  given the learned Gaussianization parameters.
+
+        Parameters
+        ----------
+        X : array, (n_samples, n_dimensions)
+            The X that follows a Gaussian distribution to be transformed
+            to data in the original input space.
+
+        Returns
+        -------
+        X_input_domain : array, (n_samples, n_dimensions)
+            The new transformed X in the original input space.
+
+        """
+        n_samples, n_dimensions = np.shape(X)
+        X_input_domain = np.copy(X)
+
         for layer in range(self.n_layers - 1, -1, -1):
 
             if self.verbose is not None:
                 print("Completed {} inverse iterations of RBIG.".format(layer + 1))
 
-            sampled_data = np.dot(sampled_data, self.rotation_matrix[layer])
+            X_input_domain = np.dot(X_input_domain, self.rotation_matrix[layer])
             
-            temp = sampled_data.T
+            temp = X_input_domain
             for idim in range(n_dimensions):
-                temp[idim, :] = univariate_invert_normalization(
-                    temp[idim, :],
+                temp[:, idim] = univariate_invert_normalization(
+                    temp[:, idim],
                     self.gauss_params[layer][idim]
                 )
-            sampled_data = temp.T
+            X_input_domain = temp
 
-        return sampled_data
+        return X_input_domain
 
     def _get_information_tolerance(self, n_samples):
         """Precompute some tolerances for the tails."""
@@ -217,14 +279,32 @@ class RBIG(object):
 
         return tol_d
 
-    def jacobian(self, data):
-        """Calculates the jacobian matrix"""
-        n_samples, n_components = data.shape
+    def jacobian(self, X, return_X_transform=False):
+        """Calculates the jacobian matrix of the X.
+
+        Parameters
+        ----------
+        X : array, (n_samples, n_features)
+            The input array to calculate the jacobian using the Gaussianization params.
+
+        return_X_transform : bool, default: False
+            Determines whether to return the transformed Data. This is computed along
+            with the Jacobian to save time with the iterations
+
+        Returns
+        -------
+        jacobian : array, (n_samples, n_features, n_features)
+            The jacobian of the data w.r.t. each component for each direction
+
+        X_transformed : array, (n_samples, n_features) (optional)
+            The transformed data in the Gaussianized space
+        """
+        n_samples, n_components = X.shape
 
         # initialize jacobian matrix
         jacobian = np.zeros((n_samples, n_components, n_components))
 
-        data_rbig = data.copy()
+        X_transformed = X.copy()
 
         XX = np.zeros(shape=(n_samples, n_components))
         XX[:, 0] = np.ones(shape=n_samples)
@@ -243,7 +323,7 @@ class RBIG(object):
                     self.gauss_params[ilayer][idim]['uniform_cdf_support'],
                     self.gauss_params[ilayer][idim]['uniform_cdf'],
                     fill_value='extrapolate')(
-                        data_rbig[:, idim]
+                        X_transformed[:, idim]
                     )
 
                 # Marginal Gaussianization
@@ -254,13 +334,13 @@ class RBIG(object):
                     self.gauss_params[ilayer][idim]['empirical_pdf_support'],
                     self.gauss_params[ilayer][idim]['empirical_pdf'],
                     fill_value='extrapolate')(
-                        data_rbig[:, idim]
+                        X_transformed[:, idim]
                     ) * (1 / norm.pdf(igaussian_pdf[:, idim]))
 
 
             XX = np.dot(gaussian_pdf[:, :, ilayer] * XX, self.rotation_matrix[ilayer])
 
-            data_rbig = np.dot(igaussian_pdf, self.rotation_matrix[ilayer])
+            X_transformed = np.dot(igaussian_pdf, self.rotation_matrix[ilayer])
         jacobian[:, :, 0] = XX
 
         if n_components > 1:
@@ -275,13 +355,47 @@ class RBIG(object):
                     XX = np.dot(gaussian_pdf[:, :, ilayer]*XX, self.rotation_matrix[ilayer])
 
                 jacobian[:, :, idim] = XX
-        return jacobian, data_rbig
 
-    def estimate_prob(self, data, n_trials=1, chunksize=2000, domain='input'):
+        if return_X_transform:
+            return jacobian, X_transformed
+        else:
+            return jacobian
 
-        component_wise_std = np.std(data, axis=0) / 20
+    def predict_proba(self, X, n_trials=1, chunksize=2000, domain='input'):
+        """ Computes the probability of the original data under the generative RBIG
+        model.
 
-        n_samples, n_components = data.shape
+        Parameters
+        ----------
+        X : array, (n_samples x n_components)
+            The points that the pdf is evaluated
+
+        n_trials : int, (default : 1)
+            The number of times that the jacobian is evaluated and averaged
+
+        TODO: make sure n_trials is an int
+        TODO: make sure n_trials is 1 or more
+
+        chunksize : int, (default: 2000)
+            The batchsize to calculate the jacobian matrix.
+
+        TODO: make sure chunksize is an int
+        TODO: make sure chunk size is greater than 0
+
+        domain : {'input', 'gauss', 'both'}
+            The domain to calculate the PDF.
+            - 'input' : returns the original domain (default)
+            - 'gauss' : returns the gaussian domain
+            - 'both'  : returns both the input and gauss domain
+
+        Returns
+        -------
+        prob_data_input_domain : array, (n_samples)
+            The probability
+        """
+        component_wise_std = np.std(X, axis=0) / 20
+
+        n_samples, n_components = X.shape
 
         prob_data_gaussian_domain = np.zeros(shape=(n_samples, n_trials))
         prob_data_input_domain = np.zeros(shape=(n_samples, n_trials))
@@ -291,24 +405,22 @@ class RBIG(object):
             jacobians = np.zeros(shape=(n_samples, n_components, n_components))
 
             if itrial < n_trials:
-                data_aux = data + component_wise_std[None, :]
+                data_aux = X + component_wise_std[None, :]
             else:
-                data_aux = data
+                data_aux = X
 
             data_temp = np.zeros(data_aux.shape)
 
             for start_idx, end_idx in generate_batches(n_samples, chunksize):
 
                 jacobians[start_idx:end_idx, :, :], data_temp[start_idx:end_idx, :] = \
-                    self.jacobian(data_aux[start_idx:end_idx, :])
+                    self.jacobian(data_aux[start_idx:end_idx, :], return_X_transform=True)
 
             # set all nans to zero
             jacobians[np.isnan(jacobians)] = 0.0
 
-            # print(f"Jacobians - min: {jacobians.min()}, max: {jacobians.max()}")
-            # print(f"Shape of Jacobians: {jacobians.shape}")
+            # get the determinant of all jacobians
             det_jacobians = np.linalg.det(jacobians)
-            # print('Det:', det_jacobians.shape)
 
             # Probability in Gaussian Domain
             prob_data_gaussian_domain[:, itrial] = np.prod(
@@ -329,9 +441,6 @@ class RBIG(object):
 
 
         # Average all the jacobians we calculate
-        # print(prob_data_input_domain.shape)
-        # print(prob_data_gaussian_domain.shape)
-        # print(det_jacobians.shape)
         prob_data_input_domain = prob_data_input_domain.mean(axis=1)
         prob_data_gaussian_domain = prob_data_gaussian_domain.mean(axis=1)
         det_jacobians = det_jacobians.mean()
@@ -362,6 +471,7 @@ def univariate_make_normal(uni_data, extension, precision):
       Extend the marginal PDF support by this amount.
     precision : int
       The number of points in the marginal PDF
+
     Returns
     -------
     uni_gaussian_data : ndarray
@@ -459,21 +569,21 @@ def make_cdf_monotonic(cdf):
       The values of the cdf in order (1d)
     """
     # laparra's version
-    corrected_cdf = cdf.copy()
-    for i in range(1, len(corrected_cdf)):
-        if corrected_cdf[i] <= corrected_cdf[i-1]:
-            if abs(corrected_cdf[i-1]) > 1e-14:
-                corrected_cdf[i] = corrected_cdf[i-1] + 1e-14
-            elif corrected_cdf[i-1] == 0:
-                corrected_cdf[i] = 1e-80
-            else:
-                corrected_cdf[i] = (corrected_cdf[i-1] +
-                                    10**(np.log10(abs(corrected_cdf[i-1]))))
-    return corrected_cdf
+    # corrected_cdf = cdf.copy()
+    # for i in range(1, len(corrected_cdf)):
+    #     if corrected_cdf[i] <= corrected_cdf[i-1]:
+    #         if abs(corrected_cdf[i-1]) > 1e-14:
+    #             corrected_cdf[i] = corrected_cdf[i-1] + 1e-14
+    #         elif corrected_cdf[i-1] == 0:
+    #             corrected_cdf[i] = 1e-80
+    #         else:
+    #             corrected_cdf[i] = (corrected_cdf[i-1] +
+    #                                 10**(np.log10(abs(corrected_cdf[i-1]))))
+    # return corrected_cdf
 
     # my version
     # I think actually i need to make sure i is strictly increasing....
-    # return np.maximum.accumulate(cdf)
+    return np.maximum.accumulate(cdf)
 
 def information_reduction(x_data, y_data, tol_dimensions=None):
     """Computes the multi-information (total correlation) reduction after a linear
