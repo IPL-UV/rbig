@@ -106,6 +106,7 @@ class RBIG(object):
         self : object
             Returns the instance itself.
         """
+        self.X_fit_ = data
         gauss_data = np.copy(data)
         
         n_samples, n_dimensions = np.shape(gauss_data)
@@ -202,7 +203,7 @@ class RBIG(object):
             The new transformed data in the Gaussian domain
 
         """
-        n_samples, n_dimensions = np.shape(X)
+        n_dimensions = np.shape(X)[1]
         X_transformed = np.copy(X)
 
         for layer in range(self.n_layers):
@@ -251,7 +252,7 @@ class RBIG(object):
             The new transformed X in the original input space.
 
         """
-        n_samples, n_dimensions = np.shape(X)
+        n_dimensions = np.shape(X)[1]
         X_input_domain = np.copy(X)
 
         for layer in range(self.n_layers - 1, -1, -1):
@@ -456,6 +457,57 @@ class RBIG(object):
         elif domain == 'both':
             return prob_data_input_domain, prob_data_gaussian_domain
 
+    def entropy(self):
+
+        #TODO check fit
+        return entropy(self.X_fit_) - self.total_correlation()
+
+    def total_correlation(self):
+
+        #TODO check fit
+        return self.residual_info.sum()
+
+
+class RBIGMI(object):
+    def __init__(self, n_layers=50, rotation_type='PCA', pdf_resolution=1000,
+                 pdf_extension=0.1, random_state=None, verbose=None):
+        self.n_layers = n_layers
+        self.rotation_type = rotation_type
+        self.pdf_resolution = pdf_resolution
+        self.pdf_extension = pdf_extension
+        self.random_state = random_state
+        self.verbose = verbose
+    
+    def fit(self, X, Y):
+        # Initialize RBIG class I
+        self.rbig_model_X = RBIG(n_layers=self.n_layers, 
+                                 rotation_type=self.rotation_type, 
+                                 random_state=self.random_state)
+
+        # fit model to the data
+        self.rbig_model_X.fit(X)
+
+        # Initialize RBIG class II
+        self.rbig_model_Y = RBIG(n_layers=self.n_layers, 
+                                 rotation_type=self.rotation_type, 
+                                 random_state=self.random_state)
+
+        # fit model to the data
+        self.rbig_model_Y.fit(Y)
+
+        self.rbig_model_XY = RBIG(n_layers=self.n_layers, 
+                                  rotation_type=self.rotation_type, 
+                                  random_state=self.random_state)
+        
+        XY = np.vstack([X, Y])
+
+        self.rbig_model_XY.fit(XY)
+
+        return self
+
+    def mutual_information(self):
+
+        return self.rbig_model_XY.residual_info.sum()
 
 def univariate_make_normal(uni_data, extension, precision):
     """
@@ -664,7 +716,7 @@ def entropy(hist_counts, correction=None):
     constant = 0.5 * (np.sum(hist_counts[idx]) - 1.0) / np.sum(hist_counts)
     hist_counts = hist_counts / np.sum(hist_counts)
     
-    H = -np.sum(hist_counts[idx] * np.log2(hist_counts[idx])) + constant
+    H = - np.sum(hist_counts[idx] * np.log2(hist_counts[idx])) + constant
     return H
 
 def generate_batches(n_samples, batch_size):
