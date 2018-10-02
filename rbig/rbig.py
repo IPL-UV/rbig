@@ -185,8 +185,11 @@ class RBIG(object):
             
             # Transform Residual Information
             if self.n_layers > 50 :
-                auxi = residual_info
-                if np.sum(np.abs(auxi[50:])) == 0:
+                if np.sum(np.abs(residual_info[-50:])) == 0:
+                    gauss_data = gauss_data[:-50]
+                    residual_info = residual_info[:-50]
+                    rotation_matrix = rotation_matrix[:-50]
+                    gauss_params = gauss_params[:-50]
                     break
                 else:
                     pass
