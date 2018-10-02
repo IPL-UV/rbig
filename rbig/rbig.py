@@ -184,7 +184,7 @@ class RBIG(object):
             residual_info[layer] = information_reduction(gauss_data, gauss_data_prerotation)
             
             # Transform Residual Information
-            if self.n_layers > 50 :
+            if layer > 60 :
                 if np.sum(np.abs(residual_info[-50:])) == 0:
                     gauss_data = gauss_data[:-50]
                     residual_info = residual_info[:-50]
@@ -197,6 +197,7 @@ class RBIG(object):
         # save necessary parameters
         self.gauss_data = gauss_data
         self.residual_info = residual_info
+        self.mutual_information = np.sum(residual_info)
         self.rotation_matrix = rotation_matrix
         self.gauss_params = gauss_params
 
