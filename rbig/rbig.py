@@ -72,7 +72,7 @@ class RBIG(object):
         https://github.com/spencerkent/pyRBIG
     """
     def __init__(self, n_layers=50, rotation_type='PCA', pdf_resolution=1000,
-                 pdf_extension=0.1, random_state=None, verbose=None):
+                 pdf_extension=None, random_state=None, verbose=None):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
         self.pdf_resolution = pdf_resolution
@@ -106,6 +106,10 @@ class RBIG(object):
         self : object
             Returns the instance itself.
         """
+
+        if self.pdf_extension is None:
+            self.pdf_extension = 2 * np.round(np.sqrt(data.shape[0]))
+
         self.X_fit_ = data
         gauss_data = np.copy(data)
         
@@ -179,6 +183,14 @@ class RBIG(object):
             # --------------------------------
             residual_info[layer] = information_reduction(gauss_data, gauss_data_prerotation)
             
+            # Transform Residual Information
+            if self.n_layers > 50 :
+                auxi = residual_info
+                if np.sum(np.abs(auxi[50:])) == 0:
+                    break
+                else:
+                    pass
+
         # save necessary parameters
         self.gauss_data = gauss_data
         self.residual_info = residual_info
