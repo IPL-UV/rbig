@@ -71,14 +71,18 @@ class RBIG(object):
     * Original Python Implementation
         https://github.com/spencerkent/pyRBIG
     """
-    def __init__(self, n_layers=50, rotation_type='PCA', pdf_resolution=1000,
-                 pdf_extension=None, random_state=None, verbose=None):
+    def __init__(self, n_layers=1000, rotation_type='PCA', pdf_resolution=1000,
+                 pdf_extension=None, random_state=None, verbose=None, tolerance=None,
+                 zero_tolerance=100, ):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
         self.pdf_resolution = pdf_resolution
         self.pdf_extension = pdf_extension
         self.random_state = random_state
         self.verbose = verbose
+        self.tolerance = tolerance
+        self.zero_tolerance = zero_tolerance
+        
     def fit(self, X):
         """ Fit the model with X.
         Parameters
@@ -113,14 +117,20 @@ class RBIG(object):
         self.X_fit_ = data
         gauss_data = np.copy(data)
         
-        n_samples, n_dimensions = np.shape(gauss_data)
+        n_samples, n_dimensions = np.shape(data)
+        
+        if self.zero_tolerance is None:
+            self.zero_tolerance = self.n_layers + 1
+        
+        if self.tolerance is None:
+            self.tolerance = self._get_information_tolerance(n_samples)
         
         logging.debug('Data (shape): {}'.format(np.shape(gauss_data)))
 
         # Initialize stopping criteria (residual information)
-        residual_info = np.empty(shape=(self.n_layers))
-        gauss_params = [None] * self.n_layers
-        rotation_matrix = [None] * self.n_layers
+        residual_info = list()
+        gauss_params = list()
+        rotation_matrix = list()
 
         # Loop through the layers
         logging.debug('Running: Looping through the layers...')
@@ -145,7 +155,7 @@ class RBIG(object):
                 # append the parameters
                 layer_params.append(temp_params)
 
-            gauss_params[layer] = layer_params
+            gauss_params.append(layer_params)
             gauss_data_prerotation = gauss_data.copy()
             # --------
             # Rotation
@@ -154,9 +164,15 @@ class RBIG(object):
 
                 rand_ortho_matrix = ortho_group.rvs(n_dimensions)
                 gauss_data = np.dot(gauss_data, rand_ortho_matrix)
-                rotation_matrix[layer] = rand_ortho_matrix
+                rotation_matrix.append(rand_ortho_matrix)
 
             elif self.rotation_type.lower() == 'pca':
+#                 # PCA w/ Scikit-Learn
+#                 pca_model = PCA()
+#                 pca_model.fit(gauss_data)
+#                 V = pca_model.components_
+#                 gauss_data = np.dot(gauss_data, V.T)
+#                 rotation_matrix.append(V.T)
                 if n_dimensions > n_samples or n_dimensions > 10 ** 6:
                     # If the dimensionality of each datapoint is high, we probably
                     # want to compute the SVD of the data directly to avoid forming a huge
@@ -173,7 +189,7 @@ class RBIG(object):
                 logging.debug('Size of gauss_data: {}'.format(gauss_data.shape))
 
                 gauss_data = np.dot(gauss_data, V.T)
-                rotation_matrix[layer] = V.T
+                rotation_matrix.append(V.T)
 
             else:
                 raise ValueError('Rotation type ' + self.rotation_type + ' not recognized')
@@ -181,25 +197,38 @@ class RBIG(object):
             # --------------------------------
             # Information Reduction (Emmanuel)
             # --------------------------------
-            residual_info[layer] = information_reduction(gauss_data, gauss_data_prerotation)
+            residual_info.append(information_reduction(gauss_data, 
+                                                       gauss_data_prerotation,
+                                                       self.tolerance))
+            
             
             # Transform Residual Information
-            if layer > 60 :
-                if np.sum(np.abs(residual_info[-50:])) == 0:
-                    gauss_data = gauss_data[:-50]
-                    residual_info = residual_info[:-50]
-                    rotation_matrix = rotation_matrix[:-50]
-                    gauss_params = gauss_params[:-50]
+            if layer > self.zero_tolerance:
+                aux_residual = np.array(residual_info)
+                if (aux_residual[-self.zero_tolerance:].sum() == 0):
+                    logging.debug('Done! aux: {}'.format(aux_residual))
+                    
+                    residual_info = residual_info[:-self.zero_tolerance]
+                    logging.debug('Res Info: {}'.format(len(residual_info)))
+                    rotation_matrix = rotation_matrix[:-self.zero_tolerance]
+                    logging.debug('Rotation Matrix: {}'.format(len(rotation_matrix)))
+                    gauss_params = gauss_params[:-self.zero_tolerance]
+                    logging.debug('Gauss Param: {}'.format(len(gauss_params)))
                     break
                 else:
                     pass
 
         # save necessary parameters
+        try:
+            self.information_loss = aux_residual
+        except UnboundLocalError:
+            self.information_loss = np.array(residual_info)
         self.gauss_data = gauss_data
-        self.residual_info = residual_info
+        self.residual_info = np.array(residual_info)
         self.mutual_information = np.sum(residual_info)
         self.rotation_matrix = rotation_matrix
         self.gauss_params = gauss_params
+        self.n_layers = len(gauss_params)
 
         return self
 
@@ -221,7 +250,7 @@ class RBIG(object):
         """
         n_dimensions = np.shape(X)[1]
         X_transformed = np.copy(X)
-
+        
         for layer in range(self.n_layers):
             
             # ----------------------------
@@ -270,7 +299,7 @@ class RBIG(object):
         """
         n_dimensions = np.shape(X)[1]
         X_input_domain = np.copy(X)
-
+        
         for layer in range(self.n_layers - 1, -1, -1):
 
             if self.verbose is not None:
@@ -290,11 +319,10 @@ class RBIG(object):
 
     def _get_information_tolerance(self, n_samples):
         """Precompute some tolerances for the tails."""
-        xxx = np.linspace(2, 8, 7)
+        xxx = np.logspace(2, 8, 6)
         yyy = [0.1571, 0.0468, 0.0046, 0.0014, 0.0001, 0.00001]
-        tol_d = np.interp(n_samples, xxx, yyy)
 
-        return tol_d
+        return interp1d(xxx, yyy)(n_samples)
 
     def jacobian(self, X, return_X_transform=False):
         """Calculates the jacobian matrix of the X.
@@ -331,6 +359,7 @@ class RBIG(object):
         igaussian_pdf = np.zeros(shape=(n_samples, n_components))
 
         # TODO: I feel like this is repeating a part of the transform operation
+        
         for ilayer in range(self.n_layers):
 
             for idim in range(n_components):
@@ -637,21 +666,21 @@ def make_cdf_monotonic(cdf):
       The values of the cdf in order (1d)
     """
     # laparra's version
-    # corrected_cdf = cdf.copy()
-    # for i in range(1, len(corrected_cdf)):
-    #     if corrected_cdf[i] <= corrected_cdf[i-1]:
-    #         if abs(corrected_cdf[i-1]) > 1e-14:
-    #             corrected_cdf[i] = corrected_cdf[i-1] + 1e-14
-    #         elif corrected_cdf[i-1] == 0:
-    #             corrected_cdf[i] = 1e-80
-    #         else:
-    #             corrected_cdf[i] = (corrected_cdf[i-1] +
-    #                                 10**(np.log10(abs(corrected_cdf[i-1]))))
-    # return corrected_cdf
+    corrected_cdf = cdf.copy()
+    for i in range(1, len(corrected_cdf)):
+        if corrected_cdf[i] <= corrected_cdf[i-1]:
+            if abs(corrected_cdf[i-1]) > 1e-14:
+                corrected_cdf[i] = corrected_cdf[i-1] + 1e-14
+            elif corrected_cdf[i-1] == 0:
+                corrected_cdf[i] = 1e-80
+            else:
+                corrected_cdf[i] = (corrected_cdf[i-1] +
+                                    10**(np.log10(abs(corrected_cdf[i-1]))))
+    return corrected_cdf
 
-    # my version
-    # I think actually i need to make sure i is strictly increasing....
-    return np.maximum.accumulate(cdf)
+#     # my version
+#     # I think actually i need to make sure i is strictly increasing....
+#     return np.maximum.accumulate(cdf)
 
 def information_reduction(x_data, y_data, tol_dimensions=None):
     """Computes the multi-information (total correlation) reduction after a linear
@@ -700,8 +729,8 @@ def information_reduction(x_data, y_data, tol_dimensions=None):
     hy = np.zeros(n_dimensions)
     
     # number of bins
-    n_bins = int(round(np.sqrt(n_samples)))
-    
+    n_bins = int(round(np.sqrt(n_samples))) + 1
+#     print('Bins: ', n_bins)
     # loop through dimensions
     for idim in np.arange(0, n_dimensions):
 
@@ -718,12 +747,13 @@ def information_reduction(x_data, y_data, tol_dimensions=None):
         hy[idim] = entropy(hist_y) + np.log2(delta_y)
 
     I = np.sum(hy) - np.sum(hx)
-    II = np.sqrt(np.sum(hy - hx) ** 2)
+#     print('Data:')
+#     print(hx, hy)
+    II = np.sqrt(np.sum((hy - hx) ** 2))
+#     print(I, II)
     p = 0.25
-
-    if np.abs(II) < np.sqrt(n_dimensions * p * tol_dimensions ** 2):
+    if II < np.sqrt(n_dimensions * p * tol_dimensions ** 2) or I < 0:
         I = 0
-
     return I
 
 def entropy(hist_counts, correction=None):
