@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.utils import check_random_state
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import QuantileTransformer
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, FastICA
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import normalized_mutual_info_score as mi_score
 from scipy.stats import norm, ortho_group, entropy as sci_entropy
@@ -168,6 +168,18 @@ class RBIG(BaseEstimator, TransformerMixin):
                 gauss_data = np.dot(gauss_data, rand_ortho_matrix)
                 rotation_matrix.append(rand_ortho_matrix)
 
+            elif self.rotation_type.lower() == 'ica':
+                
+                # initialize model fastica model
+                ica_model = FastICA()
+
+                # fit-transform data
+                gauss_data = ica_model.fit_transform(gauss_data)
+
+                # save rotation matrix
+                rotation_matrix.append(ica_model.components_.T)
+
+
             elif self.rotation_type.lower() == 'pca':
 
                 if n_dimensions > n_samples or n_dimensions > 10 ** 6:
@@ -179,14 +191,18 @@ class RBIG(BaseEstimator, TransformerMixin):
                 else:
                     # the SVD is more numerically stable then eig so we'll use it on the 
                     # covariance matrix directly
-                    cov_data = np.dot(gauss_data.T, gauss_data) / n_samples
-                    _, _, V = np.linalg.svd(cov_data, full_matrices=True)
+                    # cov_data = np.dot(gauss_data.T, gauss_data) / n_samples
+                    # _, _, V = np.linalg.svd(cov_data, full_matrices=True)
+                    pca_model = PCA()
+                    
                 
-                logging.debug('Size of V: {}'.format(V.shape))
+                # logging.debug('Size of V: {}'.format(V.shape))
                 logging.debug('Size of gauss_data: {}'.format(gauss_data.shape))
-
-                gauss_data = np.dot(gauss_data, V.T)
-                rotation_matrix.append(V.T)
+                # print(V.shape)
+                # gauss_data = np.dot(gauss_data, V.T)
+                # rotation_matrix.append(V.T)
+                gauss_data = pca_model.fit_transform(gauss_data)
+                rotation_matrix.append(pca_model.components_.T)
 
             else:
                 raise ValueError('Rotation type ' + self.rotation_type + ' not recognized')
@@ -302,7 +318,7 @@ class RBIG(BaseEstimator, TransformerMixin):
             if self.verbose is not None:
                 print("Completed {} inverse iterations of RBIG.".format(layer + 1))
 
-            X_input_domain = np.dot(X_input_domain, self.rotation_matrix[layer])
+            X_input_domain = np.dot(X_input_domain, self.rotation_matrix[layer].T)
             
             temp = X_input_domain
             for idim in range(n_dimensions):
