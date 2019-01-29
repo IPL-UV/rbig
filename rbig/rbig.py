@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.utils import check_random_state
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import QuantileTransformer
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import normalized_mutual_info_score as mi_score
-from scipy.stats import norm, ortho_group
+from scipy.stats import norm, ortho_group, entropy as sci_entropy
 from scipy.interpolate import interp1d
 import warnings
 import logging
@@ -17,7 +18,7 @@ logging.basicConfig(filename="rbig_demo.log",
                     filemode='w')
 
 
-class RBIG(object):
+class RBIG(BaseEstimator, TransformerMixin):
     """ Rotation-Based Iterative Gaussian-ization (RBIG_)
     Parameters
     ----------
@@ -73,7 +74,7 @@ class RBIG(object):
     """
     def __init__(self, n_layers=1000, rotation_type='PCA', pdf_resolution=1000,
                  pdf_extension=None, random_state=None, verbose=None, tolerance=None,
-                 zero_tolerance=100, ):
+                 zero_tolerance=100, entropy_algo='standard'):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
         self.pdf_resolution = pdf_resolution
@@ -82,6 +83,7 @@ class RBIG(object):
         self.verbose = verbose
         self.tolerance = tolerance
         self.zero_tolerance = zero_tolerance
+        self.entropy_algo = entropy_algo
         
     def fit(self, X):
         """ Fit the model with X.
@@ -167,12 +169,7 @@ class RBIG(object):
                 rotation_matrix.append(rand_ortho_matrix)
 
             elif self.rotation_type.lower() == 'pca':
-#                 # PCA w/ Scikit-Learn
-#                 pca_model = PCA()
-#                 pca_model.fit(gauss_data)
-#                 V = pca_model.components_
-#                 gauss_data = np.dot(gauss_data, V.T)
-#                 rotation_matrix.append(V.T)
+
                 if n_dimensions > n_samples or n_dimensions > 10 ** 6:
                     # If the dimensionality of each datapoint is high, we probably
                     # want to compute the SVD of the data directly to avoid forming a huge
@@ -502,10 +499,11 @@ class RBIG(object):
         elif domain == 'both':
             return prob_data_input_domain, prob_data_gaussian_domain
 
-    def entropy(self):
+    def entropy(self, correction=False):
 
         #TODO check fit
-        return entropy(self.X_fit_) - self.total_correlation()
+
+        return entropy_marginal(self.X_fit_, correction=correction).sum() - self.mutual_information
 
     def total_correlation(self):
 
@@ -515,38 +513,54 @@ class RBIG(object):
 
 class RBIGMI(object):
     def __init__(self, n_layers=50, rotation_type='PCA', pdf_resolution=1000,
-                 pdf_extension=0.1, random_state=None, verbose=None):
+                 pdf_extension=None, random_state=None, verbose=None,
+                 tolerance=None, zero_tolerance=100):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
         self.pdf_resolution = pdf_resolution
         self.pdf_extension = pdf_extension
         self.random_state = random_state
         self.verbose = verbose
+        self.tolerance = tolerance
+        self.zero_tolerance = zero_tolerance
     
     def fit(self, X, Y):
+
+
         # Initialize RBIG class I
         self.rbig_model_X = RBIG(n_layers=self.n_layers, 
                                  rotation_type=self.rotation_type, 
-                                 random_state=self.random_state)
+                                 random_state=self.random_state,
+                                 zero_tolerance=self.zero_tolerance,
+                                  tolerance=self.tolerance)
 
-        # fit model to the data
-        self.rbig_model_X.fit(X)
+        # fit and transform model to the data
+        X_transformed = self.rbig_model_X.fit_transform(X)
 
         # Initialize RBIG class II
         self.rbig_model_Y = RBIG(n_layers=self.n_layers, 
                                  rotation_type=self.rotation_type, 
-                                 random_state=self.random_state)
+                                 random_state=self.random_state,
+                                 zero_tolerance=self.zero_tolerance,
+                                  tolerance=self.tolerance)
 
         # fit model to the data
-        self.rbig_model_Y.fit(Y)
+        Y_transformed = self.rbig_model_Y.fit_transform(Y)
 
+        # Stack Data
+        XY_transformed = np.hstack([X_transformed, Y_transformed])
+
+        # Initialize RBIG class I & II
         self.rbig_model_XY = RBIG(n_layers=self.n_layers, 
-                                  rotation_type=self.rotation_type, 
-                                  random_state=self.random_state)
+                                 rotation_type=self.rotation_type, 
+                                 random_state=self.random_state,
+                                 zero_tolerance=self.zero_tolerance,
+                                  tolerance=self.tolerance)
         
-        XY = np.vstack([X, Y])
 
-        self.rbig_model_XY.fit(XY)
+
+        # Fit RBIG model to combined dataset
+        self.rbig_model_XY.fit(XY_transformed)
 
         return self
 
@@ -682,7 +696,127 @@ def make_cdf_monotonic(cdf):
 #     # I think actually i need to make sure i is strictly increasing....
 #     return np.maximum.accumulate(cdf)
 
-def information_reduction(x_data, y_data, tol_dimensions=None):
+# def entropy_hist(data):
+    
+#     # data dimensions
+#     n_samples, d_dimensions = data.shape
+    
+#     # preallocate data
+#     H = np.zeros(d_dimensions)    
+#     # number of bins
+#     n_bins = int(round(np.sqrt(n_samples))) + 1
+#     print('n Bins: {}'.format(n_bins))
+    
+#     for idim in np.arange(0, d_dimensions):
+
+#         # calculate entropy in X direction
+#         [hist, bin_edges] = np.histogram(a=data[:, idim], bins=n_bins)
+#         bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
+#         delta = bin_centers[2] - bin_centers[1]
+# #         print(delta)
+# #         print(hist)
+#         h = entropy(hist)
+        
+# #         # MLE estimator with miller-maddow correction
+# #         idx = np.where(hist_counts > 0)
+# #         constant = 0.5 * (np.sum(hist_counts[idx]) - 1.0) / np.sum(hist_counts)
+# #         hist_counts = hist_counts / np.sum(hist_counts)
+    
+# #         H = - np.sum(hist_counts[idx] * np.log2(hist_counts[idx])) + constant
+#         print('Little h: {}'.format(h))
+#         H[idim] = h + np.log2(delta)
+        
+#     return H
+        
+def entropy_multi(x_data, tol_dimensions=None, algorithm='standard'):
+    
+    n_samples, n_dimensions = x_data.shape
+    
+    # minimum multi-information heuristic
+    if tol_dimensions is None or 0:
+        xxx = np.logspace(2, 8, 7)
+        yyy = [0.1571, 0.0468, 0.0145, 0.0046, 0.0014, 0.0001, 0.00001]
+        tol_dimensions = np.interp(n_samples, xxx, yyy)
+    
+#     if algorithm == 'standard':
+#         entropy = sci_entropy()
+#     elif algorithm == 'miller-maddow':
+#         entropy = entropy()
+#     else:
+#         raise ValueError('Unrecognized entropy algorithm')
+    # preallocate data
+    H = np.zeros(n_dimensions)
+    
+    # number of bins
+    n_bins = int(round(np.sqrt(n_samples))) + 1
+    
+    
+    print('here')
+    # loop through dimensions
+    for idim in np.arange(0, n_dimensions):
+
+        # calculate entropy in X direction
+        Raux = np.linspace(x_data[:, idim].min(), x_data[:, idim].max(), n_bins)
+        [hist_x, bin_edges_x] = np.histogram(a=x_data[:, idim], bins=Raux)
+        bin_centers_x = 0.5 * (bin_edges_x[1:] + bin_edges_x[:-1])
+        delta_x = bin_centers_x[2] - bin_centers_x[1]
+        if algorithm == 'standard':
+            correction = None
+            # h = sci_entropy(hist_x, base=2)
+            # h = entropy
+        elif algorithm == 'miller-maddow':
+            # h = entropy(hist_x)
+            correction = True
+        else:
+            raise ValueError('Unrecognized entropy algorithm: {}...'
+                             .format(algorithm))
+        H[idim] = entropy(hist_x, correction) + np.log2(delta_x)
+    
+    return H
+    
+        
+def entropy_marginal(data, correction=None):
+    
+    # Get dimensions of the data
+    n_samples, d_dimensions = data.shape
+    
+    # get number of bins
+    n_bins = int(round(np.sqrt(n_samples))) + 1
+    
+    H = np.zeros(d_dimensions)
+    
+    # loop through dimensions
+    for idimension in range(d_dimensions):
+        
+        # get histogram counts and edges for data
+        Raux = np.linspace(data[:, idimension].min(), data[:, idimension].max(), n_bins)
+        [hist_counts, bin_edges] = np.histogram(a=data[:, idimension], bins=Raux)
+        bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
+        delta = bin_centers[2] - bin_centers[1]
+#         print(f'Delta: {delta:.4f}')
+        # MLE Estimator with Miller-Maddow Correction
+        idx = np.where(hist_counts > 0)
+        
+        
+        
+        
+        if correction:
+            constant = 0.5 * (np.count_nonzero(hist_counts[idx]) - 1.0) / hist_counts.sum()
+        else:
+            constant = 0.0
+        
+        hist_counts = hist_counts / np.sum(hist_counts)
+        
+        h = - np.sum(hist_counts[idx] * np.log2(hist_counts[idx])) + constant
+#         print(f'Little h: {h:.3f}')
+        H[idimension] = h + np.log2(delta)
+        
+        
+        
+    return H
+    
+
+def information_reduction(x_data, y_data, tol_dimensions=None, correction=None):
     """Computes the multi-information (total correlation) reduction after a linear
     transformation
     
@@ -732,19 +866,27 @@ def information_reduction(x_data, y_data, tol_dimensions=None):
     n_bins = int(round(np.sqrt(n_samples))) + 1
 #     print('Bins: ', n_bins)
     # loop through dimensions
-    for idim in np.arange(0, n_dimensions):
 
-        # calculate entropy in X direction
-        [hist_x, bin_edges_x] = np.histogram(a=x_data[:, idim], bins=n_bins)
-        bin_centers_x = 0.5 * (bin_edges_x[1:] + bin_edges_x[:-1])
-        delta_x = bin_centers_x[2] - bin_centers_x[1]
-        hx[idim] = entropy(hist_x) + np.log2(delta_x)
 
-        # calculate entropy in Y direction
-        [hist_y, bin_edges_y] = np.histogram(a=y_data[:, idim], bins=n_bins)
-        bin_centers_y = 0.5 * (bin_edges_y[1:] + bin_edges_y[:-1])
-        delta_y = bin_centers_y[2] - bin_centers_y[1]
-        hy[idim] = entropy(hist_y) + np.log2(delta_y)
+    # calculate the entropy in
+    # print('Marginal..')
+    hx = entropy_marginal(x_data, correction=correction)
+    hy = entropy_marginal(y_data, correction=correction)
+
+    # for idim in np.arange(0, n_dimensions):
+
+    #     # calculate entropy in X direction
+    #     Raux = np.linspace(x_data[:, idim].min(), x_data[:, idim].max(), n_bins)
+    #     [hist_x, bin_edges_x] = np.histogram(a=x_data[:, idim], bins=Raux)
+    #     bin_centers_x = 0.5 * (bin_edges_x[1:] + bin_edges_x[:-1])
+    #     delta_x = bin_centers_x[2] - bin_centers_x[1]
+    #     hx[idim] = sci_entropy(hist_x) + np.log2(delta_x)
+
+    #     # calculate entropy in Y direction
+    #     [hist_y, bin_edges_y] = np.histogram(a=y_data[:, idim], bins=n_bins)
+    #     bin_centers_y = 0.5 * (bin_edges_y[1:] + bin_edges_y[:-1])
+    #     delta_y = bin_centers_y[2] - bin_centers_y[1]
+    #     hy[idim] = sci_entropy(hist_y) + np.log2(delta_y)
 
     I = np.sum(hy) - np.sum(hx)
 #     print('Data:')
@@ -759,7 +901,7 @@ def information_reduction(x_data, y_data, tol_dimensions=None):
 def entropy(hist_counts, correction=None):
     # MLE estimator with miller-maddow correction
     idx = np.where(hist_counts > 0)
-    constant = 0.5 * (np.sum(hist_counts[idx]) - 1.0) / np.sum(hist_counts)
+    constant = 0.5 * (np.count_nonzero(idx) - 1.0) / np.sum(hist_counts)
     hist_counts = hist_counts / np.sum(hist_counts)
     
     H = - np.sum(hist_counts[idx] * np.log2(hist_counts[idx])) + constant
