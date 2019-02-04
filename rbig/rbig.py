@@ -512,6 +512,12 @@ class RBIG(BaseEstimator, TransformerMixin):
 
 
 class RBIGMI(object):
+    """Calculates the mutual information between two multidimensional datasets.
+    Utilizes the Rotation-Based Iterative Algorithm (RBIG) to gaussianize the data
+    and compares the Gaussianized data to calculate the mutual information between
+    the two datasets.
+    
+    """
     def __init__(self, n_layers=50, rotation_type='PCA', pdf_resolution=1000,
                  pdf_extension=None, random_state=None, verbose=None,
                  tolerance=None, zero_tolerance=100):
