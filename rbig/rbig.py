@@ -74,7 +74,7 @@ class RBIG(BaseEstimator, TransformerMixin):
     """
     def __init__(self, n_layers=1000, rotation_type='PCA', pdf_resolution=1000,
                  pdf_extension=None, random_state=None, verbose=None, tolerance=None,
-                 zero_tolerance=100, entropy_algo='standard'):
+                 zero_tolerance=60, entropy_algo='standard'):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
         self.pdf_resolution = pdf_resolution
@@ -194,24 +194,26 @@ class RBIG(BaseEstimator, TransformerMixin):
             # --------------------------------
             # Information Reduction (Emmanuel)
             # --------------------------------
-            residual_info.append(information_reduction(gauss_data, 
-                                                       gauss_data_prerotation,
-                                                       self.tolerance))
-            
+            residual_info.append(information_reduction(
+                gauss_data, 
+                gauss_data_prerotation,
+                self.tolerance))
             
             # Transform Residual Information
             if layer > self.zero_tolerance:
                 aux_residual = np.array(residual_info)
-                if (aux_residual[-self.zero_tolerance:].sum() == 0):
+
+                if (np.abs(aux_residual[-self.zero_tolerance:]).sum() == 0):
                     logging.debug('Done! aux: {}'.format(aux_residual))
                     
-                    residual_info = residual_info[:-self.zero_tolerance]
-                    logging.debug('Res Info: {}'.format(len(residual_info)))
-                    rotation_matrix = rotation_matrix[:-self.zero_tolerance]
+                    # residual_info = residual_info[:-50]
+                    # logging.debug('Res Info: {}'.format(len(residual_info)))
+                    rotation_matrix = rotation_matrix[:-50]
                     logging.debug('Rotation Matrix: {}'.format(len(rotation_matrix)))
-                    gauss_params = gauss_params[:-self.zero_tolerance]
+                    gauss_params = gauss_params[:-50]
                     logging.debug('Gauss Param: {}'.format(len(gauss_params)))
                     break
+
                 else:
                     pass
 
@@ -220,6 +222,7 @@ class RBIG(BaseEstimator, TransformerMixin):
             self.information_loss = aux_residual
         except UnboundLocalError:
             self.information_loss = np.array(residual_info)
+
         self.gauss_data = gauss_data
         self.residual_info = np.array(residual_info)
         self.mutual_information = np.sum(residual_info)
@@ -316,8 +319,8 @@ class RBIG(BaseEstimator, TransformerMixin):
 
     def _get_information_tolerance(self, n_samples):
         """Precompute some tolerances for the tails."""
-        xxx = np.logspace(2, 8, 6)
-        yyy = [0.1571, 0.0468, 0.0046, 0.0014, 0.0001, 0.00001]
+        xxx = np.logspace(2, 8, 7)
+        yyy = [0.1571, 0.0468, 0.0145, 0.0046, 0.0014, 0.0001, 0.00001]
 
         return interp1d(xxx, yyy)(n_samples)
 
@@ -499,7 +502,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         elif domain == 'both':
             return prob_data_input_domain, prob_data_gaussian_domain
 
-    def entropy(self, correction=False):
+    def entropy(self, correction=True):
 
         #TODO check fit
 
@@ -573,6 +576,7 @@ class RBIGMI(object):
     def mutual_information(self):
 
         return self.rbig_model_XY.residual_info.sum()
+
 
 def univariate_make_normal(uni_data, extension, precision):
     """
@@ -698,131 +702,65 @@ def make_cdf_monotonic(cdf):
                                     10**(np.log10(abs(corrected_cdf[i-1]))))
     return corrected_cdf
 
-#     # my version
-#     # I think actually i need to make sure i is strictly increasing....
-#     return np.maximum.accumulate(cdf)
-
-# def entropy_hist(data):
+def entropy_marginal(data, bin_est='standard', correction=True):
+    """Calculates the marginal entropy (the entropy per dimension) of a
+    multidimensional dataset. Uses histogram bin counnts. Also features
+    and option to add the Shannon-Miller correction.
     
-#     # data dimensions
-#     n_samples, d_dimensions = data.shape
+    Parameters
+    ----------
+    data : array, (n_samples x d_dimensions)
     
-#     # preallocate data
-#     H = np.zeros(d_dimensions)    
-#     # number of bins
-#     n_bins = int(round(np.sqrt(n_samples))) + 1
-#     print('n Bins: {}'.format(n_bins))
+    bin_est : str, (default='standard')
+        The bin estimation method.
+        {'standard', 'sturge'}
     
-#     for idim in np.arange(0, d_dimensions):
-
-#         # calculate entropy in X direction
-#         [hist, bin_edges] = np.histogram(a=data[:, idim], bins=n_bins)
-#         bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
-#         delta = bin_centers[2] - bin_centers[1]
-# #         print(delta)
-# #         print(hist)
-#         h = entropy(hist)
-        
-# #         # MLE estimator with miller-maddow correction
-# #         idx = np.where(hist_counts > 0)
-# #         constant = 0.5 * (np.sum(hist_counts[idx]) - 1.0) / np.sum(hist_counts)
-# #         hist_counts = hist_counts / np.sum(hist_counts)
+    correction : bool, default=True
     
-# #         H = - np.sum(hist_counts[idx] * np.log2(hist_counts[idx])) + constant
-#         print('Little h: {}'.format(h))
-#         H[idim] = h + np.log2(delta)
-        
-#     return H
-        
-def entropy_multi(x_data, tol_dimensions=None, algorithm='standard'):
+    Returns
+    -------
+    H : array (d_dimensions)
     
-    n_samples, n_dimensions = x_data.shape
-    
-    # minimum multi-information heuristic
-    if tol_dimensions is None or 0:
-        xxx = np.logspace(2, 8, 7)
-        yyy = [0.1571, 0.0468, 0.0145, 0.0046, 0.0014, 0.0001, 0.00001]
-        tol_dimensions = np.interp(n_samples, xxx, yyy)
-    
-#     if algorithm == 'standard':
-#         entropy = sci_entropy()
-#     elif algorithm == 'miller-maddow':
-#         entropy = entropy()
-#     else:
-#         raise ValueError('Unrecognized entropy algorithm')
-    # preallocate data
-    H = np.zeros(n_dimensions)
-    
-    # number of bins
-    n_bins = int(round(np.sqrt(n_samples))) + 1
-    
-    
-    print('here')
-    # loop through dimensions
-    for idim in np.arange(0, n_dimensions):
-
-        # calculate entropy in X direction
-        Raux = np.linspace(x_data[:, idim].min(), x_data[:, idim].max(), n_bins)
-        [hist_x, bin_edges_x] = np.histogram(a=x_data[:, idim], bins=Raux)
-        bin_centers_x = 0.5 * (bin_edges_x[1:] + bin_edges_x[:-1])
-        delta_x = bin_centers_x[2] - bin_centers_x[1]
-        if algorithm == 'standard':
-            correction = None
-            # h = sci_entropy(hist_x, base=2)
-            # h = entropy
-        elif algorithm == 'miller-maddow':
-            # h = entropy(hist_x)
-            correction = True
-        else:
-            raise ValueError('Unrecognized entropy algorithm: {}...'
-                             .format(algorithm))
-        H[idim] = entropy(hist_x, correction) + np.log2(delta_x)
-    
-    return H
-    
-        
-def entropy_marginal(data, correction=None):
-    
-    # Get dimensions of the data
+    Information
+    -----------
+    Author : J. Emmanuel Johnson
+    Email  : jemanjohnson34@gmail.com
+    """
     n_samples, d_dimensions = data.shape
     
-    # get number of bins
-    n_bins = int(round(np.sqrt(n_samples))) + 1
+    n_bins = bin_estimation(n_samples, rule=bin_est)
     
     H = np.zeros(d_dimensions)
     
-    # loop through dimensions
-    for idimension in range(d_dimensions):
+    for idim in range(d_dimensions):
+        # Get histogram (use default bin estimation)
+        [hist_counts, bin_edges] = np.histogram(a=data[:, idim], bins=n_bins, range=(data[:, idim].min(), data[:, idim].max()))
         
-        # get histogram counts and edges for data
-        Raux = np.linspace(data[:, idimension].min(), data[:, idimension].max(), n_bins)
-        [hist_counts, bin_edges] = np.histogram(a=data[:, idimension], bins=Raux)
-        bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
-        delta = bin_centers[2] - bin_centers[1]
-#         print(f'Delta: {delta:.4f}')
-        # MLE Estimator with Miller-Maddow Correction
-        idx = np.where(hist_counts > 0)
+        # Calculate bin_centers from bin_edges
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
         
+        # get difference between the bins
+        delta = bin_centers[3] - bin_centers[2]
         
-        
-        
-        if correction:
-            constant = 0.5 * (np.count_nonzero(hist_counts[idx]) - 1.0) / hist_counts.sum()
-        else:
-            constant = 0.0
-        
-        hist_counts = hist_counts / np.sum(hist_counts)
-        
-        h = - np.sum(hist_counts[idx] * np.log2(hist_counts[idx])) + constant
-#         print(f'Little h: {h:.3f}')
-        H[idimension] = h + np.log2(delta)
-        
-        
+        # Calculate the marginal entropy
+        H[idim] = entropy(hist_counts, correction=correction) + np.log2(delta)
         
     return H
-    
 
-def information_reduction(x_data, y_data, tol_dimensions=None, correction=None):
+def bin_estimation(n_samples, rule='standard'):
+    
+    if rule is 'sturge':
+        n_bins = int(np.ceil(1 + 3.322 * np.log10(n_samples)))
+        
+    elif rule is 'standard':
+        n_bins = int(np.ceil(np.sqrt(n_samples)))
+        
+    else:
+        raise ValueError(f"Unrecognized bin estimation rule: {rule}")
+    
+    return n_bins
+
+def information_reduction(x_data, y_data, tol_dimensions=None, correction=True):
     """Computes the multi-information (total correlation) reduction after a linear
     transformation
     
@@ -863,55 +801,35 @@ def information_reduction(x_data, y_data, tol_dimensions=None, correction=None):
         xxx = np.logspace(2, 8, 7)
         yyy = [0.1571, 0.0468, 0.0145, 0.0046, 0.0014, 0.0001, 0.00001]
         tol_dimensions = np.interp(n_samples, xxx, yyy)
-
+    
     # preallocate data
     hx = np.zeros(n_dimensions)
     hy = np.zeros(n_dimensions)
     
-    # number of bins
-    n_bins = int(round(np.sqrt(n_samples))) + 1
-#     print('Bins: ', n_bins)
-    # loop through dimensions
-
-
-    # calculate the entropy in
-    # print('Marginal..')
+    # calculate the marginal entropy
     hx = entropy_marginal(x_data, correction=correction)
     hy = entropy_marginal(y_data, correction=correction)
-
-    # for idim in np.arange(0, n_dimensions):
-
-    #     # calculate entropy in X direction
-    #     Raux = np.linspace(x_data[:, idim].min(), x_data[:, idim].max(), n_bins)
-    #     [hist_x, bin_edges_x] = np.histogram(a=x_data[:, idim], bins=Raux)
-    #     bin_centers_x = 0.5 * (bin_edges_x[1:] + bin_edges_x[:-1])
-    #     delta_x = bin_centers_x[2] - bin_centers_x[1]
-    #     hx[idim] = sci_entropy(hist_x) + np.log2(delta_x)
-
-    #     # calculate entropy in Y direction
-    #     [hist_y, bin_edges_y] = np.histogram(a=y_data[:, idim], bins=n_bins)
-    #     bin_centers_y = 0.5 * (bin_edges_y[1:] + bin_edges_y[:-1])
-    #     delta_y = bin_centers_y[2] - bin_centers_y[1]
-    #     hy[idim] = sci_entropy(hist_y) + np.log2(delta_y)
-
+    
+    # Information content
     I = np.sum(hy) - np.sum(hx)
-#     print('Data:')
-#     print(hx, hy)
     II = np.sqrt(np.sum((hy - hx) ** 2))
-#     print(I, II)
+    
     p = 0.25
     if II < np.sqrt(n_dimensions * p * tol_dimensions ** 2) or I < 0:
         I = 0
+    
     return I
 
-def entropy(hist_counts, correction=None):
-    # MLE estimator with miller-maddow correction
-    idx = np.where(hist_counts > 0)
-    constant = 0.5 * (np.count_nonzero(idx) - 1.0) / np.sum(hist_counts)
-    hist_counts = hist_counts / np.sum(hist_counts)
+def entropy(hist_counts, correction=True):
     
-    H = - np.sum(hist_counts[idx] * np.log2(hist_counts[idx])) + constant
-    return H
+    # MLE Estimator with Miller-Maddow Correction
+    if not (correction is None):
+        correction = 0.5 * ( np.sum(hist_counts > 0) - 1 ) / hist_counts.sum()
+    else:
+        correction = 0.0
+    
+    # Plut in estimator of entropy with correction
+    return sci_entropy(hist_counts, base=2) + correction
 
 def generate_batches(n_samples, batch_size):
     """A generator to split an array of 0 to n_samples
