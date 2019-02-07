@@ -7,6 +7,7 @@ from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import normalized_mutual_info_score as mi_score
 from scipy.stats import norm, ortho_group, entropy as sci_entropy
+from scipy import stats
 from scipy.interpolate import interp1d
 import warnings
 import logging
@@ -578,6 +579,90 @@ class RBIGMI(object):
         return self.rbig_model_XY.residual_info.sum()
 
 
+class RBIGKLD(object):
+    """Computes the Kullback-Leibler Divergence (KLD) between two multidimensional 
+    probability distributiions using the RBIG algorithm. 
+    
+    The KLD of X, Y KL(X||Y)
+    
+    Note: This is not a symmetric relationship
+    """
+    def __init__(self, n_layers=50, 
+                 rotation_type='PCA', 
+                 pdf_resolution=None,
+                 pdf_extension=10, 
+                 random_state=None, 
+                 verbose=None,
+                 tolerance=None, 
+                 zero_tolerance=100):
+        self.n_layers = n_layers
+        self.rotation_type = rotation_type
+        self.pdf_resolution = pdf_resolution
+        self.pdf_extension = pdf_extension
+        self.random_state = random_state
+        self.verbose = verbose
+        self.tolerance = tolerance
+        self.zero_tolerance = zero_tolerance
+    
+    def fit(self, X, Y):
+        
+        # TODO: check X and Y
+        
+        mv_g = None
+        
+        # Loop Until convergence
+        while mv_g is None:
+            
+            if self.verbose:
+                print(f"PDF Extension: {self.pdf_extension}%")
+            
+            try:
+                
+                # initialize RBIG transform for Y
+                self.rbig_model_Y = RBIG(
+                    n_layers=self.n_layers, 
+                    rotation_type=self.rotation_type, 
+                    random_state=self.random_state,
+                    zero_tolerance=self.zero_tolerance,
+                    tolerance=self.tolerance,
+                    pdf_extension=self.pdf_extension);
+                
+                # fit RBIG model to Y
+                self.rbig_model_Y.fit(Y)
+                
+                # Transform X using rbig_model_Y
+                X_transformed = self.rbig_model_Y.transform(X)
+                
+                # Initialize RBIG transform for X_transformed
+                self.rbig_model_X_trans = RBIG(n_layers=self.n_layers, 
+                                 rotation_type=self.rotation_type, 
+                                 random_state=self.random_state,
+                                 zero_tolerance=self.zero_tolerance,
+                                  tolerance=self.tolerance,
+                                              pdf_extension=self.pdf_extension);
+                
+                # Fit RBIG model to X_transformed
+                self.rbig_model_X_trans.fit(X_transformed);
+                
+                # Get mutual information
+                mv_g = self.rbig_model_X_trans.residual_info.sum()
+                
+            except:
+                self.pdf_extension = 1.5 * self.pdf_extension
+        
+        
+        self.mv_g = mv_g
+        print(f"mv_g: {mv_g}")
+        print(f"mv_g: {neg_entropy_normal(X_transformed)}")
+        self.kld = mv_g + neg_entropy_normal(X_transformed).sum()
+        
+        return self
+    
+    def kld(self):
+        
+        return self.kld
+
+
 def univariate_make_normal(uni_data, extension, precision):
     """
     Takes univariate data and transforms it to have approximately normal dist
@@ -875,6 +960,79 @@ def generate_batches(n_samples, batch_size):
         # yield the remaining indices
         yield start_index, n_samples
 
+def neg_entropy_normal(data):
+    """Function to calculate the marginal negative entropy 
+    (negative entropy per dimensions). It uses a histogram
+    scheme to initialize the bins and then uses a KDE 
+    scheme to approximate a smooth solution.
+    
+    Parameters
+    ----------
+    data : array, (samples x dimensions)
+    
+    Returns
+    -------
+    neg : array, (dimensions)
+    
+    """
+    
+    n_samples, d_dimensions = data.shape
+    
+    
+    # bin estimation
+    # TODO: Use function
+    n_bins = int(np.ceil(np.sqrt(n_samples)))
+    
+    neg = np.zeros(d_dimensions)
+    
+    # Loop through dimensions
+    for idim in range(d_dimensions):
+        
+        # =====================
+        # Histogram Estimation
+        # =====================
+        
+        # Get Histogram
+        [hist_counts, bin_edges] = np.histogram(a=data[:, idim], 
+                                                bins=n_bins, 
+                                                range=(data[:, idim].min(), 
+                                                       data[:, idim].max()))
+        
+        # calculate bin centers
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2        
+        
+        # get delta between bin centers
+        delta = bin_centers[3] - bin_centers[2]
+        
+        # Calculate probabilities of normal distribution
+        pg = stats.norm.pdf(bin_centers, 0, 1)
+        
+        # ==================
+        # KDE Function Est.
+        # ==================
+        
+        # Initialize KDE function with data
+        kde_model = stats.gaussian_kde(data[:, idim])
+        
+        # Calculate probabilities for each bin
+        hx = kde_model.pdf(bin_centers)
+        
+        # Calculate probabilities
+        px = hx / (hx.sum() * delta)
+        
+        
+        # ====================
+        # Compare
+        # ====================
+        
+        # Find the indices greater than zero
+        idx = np.where((px > 0) & (pg > 0))
+        
+        # calculate the negative entropy
+        neg[idim] = delta * (px[idx] * np.log2(px[idx] / pg[idx])).sum()
+    
+    
+    return neg
 
 def main():
     pass
