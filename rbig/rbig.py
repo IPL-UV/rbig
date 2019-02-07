@@ -233,6 +233,10 @@ class RBIG(BaseEstimator, TransformerMixin):
 
         return self
 
+    def _stopping_criteria(self, X):
+
+        return None
+
     def transform(self, X):
         """Complete transformation of X given the learned Gaussianization parameters.
         This assumes that the data follows a similar distribution as the data that
@@ -652,8 +656,9 @@ class RBIGKLD(object):
         
         
         self.mv_g = mv_g
-        print(f"mv_g: {mv_g}")
-        print(f"mv_g: {neg_entropy_normal(X_transformed)}")
+        if self.verbose:
+            print(f"mv_g: {mv_g}")
+            print(f"m_g: {neg_entropy_normal(X_transformed)}")
         self.kld = mv_g + neg_entropy_normal(X_transformed).sum()
         
         return self
