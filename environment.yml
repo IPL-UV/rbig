@@ -1,0 +1,9 @@
+name: rbig
+channels:
+- defaults
+- conda-forge
+dependencies:
+- scipy
+- scikit-learn
+- numpy
+- matplotlib
