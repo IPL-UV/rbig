@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.utils import check_random_state, check_array
+from sklearn.utils import check_random_state, check_array, gen_batches
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import QuantileTransformer
 from sklearn.decomposition import PCA, FastICA
@@ -19,7 +19,13 @@ logging.basicConfig(filename="rbig_demo.log",
 
 
 class RBIG(BaseEstimator, TransformerMixin):
-    """ Rotation-Based Iterative Gaussian-ization (RBIG)
+    """ Rotation-Based Iterative Gaussian-ization (RBIG). This algorithm transforms
+    any multidimensional data to a Gaussian. It also provides a sampling mechanism
+    whereby you can provide multidimensional gaussian data and it will generate 
+    multidimensional data in the original domain. You can calculate the probabilities
+    as well as have access to a few information theoretic measures like total 
+    correlation and entropy.
+
     Parameters
     ----------
     n_layers : int, optional (default 1000)
@@ -509,7 +515,7 @@ class RBIG(BaseEstimator, TransformerMixin):
 
             data_temp = np.zeros(data_aux.shape)
 
-            for start_idx, end_idx in generate_batches(n_samples, chunksize):
+            for start_idx, end_idx in gen_batches(n_samples, chunksize):
 
                 jacobians[start_idx:end_idx, :, :], data_temp[start_idx:end_idx, :] = \
                     self.jacobian(data_aux[start_idx:end_idx, :], return_X_transform=True)
@@ -668,15 +674,82 @@ class RBIG(BaseEstimator, TransformerMixin):
 
 
 class RBIGMI(object):
-    """Calculates the mutual information between two multidimensional datasets.
-    Utilizes the Rotation-Based Iterative Algorithm (RBIG) to gaussianize the data
-    and compares the Gaussianized data to calculate the mutual information between
-    the two datasets.
+    """ Rotation-Based Iterative Gaussian-ization (RBIG) applied to two
+    multidimensional variables (RBIGMI). Applies the RBIG algorithm to 
+    the two multidimensional variables independently, then applies another 
+    RBIG algorithm on the two Gaussian-ized datasets.
     
+    Parameters
+    ----------
+    n_layers : int, optional (default 1000)
+        The number of steps to run the sequence of marginal gaussianization
+        and then rotation
+
+    rotation_type : {'PCA', 'random'}
+        The rotation applied to the marginally Gaussian-ized data at each iteration.
+        - 'pca'     : a principal components analysis rotation (PCA)
+        - 'random'  : random rotations
+        - 'ica'     : independent components analysis (ICA)
+
+    pdf_resolution : int, optional (default 1000)
+        The number of points at which to compute the gaussianized marginal pdfs.
+        The functions that map from original data to gaussianized data at each
+        iteration have to be stored so that we can invert them later - if working
+        with high-dimensional data consider reducing this resolution to shorten
+        computation time.
+
+    pdf_extension : int, optional (default 0.1)
+        The fraction by which to extend the support of the Gaussian-ized marginal
+        pdf compared to the empirical marginal PDF.
+
+    verbose : int, optional
+        If specified, report the RBIG iteration number every
+        progress_report_interval iterations.
+
+    zero_tolerance : int, optional (default=60)
+        The number of layers where the total correlation should not change
+        between RBIG iterations. If there is no zero_tolerance, then the
+        method will stop iterating regardless of how many the user sets as
+        the n_layers.
+
+    rotation_kwargs : dict, optional (default=None)
+        Any extra keyword arguments that you want to pass into the rotation
+        algorithms (i.e. ICA or PCA). See the respective algorithms on 
+        scikit-learn for more details.
+
+    random_state : int, optional (default=None)
+        Control the seed for any randomization that occurs in this algorithm.
+
+    entropy_correction : bool, optional (default=True)
+        Implements the shannon-millow correction to the entropy algorithm
+
+    Attributes
+    ----------
+
+    rbig_model_X : RBIG() object
+        The RBIG model fitted
+
+    rbig_model_Y : 
+
+
+    rbig_model_XY : 
+
+
+    References
+    ----------
+    * Original Paper : Iterative Gaussianization: from ICA to Random Rotations
+        https://arxiv.org/abs/1602.00229
+
     """
-    def __init__(self, n_layers=50, rotation_type='PCA', pdf_resolution=1000,
-                 pdf_extension=None, random_state=None, verbose=None,
-                 tolerance=None, zero_tolerance=100):
+    def __init__(self, 
+                 n_layers=50, 
+                 rotation_type='PCA', 
+                 pdf_resolution=1000,
+                 pdf_extension=None, 
+                 random_state=None, 
+                 verbose=None,
+                 tolerance=None, 
+                 zero_tolerance=100):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
         self.pdf_resolution = pdf_resolution
@@ -687,14 +760,28 @@ class RBIGMI(object):
         self.zero_tolerance = zero_tolerance
     
     def fit(self, X, Y):
+        """Inputs for the RBIGMI algorithm.
+        
+        Parameters
+        ----------
+        X : array, (n1_samples, d1_dimensions)
+        
+        Y : array, (n2_samples, d2_dimensions)
 
+        Note: The number of dimensions and the number of samples
+        do not have to be the same.
+        
+        """
 
         # Initialize RBIG class I
         self.rbig_model_X = RBIG(n_layers=self.n_layers, 
                                  rotation_type=self.rotation_type, 
+                                 pdf_resolution=self.pdf_resolution,
+                                 pdf_extension=self.pdf_extension,
+                                 verbose=self.verbose,
                                  random_state=self.random_state,
                                  zero_tolerance=self.zero_tolerance,
-                                  tolerance=self.tolerance)
+                                 tolerance=self.tolerance)
 
         # fit and transform model to the data
         X_transformed = self.rbig_model_X.fit_transform(X)
@@ -702,9 +789,12 @@ class RBIGMI(object):
         # Initialize RBIG class II
         self.rbig_model_Y = RBIG(n_layers=self.n_layers, 
                                  rotation_type=self.rotation_type, 
+                                 pdf_resolution=self.pdf_resolution,
+                                 pdf_extension=self.pdf_extension,
+                                 verbose=self.verbose,
                                  random_state=self.random_state,
                                  zero_tolerance=self.zero_tolerance,
-                                  tolerance=self.tolerance)
+                                 tolerance=self.tolerance)
 
         # fit model to the data
         Y_transformed = self.rbig_model_Y.fit_transform(Y)
@@ -727,22 +817,96 @@ class RBIGMI(object):
         return self
 
     def mutual_information(self):
-
+        """Given that the algorithm has been fitted to two datasets, this
+        returns the mutual information between the two multidimensional
+        datasets.
+        
+        Returns
+        -------
+        mutual_info : float
+            The mutual information between the two multidimensional 
+            variables.
+        """
         return self.rbig_model_XY.residual_info.sum()
 
 
 class RBIGKLD(object):
-    """Computes the Kullback-Leibler Divergence (KLD) between two multidimensional 
-    probability distributiions using the RBIG algorithm. 
+    """ Rotation-Based Iterative Gaussian-ization (RBIG) applied to two
+    multidimensional variables to find the Kullback-Leibler Divergence (KLD) between 
+    X and Y 
     
-    The KLD of X, Y KL(X||Y)
+        KLD(X||Y) = int_R P_X(R) log P_Y(R) / P_X(R) dR
+
+
+    Note: as with the normal KLD,the KLD using RBIG is not symmetric.
     
-    Note: This is not a symmetric relationship
+    Parameters
+    ----------
+    n_layers : int, optional (default 1000)
+        The number of steps to run the sequence of marginal gaussianization
+        and then rotation
+
+    rotation_type : {'PCA', 'random'}
+        The rotation applied to the marginally Gaussian-ized data at each iteration.
+        - 'pca'     : a principal components analysis rotation (PCA)
+        - 'random'  : random rotations
+        - 'ica'     : independent components analysis (ICA)
+
+    pdf_resolution : int, optional (default 1000)
+        The number of points at which to compute the gaussianized marginal pdfs.
+        The functions that map from original data to gaussianized data at each
+        iteration have to be stored so that we can invert them later - if working
+        with high-dimensional data consider reducing this resolution to shorten
+        computation time.
+
+    pdf_extension : int, optional (default 0.1)
+        The fraction by which to extend the support of the Gaussian-ized marginal
+        pdf compared to the empirical marginal PDF.
+
+    verbose : int, optional
+        If specified, report the RBIG iteration number every
+        progress_report_interval iterations.
+
+    zero_tolerance : int, optional (default=60)
+        The number of layers where the total correlation should not change
+        between RBIG iterations. If there is no zero_tolerance, then the
+        method will stop iterating regardless of how many the user sets as
+        the n_layers.
+
+    rotation_kwargs : dict, optional (default=None)
+        Any extra keyword arguments that you want to pass into the rotation
+        algorithms (i.e. ICA or PCA). See the respective algorithms on 
+        scikit-learn for more details.
+
+    random_state : int, optional (default=None)
+        Control the seed for any randomization that occurs in this algorithm.
+
+    entropy_correction : bool, optional (default=True)
+        Implements the shannon-millow correction to the entropy algorithm
+
+    Attributes
+    ----------
+
+    rbig_model_X : RBIG() object
+        The RBIG model fitted
+
+    rbig_model_Y : 
+
+    
+    rbig_model_XY : 
+
+
+    References
+    ----------
+    * Original Paper : Iterative Gaussianization: from ICA to Random Rotations
+        https://arxiv.org/abs/1602.00229
+
     """
-    def __init__(self, n_layers=50, 
+    def __init__(self, 
+                 n_layers=50, 
                  rotation_type='PCA', 
-                 pdf_resolution=None,
-                 pdf_extension=10, 
+                 pdf_resolution=1000,
+                 pdf_extension=None, 
                  random_state=None, 
                  verbose=None,
                  tolerance=None, 
@@ -815,107 +979,6 @@ class RBIGKLD(object):
         
         return self.kld
 
-
-# def univariate_make_normal(uni_data, extension, precision):
-#     """
-#     Takes univariate data and transforms it to have approximately normal dist
-#     We do this through the simple composition of a histogram equalization
-#     producing an approximately uniform distribution and then the inverse of the
-#     normal CDF. This will produce approximately gaussian samples.
-#     Parameters
-#     ----------
-#     uni_data : ndarray
-#       The univariate data [Sx1] where S is the number of samples in the dataset
-#     extension : float
-#       Extend the marginal PDF support by this amount.
-#     precision : int
-#       The number of points in the marginal PDF
-
-#     Returns
-#     -------
-#     uni_gaussian_data : ndarray
-#       univariate gaussian data
-#     params : dictionary
-#       parameters of the transform. We save these so we can invert them later
-#     """
-#     data_uniform, params = univariate_make_uniform(uni_data.T, extension, precision)
-#     return norm.ppf(data_uniform).T, params
-
-# def univariate_make_uniform(uni_data, extension, precision):
-#     """
-#     Takes univariate data and transforms it to have approximately uniform dist
-#     Parameters
-#     ----------
-#     uni_data : ndarray
-#       The univariate data [1xS] where S is the number of samples in the dataset
-#     extension : float
-#       Extend the marginal PDF support by this amount. Default 0.1
-#     precision : int
-#       The number of points in the marginal PDF
-#     Returns
-#     -------
-#     uni_uniform_data : ndarray
-#       univariate uniform data
-#     transform_params : dictionary
-#     parameters of the transform. We save these so we can invert them later
-#     """
-#     n_samps = len(uni_data)
-#     support_extension = \
-#       (extension / 100) * abs(np.max(uni_data) - np.min(uni_data))
-
-#     # not sure exactly what we're doing here, but at a high level we're
-#     # constructing bins for the histogram
-#     bin_edges = np.linspace(np.min(uni_data), np.max(uni_data),
-#                            np.sqrt(n_samps) + 1)
-#     bin_centers = np.mean(np.vstack((bin_edges[0:-1], bin_edges[1:])), axis=0)
-
-#     counts, _ = np.histogram(uni_data, bin_edges)
-
-#     bin_size = bin_edges[2] - bin_edges[1]
-#     pdf_support = np.hstack((bin_centers[0] - bin_size, bin_centers,
-#                            bin_centers[-1] + bin_size))
-#     empirical_pdf = np.hstack((0.0, counts / (np.sum(counts) * bin_size), 0.0))
-#     #^ this is unnormalized
-#     c_sum = np.cumsum(counts)
-#     cdf = (1 - 1 / n_samps) * c_sum / n_samps
-
-#     incr_bin = bin_size / 2
-
-#     new_bin_edges = np.hstack((np.min(uni_data) - support_extension,
-#                              np.min(uni_data),
-#                              bin_centers + incr_bin,
-#                              np.max(uni_data) + support_extension + incr_bin))
-
-#     extended_cdf = np.hstack((0.0, 1.0 / n_samps, cdf, 1.0))
-#     new_support = np.linspace(new_bin_edges[0], new_bin_edges[-1], precision)
-#     learned_cdf = interp1d(new_bin_edges, extended_cdf)
-#     uniform_cdf = make_cdf_monotonic(learned_cdf(new_support))
-#     #^ linear interpolation
-#     uniform_cdf /= np.max(uniform_cdf)
-#     uni_uniform_data = interp1d(new_support, uniform_cdf)(uni_data)
-
-#     return uni_uniform_data, {'empirical_pdf_support': pdf_support,
-#                             'empirical_pdf': empirical_pdf,
-#                             'uniform_cdf_support': new_support,
-#                             'uniform_cdf': uniform_cdf}
-
-# def univariate_invert_normalization(uni_gaussian_data, trans_params):
-#     """
-#     Inverts the marginal normalization
-#     See the companion, univariate_make_normal.py, for more details
-#     """
-#     uni_uniform_data = norm.cdf(uni_gaussian_data)
-#     uni_data = univariate_invert_uniformization(uni_uniform_data, trans_params)
-#     return uni_data
-
-# def univariate_invert_uniformization(uni_uniform_data, trans_params):
-#     """
-#     Inverts the marginal uniformization transform specified by trans_params
-#     See the companion, univariate_make_normal.py, for more details
-#     """
-#     # simple, we just interpolate based on the saved CDF
-#     return interp1d(trans_params['uniform_cdf'],
-#                   trans_params['uniform_cdf_support'])(uni_uniform_data)
 
 def make_cdf_monotonic(cdf):
     """
@@ -1068,50 +1131,6 @@ def entropy(hist_counts, correction=True):
     
     # Plut in estimator of entropy with correction
     return sci_entropy(hist_counts, base=2) + correction
-
-def generate_batches(n_samples, batch_size):
-    """A generator to split an array of 0 to n_samples
-    into an array of batch_size each.
-
-    Parameters
-    ----------
-    n_samples : int
-        the number of samples
-
-    batch_size : int,
-        the size of each batch
-
-
-    Returns
-    -------
-    start_index, end_index : int, int
-        the start and end indices for the batch
-
-    Source:
-        https://github.com/scikit-learn/scikit-learn/blob/master
-        /sklearn/utils/__init__.py#L374
-    """
-    start_index = 0
-
-    # calculate number of batches
-    n_batches = int(n_samples // batch_size)
-
-    for _ in range(n_batches):
-
-        # calculate the end coordinate
-        end_index = start_index + batch_size
-
-        # yield the start and end coordinate for batch
-        yield start_index, end_index
-
-        # start index becomes new end index
-        start_index = end_index
-
-    # special case at the end of the segment
-    if start_index < n_samples:
-
-        # yield the remaining indices
-        yield start_index, n_samples
 
 def neg_entropy_normal(data):
     """Function to calculate the marginal negative entropy 
