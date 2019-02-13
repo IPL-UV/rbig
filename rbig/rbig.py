@@ -1,8 +1,8 @@
 import numpy as np
-from sklearn.utils import check_random_state
+from sklearn.utils import check_random_state, check_array
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import QuantileTransformer
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, FastICA
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import normalized_mutual_info_score as mi_score
 from scipy.stats import norm, ortho_group, entropy as sci_entropy
@@ -22,14 +22,15 @@ class RBIG(BaseEstimator, TransformerMixin):
     """ Rotation-Based Iterative Gaussian-ization (RBIG)
     Parameters
     ----------
-    n_layers : int, optional (default 50)
+    n_layers : int, optional (default 1000)
         The number of steps to run the sequence of marginal gaussianization
         and then rotation
 
     rotation_type : {'PCA', 'random'}
-        The rotation applied to the Gaussian-ized data at each iteration.
+        The rotation applied to the marginally Gaussian-ized data at each iteration.
         - 'pca'     : a principal components analysis rotation (PCA)
         - 'random'  : random rotations
+        - 'ica'     : independent components analysis (ICA)
 
     pdf_resolution : int, optional (default 1000)
         The number of points at which to compute the gaussianized marginal pdfs.
@@ -51,6 +52,17 @@ class RBIG(BaseEstimator, TransformerMixin):
         between RBIG iterations. If there is no zero_tolerance, then the
         method will stop iterating regardless of how many the user sets as
         the n_layers.
+
+    rotation_kwargs : dict, optional (default=None)
+        Any extra keyword arguments that you want to pass into the rotation
+        algorithms (i.e. ICA or PCA). See the respective algorithms on 
+        scikit-learn for more details.
+
+    random_state : int, optional (default=None)
+        Control the seed for any randomization that occurs in this algorithm.
+
+    entropy_correction : bool, optional (default=True)
+        Implements the shannon-millow correction to the entropy algorithm
 
     Attributes
     ----------
@@ -78,9 +90,17 @@ class RBIG(BaseEstimator, TransformerMixin):
     * Original Python Implementation
         https://github.com/spencerkent/pyRBIG
     """
-    def __init__(self, n_layers=1000, rotation_type='PCA', pdf_resolution=1000,
-                 pdf_extension=None, random_state=None, verbose=None, tolerance=None,
-                 zero_tolerance=60, entropy_algo='standard'):
+    def __init__(self, 
+                 n_layers=1000, 
+                 rotation_type='PCA', 
+                 pdf_resolution=1000,
+                 pdf_extension=None, 
+                 random_state=None,
+                 verbose=None, 
+                 tolerance=None,
+                 zero_tolerance=60, 
+                 entropy_correction=True,
+                 rotation_kwargs=None):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
         self.pdf_resolution = pdf_resolution
@@ -89,7 +109,8 @@ class RBIG(BaseEstimator, TransformerMixin):
         self.verbose = verbose
         self.tolerance = tolerance
         self.zero_tolerance = zero_tolerance
-        self.entropy_algo = entropy_algo
+        self.entropy_correction = entropy_correction
+        self.rotation_kwargs = rotation_kwargs
         
     def fit(self, X):
         """ Fit the model with X.
@@ -98,19 +119,21 @@ class RBIG(BaseEstimator, TransformerMixin):
         X : array-like, shape (n_samples, n_features)
             Training data, where n_samples in the number of samples
             and n_features is the number of features.
+
         Returns
         -------
         self : object
             Returns the instance itself.
         """
+        X = check_array(X, ensure_2d=True)
         self._fit(X)
         return self
 
     def _fit(self, data):
-        """ Fit the model with X.
+        """ Fit the model with data.
         Parameters
         ----------
-        X : array-like, shape (n_samples, n_features)
+        data : array-like, shape (n_samples, n_features)
             Training data, where n_samples in the number of samples
             and n_features is the number of features.
         Returns
@@ -118,6 +141,8 @@ class RBIG(BaseEstimator, TransformerMixin):
         self : object
             Returns the instance itself.
         """
+
+        data = check_array(data, ensure_2d=True)
 
         if self.pdf_extension is None:
             self.pdf_extension = 2 * np.round(np.sqrt(data.shape[0]))
@@ -157,7 +182,7 @@ class RBIG(BaseEstimator, TransformerMixin):
 
             for idim in range(n_dimensions):
                 
-                gauss_data[:, idim], temp_params = univariate_make_normal(
+                gauss_data[:, idim], temp_params = self.univariate_make_normal(
                     gauss_data[:, idim],
                     self.pdf_extension,
                     self.pdf_resolution
@@ -177,31 +202,38 @@ class RBIG(BaseEstimator, TransformerMixin):
                 gauss_data = np.dot(gauss_data, rand_ortho_matrix)
                 self.rotation_matrix.append(rand_ortho_matrix)
 
-            elif self.rotation_type.lower() == 'pca':
-
-                if n_dimensions > n_samples or n_dimensions > 10 ** 6:
-                    # If the dimensionality of each datapoint is high, we probably
-                    # want to compute the SVD of the data directly to avoid forming a huge
-                    # covariance matrix
-                    _, _, V = np.linalg.svd(gauss_data, full_matrices=True)
-                    
-                else:
-                    # the SVD is more numerically stable then eig so we'll use it on the 
-                    # covariance matrix directly
-                    cov_data = np.dot(gauss_data.T, gauss_data) / n_samples
-                    _, _, V = np.linalg.svd(cov_data, full_matrices=True)
+            elif self.rotation_type.lower() == 'ica':
                 
-                logging.debug('Size of V: {}'.format(V.shape))
-                logging.debug('Size of gauss_data: {}'.format(gauss_data.shape))
+                # initialize model fastica model
+                if self.rotation_kwargs is not None:
+                    ica_model = FastICA(random_state=self.random_state, 
+                                        **self.rotation_kwargs)
+                else:
+                    ica_model = FastICA(random_state=self.random_state)
+                # fit-transform data
+                gauss_data = ica_model.fit_transform(gauss_data)
 
-                gauss_data = np.dot(gauss_data, V.T)
-                self.rotation_matrix.append(V.T)
+                # save rotation matrix
+                self.rotation_matrix.append(ica_model.components_.T)
+
+            elif self.rotation_type.lower() == 'pca':
+                
+                # Initialize PCA model
+                if self.rotation_kwargs is not None:
+                    pca_model = PCA(random_state=self.random_state,
+                                    **self.rotation_kwargs)
+                else:
+                    pca_model = PCA(random_state=self.random_state)
+                
+                logging.debug('Size of gauss_data: {}'.format(gauss_data.shape))
+                gauss_data = pca_model.fit_transform(gauss_data)
+                self.rotation_matrix.append(pca_model.components_.T)
 
             else:
                 raise ValueError('Rotation type ' + self.rotation_type + ' not recognized')
                 
             # --------------------------------
-            # Information Reduction (Emmanuel)
+            # Information Reduction
             # --------------------------------
             self.residual_info.append(information_reduction(
                 gauss_data, 
@@ -235,6 +267,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         
         """
         stop_ = False
+
         if layer > self.zero_tolerance:
             aux_residual = np.array(self.residual_info)
 
@@ -324,11 +357,11 @@ class RBIG(BaseEstimator, TransformerMixin):
             if self.verbose is not None:
                 print("Completed {} inverse iterations of RBIG.".format(layer + 1))
 
-            X_input_domain = np.dot(X_input_domain, self.rotation_matrix[layer])
+            X_input_domain = np.dot(X_input_domain, self.rotation_matrix[layer].T)
             
             temp = X_input_domain
             for idim in range(n_dimensions):
-                temp[:, idim] = univariate_invert_normalization(
+                temp[:, idim] = self.univariate_invert_normalization(
                     temp[:, idim],
                     self.gauss_params[layer][idim]
                 )
@@ -525,12 +558,113 @@ class RBIG(BaseEstimator, TransformerMixin):
 
         #TODO check fit
 
-        return entropy_marginal(self.X_fit_, correction=correction).sum() - self.mutual_information
+        return entropy_marginal(self.X_fit_, correction=self.entropy_correction).sum() - self.mutual_information
 
     def total_correlation(self):
 
         #TODO check fit
         return self.residual_info.sum()
+
+    def univariate_make_normal(self, uni_data, extension, precision):
+        """
+        Takes univariate data and transforms it to have approximately normal dist
+        We do this through the simple composition of a histogram equalization
+        producing an approximately uniform distribution and then the inverse of the
+        normal CDF. This will produce approximately gaussian samples.
+        Parameters
+        ----------
+        uni_data : ndarray
+        The univariate data [Sx1] where S is the number of samples in the dataset
+        extension : float
+        Extend the marginal PDF support by this amount.
+        precision : int
+        The number of points in the marginal PDF
+
+        Returns
+        -------
+        uni_gaussian_data : ndarray
+        univariate gaussian data
+        params : dictionary
+        parameters of the transform. We save these so we can invert them later
+        """
+        data_uniform, params = self.univariate_make_uniform(uni_data.T, extension, precision)
+        return norm.ppf(data_uniform).T, params
+
+    def univariate_make_uniform(self, uni_data, extension, precision):
+        """
+        Takes univariate data and transforms it to have approximately uniform dist
+        Parameters
+        ----------
+        uni_data : ndarray
+        The univariate data [1xS] where S is the number of samples in the dataset
+        extension : float
+        Extend the marginal PDF support by this amount. Default 0.1
+        precision : int
+        The number of points in the marginal PDF
+        Returns
+        -------
+        uni_uniform_data : ndarray
+        univariate uniform data
+        transform_params : dictionary
+        parameters of the transform. We save these so we can invert them later
+        """
+        n_samps = len(uni_data)
+        support_extension = \
+        (extension / 100) * abs(np.max(uni_data) - np.min(uni_data))
+
+        # not sure exactly what we're doing here, but at a high level we're
+        # constructing bins for the histogram
+        bin_edges = np.linspace(np.min(uni_data), np.max(uni_data),
+                            np.sqrt(n_samps) + 1)
+        bin_centers = np.mean(np.vstack((bin_edges[0:-1], bin_edges[1:])), axis=0)
+
+        counts, _ = np.histogram(uni_data, bin_edges)
+
+        bin_size = bin_edges[2] - bin_edges[1]
+        pdf_support = np.hstack((bin_centers[0] - bin_size, bin_centers,
+                            bin_centers[-1] + bin_size))
+        empirical_pdf = np.hstack((0.0, counts / (np.sum(counts) * bin_size), 0.0))
+        #^ this is unnormalized
+        c_sum = np.cumsum(counts)
+        cdf = (1 - 1 / n_samps) * c_sum / n_samps
+
+        incr_bin = bin_size / 2
+
+        new_bin_edges = np.hstack((np.min(uni_data) - support_extension,
+                                np.min(uni_data),
+                                bin_centers + incr_bin,
+                                np.max(uni_data) + support_extension + incr_bin))
+
+        extended_cdf = np.hstack((0.0, 1.0 / n_samps, cdf, 1.0))
+        new_support = np.linspace(new_bin_edges[0], new_bin_edges[-1], precision)
+        learned_cdf = interp1d(new_bin_edges, extended_cdf)
+        uniform_cdf = make_cdf_monotonic(learned_cdf(new_support))
+        #^ linear interpolation
+        uniform_cdf /= np.max(uniform_cdf)
+        uni_uniform_data = interp1d(new_support, uniform_cdf)(uni_data)
+
+        return uni_uniform_data, {'empirical_pdf_support': pdf_support,
+                                'empirical_pdf': empirical_pdf,
+                                'uniform_cdf_support': new_support,
+                                'uniform_cdf': uniform_cdf}
+
+    def univariate_invert_normalization(self, uni_gaussian_data, trans_params):
+        """
+        Inverts the marginal normalization
+        See the companion, univariate_make_normal.py, for more details
+        """
+        uni_uniform_data = norm.cdf(uni_gaussian_data)
+        uni_data = self.univariate_invert_uniformization(uni_uniform_data, trans_params)
+        return uni_data
+
+    def univariate_invert_uniformization(self, uni_uniform_data, trans_params):
+        """
+        Inverts the marginal uniformization transform specified by trans_params
+        See the companion, univariate_make_normal.py, for more details
+        """
+        # simple, we just interpolate based on the saved CDF
+        return interp1d(trans_params['uniform_cdf'],
+                    trans_params['uniform_cdf_support'])(uni_uniform_data)
 
 
 class RBIGMI(object):
@@ -682,106 +816,106 @@ class RBIGKLD(object):
         return self.kld
 
 
-def univariate_make_normal(uni_data, extension, precision):
-    """
-    Takes univariate data and transforms it to have approximately normal dist
-    We do this through the simple composition of a histogram equalization
-    producing an approximately uniform distribution and then the inverse of the
-    normal CDF. This will produce approximately gaussian samples.
-    Parameters
-    ----------
-    uni_data : ndarray
-      The univariate data [Sx1] where S is the number of samples in the dataset
-    extension : float
-      Extend the marginal PDF support by this amount.
-    precision : int
-      The number of points in the marginal PDF
+# def univariate_make_normal(uni_data, extension, precision):
+#     """
+#     Takes univariate data and transforms it to have approximately normal dist
+#     We do this through the simple composition of a histogram equalization
+#     producing an approximately uniform distribution and then the inverse of the
+#     normal CDF. This will produce approximately gaussian samples.
+#     Parameters
+#     ----------
+#     uni_data : ndarray
+#       The univariate data [Sx1] where S is the number of samples in the dataset
+#     extension : float
+#       Extend the marginal PDF support by this amount.
+#     precision : int
+#       The number of points in the marginal PDF
 
-    Returns
-    -------
-    uni_gaussian_data : ndarray
-      univariate gaussian data
-    params : dictionary
-      parameters of the transform. We save these so we can invert them later
-    """
-    data_uniform, params = univariate_make_uniform(uni_data.T, extension, precision)
-    return norm.ppf(data_uniform).T, params
+#     Returns
+#     -------
+#     uni_gaussian_data : ndarray
+#       univariate gaussian data
+#     params : dictionary
+#       parameters of the transform. We save these so we can invert them later
+#     """
+#     data_uniform, params = univariate_make_uniform(uni_data.T, extension, precision)
+#     return norm.ppf(data_uniform).T, params
 
-def univariate_make_uniform(uni_data, extension, precision):
-    """
-    Takes univariate data and transforms it to have approximately uniform dist
-    Parameters
-    ----------
-    uni_data : ndarray
-      The univariate data [1xS] where S is the number of samples in the dataset
-    extension : float
-      Extend the marginal PDF support by this amount. Default 0.1
-    precision : int
-      The number of points in the marginal PDF
-    Returns
-    -------
-    uni_uniform_data : ndarray
-      univariate uniform data
-    transform_params : dictionary
-    parameters of the transform. We save these so we can invert them later
-    """
-    n_samps = len(uni_data)
-    support_extension = \
-      (extension / 100) * abs(np.max(uni_data) - np.min(uni_data))
+# def univariate_make_uniform(uni_data, extension, precision):
+#     """
+#     Takes univariate data and transforms it to have approximately uniform dist
+#     Parameters
+#     ----------
+#     uni_data : ndarray
+#       The univariate data [1xS] where S is the number of samples in the dataset
+#     extension : float
+#       Extend the marginal PDF support by this amount. Default 0.1
+#     precision : int
+#       The number of points in the marginal PDF
+#     Returns
+#     -------
+#     uni_uniform_data : ndarray
+#       univariate uniform data
+#     transform_params : dictionary
+#     parameters of the transform. We save these so we can invert them later
+#     """
+#     n_samps = len(uni_data)
+#     support_extension = \
+#       (extension / 100) * abs(np.max(uni_data) - np.min(uni_data))
 
-    # not sure exactly what we're doing here, but at a high level we're
-    # constructing bins for the histogram
-    bin_edges = np.linspace(np.min(uni_data), np.max(uni_data),
-                           np.sqrt(n_samps) + 1)
-    bin_centers = np.mean(np.vstack((bin_edges[0:-1], bin_edges[1:])), axis=0)
+#     # not sure exactly what we're doing here, but at a high level we're
+#     # constructing bins for the histogram
+#     bin_edges = np.linspace(np.min(uni_data), np.max(uni_data),
+#                            np.sqrt(n_samps) + 1)
+#     bin_centers = np.mean(np.vstack((bin_edges[0:-1], bin_edges[1:])), axis=0)
 
-    counts, _ = np.histogram(uni_data, bin_edges)
+#     counts, _ = np.histogram(uni_data, bin_edges)
 
-    bin_size = bin_edges[2] - bin_edges[1]
-    pdf_support = np.hstack((bin_centers[0] - bin_size, bin_centers,
-                           bin_centers[-1] + bin_size))
-    empirical_pdf = np.hstack((0.0, counts / (np.sum(counts) * bin_size), 0.0))
-    #^ this is unnormalized
-    c_sum = np.cumsum(counts)
-    cdf = (1 - 1 / n_samps) * c_sum / n_samps
+#     bin_size = bin_edges[2] - bin_edges[1]
+#     pdf_support = np.hstack((bin_centers[0] - bin_size, bin_centers,
+#                            bin_centers[-1] + bin_size))
+#     empirical_pdf = np.hstack((0.0, counts / (np.sum(counts) * bin_size), 0.0))
+#     #^ this is unnormalized
+#     c_sum = np.cumsum(counts)
+#     cdf = (1 - 1 / n_samps) * c_sum / n_samps
 
-    incr_bin = bin_size / 2
+#     incr_bin = bin_size / 2
 
-    new_bin_edges = np.hstack((np.min(uni_data) - support_extension,
-                             np.min(uni_data),
-                             bin_centers + incr_bin,
-                             np.max(uni_data) + support_extension + incr_bin))
+#     new_bin_edges = np.hstack((np.min(uni_data) - support_extension,
+#                              np.min(uni_data),
+#                              bin_centers + incr_bin,
+#                              np.max(uni_data) + support_extension + incr_bin))
 
-    extended_cdf = np.hstack((0.0, 1.0 / n_samps, cdf, 1.0))
-    new_support = np.linspace(new_bin_edges[0], new_bin_edges[-1], precision)
-    learned_cdf = interp1d(new_bin_edges, extended_cdf)
-    uniform_cdf = make_cdf_monotonic(learned_cdf(new_support))
-    #^ linear interpolation
-    uniform_cdf /= np.max(uniform_cdf)
-    uni_uniform_data = interp1d(new_support, uniform_cdf)(uni_data)
+#     extended_cdf = np.hstack((0.0, 1.0 / n_samps, cdf, 1.0))
+#     new_support = np.linspace(new_bin_edges[0], new_bin_edges[-1], precision)
+#     learned_cdf = interp1d(new_bin_edges, extended_cdf)
+#     uniform_cdf = make_cdf_monotonic(learned_cdf(new_support))
+#     #^ linear interpolation
+#     uniform_cdf /= np.max(uniform_cdf)
+#     uni_uniform_data = interp1d(new_support, uniform_cdf)(uni_data)
 
-    return uni_uniform_data, {'empirical_pdf_support': pdf_support,
-                            'empirical_pdf': empirical_pdf,
-                            'uniform_cdf_support': new_support,
-                            'uniform_cdf': uniform_cdf}
+#     return uni_uniform_data, {'empirical_pdf_support': pdf_support,
+#                             'empirical_pdf': empirical_pdf,
+#                             'uniform_cdf_support': new_support,
+#                             'uniform_cdf': uniform_cdf}
 
-def univariate_invert_normalization(uni_gaussian_data, trans_params):
-    """
-    Inverts the marginal normalization
-    See the companion, univariate_make_normal.py, for more details
-    """
-    uni_uniform_data = norm.cdf(uni_gaussian_data)
-    uni_data = univariate_invert_uniformization(uni_uniform_data, trans_params)
-    return uni_data
+# def univariate_invert_normalization(uni_gaussian_data, trans_params):
+#     """
+#     Inverts the marginal normalization
+#     See the companion, univariate_make_normal.py, for more details
+#     """
+#     uni_uniform_data = norm.cdf(uni_gaussian_data)
+#     uni_data = univariate_invert_uniformization(uni_uniform_data, trans_params)
+#     return uni_data
 
-def univariate_invert_uniformization(uni_uniform_data, trans_params):
-    """
-    Inverts the marginal uniformization transform specified by trans_params
-    See the companion, univariate_make_normal.py, for more details
-    """
-    # simple, we just interpolate based on the saved CDF
-    return interp1d(trans_params['uniform_cdf'],
-                  trans_params['uniform_cdf_support'])(uni_uniform_data)
+# def univariate_invert_uniformization(uni_uniform_data, trans_params):
+#     """
+#     Inverts the marginal uniformization transform specified by trans_params
+#     See the companion, univariate_make_normal.py, for more details
+#     """
+#     # simple, we just interpolate based on the saved CDF
+#     return interp1d(trans_params['uniform_cdf'],
+#                   trans_params['uniform_cdf_support'])(uni_uniform_data)
 
 def make_cdf_monotonic(cdf):
     """
