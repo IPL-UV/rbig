@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.utils import check_random_state, check_array, gen_batches
+from sklearn.utils import check_random_state, check_array
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import QuantileTransformer
 from sklearn.decomposition import PCA, FastICA
@@ -151,8 +151,10 @@ class RBIG(BaseEstimator, TransformerMixin):
         data = check_array(data, ensure_2d=True)
 
         if self.pdf_extension is None:
-            self.pdf_extension = 2 * np.round(np.sqrt(data.shape[0]))
+            self.pdf_extension = 10
 
+        if self.pdf_resolution is None:
+            self.pdf_resolution = 2 * np.round(np.sqrt(data.shape[0]))
         self.X_fit_ = data
         gauss_data = np.copy(data)
         
@@ -253,7 +255,7 @@ class RBIG(BaseEstimator, TransformerMixin):
                 break
             else:
                 pass
-
+        self.residual_info = np.array(self.residual_info)
         self.gauss_data = gauss_data
         self.mutual_information = np.sum(self.residual_info)
         self.n_layers = len(self.gauss_params)
@@ -515,7 +517,7 @@ class RBIG(BaseEstimator, TransformerMixin):
 
             data_temp = np.zeros(data_aux.shape)
 
-            for start_idx, end_idx in gen_batches(n_samples, chunksize):
+            for start_idx, end_idx in generate_batches(n_samples, chunksize):
 
                 jacobians[start_idx:end_idx, :, :], data_temp[start_idx:end_idx, :] = \
                     self.jacobian(data_aux[start_idx:end_idx, :], return_X_transform=True)
@@ -560,11 +562,12 @@ class RBIG(BaseEstimator, TransformerMixin):
         elif domain == 'both':
             return prob_data_input_domain, prob_data_gaussian_domain
 
-    def entropy(self, correction=True):
+    def entropy(self, correction=None):
 
         #TODO check fit
-
-        return entropy_marginal(self.X_fit_, correction=self.entropy_correction).sum() - self.mutual_information
+        if (correction is None) or (correction is False):
+            correction = self.entropy_correction
+        return entropy_marginal(self.X_fit_, correction=correction).sum() - self.mutual_information
 
     def total_correlation(self):
 
@@ -905,8 +908,8 @@ class RBIGKLD(object):
     def __init__(self, 
                  n_layers=50, 
                  rotation_type='PCA', 
-                 pdf_resolution=1000,
-                 pdf_extension=None, 
+                 pdf_resolution=None,
+                 pdf_extension=10, 
                  random_state=None, 
                  verbose=None,
                  tolerance=None, 
@@ -922,7 +925,9 @@ class RBIGKLD(object):
     
     def fit(self, X, Y):
         
-        # TODO: check X and Y
+        # Check Arrays
+        X = check_array(X, ensure_2d=True)
+        Y = check_array(Y, ensure_2d=True)
         
         mv_g = None
         
@@ -1121,7 +1126,7 @@ def information_reduction(x_data, y_data, tol_dimensions=None, correction=True):
     
     return I
 
-def entropy(hist_counts, correction=True):
+def entropy(hist_counts, correction=None):
     
     # MLE Estimator with Miller-Maddow Correction
     if not (correction is None):
@@ -1131,6 +1136,50 @@ def entropy(hist_counts, correction=True):
     
     # Plut in estimator of entropy with correction
     return sci_entropy(hist_counts, base=2) + correction
+
+def generate_batches(n_samples, batch_size):
+    """A generator to split an array of 0 to n_samples
+    into an array of batch_size each.
+
+    Parameters
+    ----------
+    n_samples : int
+        the number of samples
+
+    batch_size : int,
+        the size of each batch
+
+
+    Returns
+    -------
+    start_index, end_index : int, int
+        the start and end indices for the batch
+
+    Source:
+        https://github.com/scikit-learn/scikit-learn/blob/master
+        /sklearn/utils/__init__.py#L374
+    """
+    start_index = 0
+
+    # calculate number of batches
+    n_batches = int(n_samples // batch_size)
+
+    for _ in range(n_batches):
+
+        # calculate the end coordinate
+        end_index = start_index + batch_size
+
+        # yield the start and end coordinate for batch
+        yield start_index, end_index
+
+        # start index becomes new end index
+        start_index = end_index
+
+    # special case at the end of the segment
+    if start_index < n_samples:
+
+        # yield the remaining indices
+        yield start_index, n_samples
 
 def neg_entropy_normal(data):
     """Function to calculate the marginal negative entropy 
