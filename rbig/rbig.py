@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.utils import check_random_state
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import QuantileTransformer
@@ -20,7 +19,7 @@ logging.basicConfig(filename="rbig_demo.log",
 
 
 class RBIG(BaseEstimator, TransformerMixin):
-    """ Rotation-Based Iterative Gaussian-ization (RBIG_)
+    """ Rotation-Based Iterative Gaussian-ization (RBIG)
     Parameters
     ----------
     n_layers : int, optional (default 50)
@@ -46,6 +45,12 @@ class RBIG(BaseEstimator, TransformerMixin):
     verbose : int, optional
         If specified, report the RBIG iteration number every
         progress_report_interval iterations.
+
+    zero_tolerance : int, optional (default=60)
+        The number of layers where the total correlation should not change
+        between RBIG iterations. If there is no zero_tolerance, then the
+        method will stop iterating regardless of how many the user sets as
+        the n_layers.
 
     Attributes
     ----------
@@ -131,9 +136,9 @@ class RBIG(BaseEstimator, TransformerMixin):
         logging.debug('Data (shape): {}'.format(np.shape(gauss_data)))
 
         # Initialize stopping criteria (residual information)
-        residual_info = list()
-        gauss_params = list()
-        rotation_matrix = list()
+        self.residual_info = list()
+        self.gauss_params = list()
+        self.rotation_matrix = list()
 
         # Loop through the layers
         logging.debug('Running: Looping through the layers...')
@@ -147,6 +152,9 @@ class RBIG(BaseEstimator, TransformerMixin):
             # ------------------
             layer_params = list()
 
+            if self.verbose is not None:
+                print("Completed {} iterations of RBIG.".format(layer + 1))
+
             for idim in range(n_dimensions):
                 
                 gauss_data[:, idim], temp_params = univariate_make_normal(
@@ -158,7 +166,7 @@ class RBIG(BaseEstimator, TransformerMixin):
                 # append the parameters
                 layer_params.append(temp_params)
 
-            gauss_params.append(layer_params)
+            self.gauss_params.append(layer_params)
             gauss_data_prerotation = gauss_data.copy()
             # --------
             # Rotation
@@ -167,7 +175,7 @@ class RBIG(BaseEstimator, TransformerMixin):
 
                 rand_ortho_matrix = ortho_group.rvs(n_dimensions)
                 gauss_data = np.dot(gauss_data, rand_ortho_matrix)
-                rotation_matrix.append(rand_ortho_matrix)
+                self.rotation_matrix.append(rand_ortho_matrix)
 
             elif self.rotation_type.lower() == 'pca':
 
@@ -187,7 +195,7 @@ class RBIG(BaseEstimator, TransformerMixin):
                 logging.debug('Size of gauss_data: {}'.format(gauss_data.shape))
 
                 gauss_data = np.dot(gauss_data, V.T)
-                rotation_matrix.append(V.T)
+                self.rotation_matrix.append(V.T)
 
             else:
                 raise ValueError('Rotation type ' + self.rotation_type + ' not recognized')
@@ -195,47 +203,53 @@ class RBIG(BaseEstimator, TransformerMixin):
             # --------------------------------
             # Information Reduction (Emmanuel)
             # --------------------------------
-            residual_info.append(information_reduction(
+            self.residual_info.append(information_reduction(
                 gauss_data, 
                 gauss_data_prerotation,
                 self.tolerance))
             
-            # Transform Residual Information
-            if layer > self.zero_tolerance:
-                aux_residual = np.array(residual_info)
-
-                if (np.abs(aux_residual[-self.zero_tolerance:]).sum() == 0):
-                    logging.debug('Done! aux: {}'.format(aux_residual))
-                    
-                    # residual_info = residual_info[:-50]
-                    # logging.debug('Res Info: {}'.format(len(residual_info)))
-                    rotation_matrix = rotation_matrix[:-50]
-                    logging.debug('Rotation Matrix: {}'.format(len(rotation_matrix)))
-                    gauss_params = gauss_params[:-50]
-                    logging.debug('Gauss Param: {}'.format(len(gauss_params)))
-                    break
-
-                else:
-                    pass
-
-        # save necessary parameters
-        try:
-            self.information_loss = aux_residual
-        except UnboundLocalError:
-            self.information_loss = np.array(residual_info)
+            # --------------------------------
+            # Stopping Criteria
+            # --------------------------------
+            if self._stopping_criteria(layer):
+                break
+            else:
+                pass
 
         self.gauss_data = gauss_data
-        self.residual_info = np.array(residual_info)
-        self.mutual_information = np.sum(residual_info)
-        self.rotation_matrix = rotation_matrix
-        self.gauss_params = gauss_params
-        self.n_layers = len(gauss_params)
+        self.mutual_information = np.sum(self.residual_info)
+        self.n_layers = len(self.gauss_params)
 
         return self
 
-    def _stopping_criteria(self, X):
+    def _stopping_criteria(self, layer):
+        """Stopping criteria for the the RBIG algorithm.
+        
+        Parameter
+        ---------
+        layer : int
 
-        return None
+        Returns
+        -------
+        verdict = 
+        
+        """
+        stop_ = False
+        if layer > self.zero_tolerance:
+            aux_residual = np.array(self.residual_info)
+
+            if (np.abs(aux_residual[-self.zero_tolerance:]).sum() == 0):
+                logging.debug('Done! aux: {}'.format(aux_residual))
+
+                # delete the last 50 layers for saved parameters
+                self.rotation_matrix = self.rotation_matrix[:-50]
+                self.gauss_params = self.gauss_params[:-50]
+
+                stop_ = True
+            else:
+                stop_ = False
+        
+        return stop_
 
     def transform(self, X):
         """Complete transformation of X given the learned Gaussianization parameters.
