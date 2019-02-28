@@ -11,11 +11,13 @@ from scipy.interpolate import interp1d
 import warnings
 import logging
 
-warnings.filterwarnings('ignore')  # get rid of annoying warnings
-logging.basicConfig(filename="rbig_demo.log",
-                    level=logging.DEBUG,
-                    format="%(asctime)s: %(name)-12s %(levelname)-8s: %(message)s",
-                    filemode='w')
+warnings.filterwarnings("ignore")  # get rid of annoying warnings
+logging.basicConfig(
+    filename="rbig_demo.log",
+    level=logging.DEBUG,
+    format="%(asctime)s: %(name)-12s %(levelname)-8s: %(message)s",
+    filemode="w",
+)
 
 
 class RBIG(BaseEstimator, TransformerMixin):
@@ -96,17 +98,20 @@ class RBIG(BaseEstimator, TransformerMixin):
     * Original Python Implementation
         https://github.com/spencerkent/pyRBIG
     """
-    def __init__(self, 
-                 n_layers=1000, 
-                 rotation_type='PCA', 
-                 pdf_resolution=1000,
-                 pdf_extension=None, 
-                 random_state=None,
-                 verbose=None, 
-                 tolerance=None,
-                 zero_tolerance=60, 
-                 entropy_correction=True,
-                 rotation_kwargs=None):
+
+    def __init__(
+        self,
+        n_layers=1000,
+        rotation_type="PCA",
+        pdf_resolution=1000,
+        pdf_extension=None,
+        random_state=None,
+        verbose=None,
+        tolerance=None,
+        zero_tolerance=60,
+        entropy_correction=True,
+        rotation_kwargs=None,
+    ):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
         self.pdf_resolution = pdf_resolution
@@ -117,7 +122,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         self.zero_tolerance = zero_tolerance
         self.entropy_correction = entropy_correction
         self.rotation_kwargs = rotation_kwargs
-        
+
     def fit(self, X):
         """ Fit the model with X.
         Parameters
@@ -157,16 +162,16 @@ class RBIG(BaseEstimator, TransformerMixin):
             self.pdf_resolution = 2 * np.round(np.sqrt(data.shape[0]))
         self.X_fit_ = data
         gauss_data = np.copy(data)
-        
+
         n_samples, n_dimensions = np.shape(data)
-        
+
         if self.zero_tolerance is None:
             self.zero_tolerance = self.n_layers + 1
-        
+
         if self.tolerance is None:
             self.tolerance = self._get_information_tolerance(n_samples)
-        
-        logging.debug('Data (shape): {}'.format(np.shape(gauss_data)))
+
+        logging.debug("Data (shape): {}".format(np.shape(gauss_data)))
 
         # Initialize stopping criteria (residual information)
         self.residual_info = list()
@@ -174,7 +179,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         self.rotation_matrix = list()
 
         # Loop through the layers
-        logging.debug('Running: Looping through the layers...')
+        logging.debug("Running: Looping through the layers...")
         for layer in range(self.n_layers):
 
             if self.verbose is not None:
@@ -189,11 +194,9 @@ class RBIG(BaseEstimator, TransformerMixin):
                 print("Completed {} iterations of RBIG.".format(layer + 1))
 
             for idim in range(n_dimensions):
-                
+
                 gauss_data[:, idim], temp_params = self.univariate_make_normal(
-                    gauss_data[:, idim],
-                    self.pdf_extension,
-                    self.pdf_resolution
+                    gauss_data[:, idim], self.pdf_extension, self.pdf_resolution
                 )
 
                 # append the parameters
@@ -201,21 +204,25 @@ class RBIG(BaseEstimator, TransformerMixin):
 
             self.gauss_params.append(layer_params)
             gauss_data_prerotation = gauss_data.copy()
+            if self.verbose == 2:
+                print(gauss_data.min(), gauss_data.max())
+
             # --------
             # Rotation
             # --------
-            if self.rotation_type == 'random':
+            if self.rotation_type == "random":
 
                 rand_ortho_matrix = ortho_group.rvs(n_dimensions)
                 gauss_data = np.dot(gauss_data, rand_ortho_matrix)
                 self.rotation_matrix.append(rand_ortho_matrix)
 
-            elif self.rotation_type.lower() == 'ica':
-                
+            elif self.rotation_type.lower() == "ica":
+
                 # initialize model fastica model
                 if self.rotation_kwargs is not None:
-                    ica_model = FastICA(random_state=self.random_state, 
-                                        **self.rotation_kwargs)
+                    ica_model = FastICA(
+                        random_state=self.random_state, **self.rotation_kwargs
+                    )
                 else:
                     ica_model = FastICA(random_state=self.random_state)
                 # fit-transform data
@@ -224,30 +231,34 @@ class RBIG(BaseEstimator, TransformerMixin):
                 # save rotation matrix
                 self.rotation_matrix.append(ica_model.components_.T)
 
-            elif self.rotation_type.lower() == 'pca':
-                
+            elif self.rotation_type.lower() == "pca":
+
                 # Initialize PCA model
                 if self.rotation_kwargs is not None:
-                    pca_model = PCA(random_state=self.random_state,
-                                    **self.rotation_kwargs)
+                    pca_model = PCA(
+                        random_state=self.random_state, **self.rotation_kwargs
+                    )
                 else:
                     pca_model = PCA(random_state=self.random_state)
-                
-                logging.debug('Size of gauss_data: {}'.format(gauss_data.shape))
+
+                logging.debug("Size of gauss_data: {}".format(gauss_data.shape))
                 gauss_data = pca_model.fit_transform(gauss_data)
                 self.rotation_matrix.append(pca_model.components_.T)
 
             else:
-                raise ValueError('Rotation type ' + self.rotation_type + ' not recognized')
-                
+                raise ValueError(
+                    "Rotation type " + self.rotation_type + " not recognized"
+                )
+
             # --------------------------------
             # Information Reduction
             # --------------------------------
-            self.residual_info.append(information_reduction(
-                gauss_data, 
-                gauss_data_prerotation,
-                self.tolerance))
-            
+            self.residual_info.append(
+                information_reduction(
+                    gauss_data, gauss_data_prerotation, self.tolerance
+                )
+            )
+
             # --------------------------------
             # Stopping Criteria
             # --------------------------------
@@ -279,8 +290,8 @@ class RBIG(BaseEstimator, TransformerMixin):
         if layer > self.zero_tolerance:
             aux_residual = np.array(self.residual_info)
 
-            if (np.abs(aux_residual[-self.zero_tolerance:]).sum() == 0):
-                logging.debug('Done! aux: {}'.format(aux_residual))
+            if np.abs(aux_residual[-self.zero_tolerance :]).sum() == 0:
+                logging.debug("Done! aux: {}".format(aux_residual))
 
                 # delete the last 50 layers for saved parameters
                 self.rotation_matrix = self.rotation_matrix[:-50]
@@ -289,7 +300,7 @@ class RBIG(BaseEstimator, TransformerMixin):
                 stop_ = True
             else:
                 stop_ = False
-        
+
         return stop_
 
     def transform(self, X):
@@ -310,9 +321,9 @@ class RBIG(BaseEstimator, TransformerMixin):
         """
         n_dimensions = np.shape(X)[1]
         X_transformed = np.copy(X)
-        
+
         for layer in range(self.n_layers):
-            
+
             # ----------------------------
             # Marginal Uniformization
             # ----------------------------
@@ -320,25 +331,20 @@ class RBIG(BaseEstimator, TransformerMixin):
 
             for idim in range(n_dimensions):
 
-                # marginal uniformization                
+                # marginal uniformization
                 data_layer[:, idim] = interp1d(
-                    self.gauss_params[layer][idim]['uniform_cdf_support'],
-                    self.gauss_params[layer][idim]['uniform_cdf'],
-                    fill_value='extrapolate')(
-                        data_layer[:, idim]
-                    )
+                    self.gauss_params[layer][idim]["uniform_cdf_support"],
+                    self.gauss_params[layer][idim]["uniform_cdf"],
+                    fill_value="extrapolate",
+                )(data_layer[:, idim])
 
                 # marginal gaussianization
-                data_layer[:, idim] = norm.ppf(
-                    data_layer[:, idim]
-                )
-                
+                data_layer[:, idim] = norm.ppf(data_layer[:, idim])
+
             # ----------------------
             # Rotation
             # ----------------------
-            X_transformed = np.dot(
-                data_layer, self.rotation_matrix[layer]
-            )
+            X_transformed = np.dot(data_layer, self.rotation_matrix[layer])
 
         return X_transformed
 
@@ -359,19 +365,18 @@ class RBIG(BaseEstimator, TransformerMixin):
         """
         n_dimensions = np.shape(X)[1]
         X_input_domain = np.copy(X)
-        
+
         for layer in range(self.n_layers - 1, -1, -1):
 
             if self.verbose is not None:
                 print("Completed {} inverse iterations of RBIG.".format(layer + 1))
 
             X_input_domain = np.dot(X_input_domain, self.rotation_matrix[layer].T)
-            
+
             temp = X_input_domain
             for idim in range(n_dimensions):
                 temp[:, idim] = self.univariate_invert_normalization(
-                    temp[:, idim],
-                    self.gauss_params[layer][idim]
+                    temp[:, idim], self.gauss_params[layer][idim]
                 )
             X_input_domain = temp
 
@@ -419,30 +424,27 @@ class RBIG(BaseEstimator, TransformerMixin):
         igaussian_pdf = np.zeros(shape=(n_samples, n_components))
 
         # TODO: I feel like this is repeating a part of the transform operation
-        
+
         for ilayer in range(self.n_layers):
 
             for idim in range(n_components):
 
                 # Marginal Uniformization
                 data_uniform = interp1d(
-                    self.gauss_params[ilayer][idim]['uniform_cdf_support'],
-                    self.gauss_params[ilayer][idim]['uniform_cdf'],
-                    fill_value='extrapolate')(
-                        X_transformed[:, idim]
-                    )
+                    self.gauss_params[ilayer][idim]["uniform_cdf_support"],
+                    self.gauss_params[ilayer][idim]["uniform_cdf"],
+                    fill_value="extrapolate",
+                )(X_transformed[:, idim])
 
                 # Marginal Gaussianization
                 igaussian_pdf[:, idim] = norm.ppf(data_uniform)
 
                 # Gaussian PDF
                 gaussian_pdf[:, idim, ilayer] = interp1d(
-                    self.gauss_params[ilayer][idim]['empirical_pdf_support'],
-                    self.gauss_params[ilayer][idim]['empirical_pdf'],
-                    fill_value='extrapolate')(
-                        X_transformed[:, idim]
-                    ) * (1 / norm.pdf(igaussian_pdf[:, idim]))
-
+                    self.gauss_params[ilayer][idim]["empirical_pdf_support"],
+                    self.gauss_params[ilayer][idim]["empirical_pdf"],
+                    fill_value="extrapolate",
+                )(X_transformed[:, idim]) * (1 / norm.pdf(igaussian_pdf[:, idim]))
 
             XX = np.dot(gaussian_pdf[:, :, ilayer] * XX, self.rotation_matrix[ilayer])
 
@@ -458,7 +460,9 @@ class RBIG(BaseEstimator, TransformerMixin):
 
                 for ilayer in range(self.n_layers):
 
-                    XX = np.dot(gaussian_pdf[:, :, ilayer]*XX, self.rotation_matrix[ilayer])
+                    XX = np.dot(
+                        gaussian_pdf[:, :, ilayer] * XX, self.rotation_matrix[ilayer]
+                    )
 
                 jacobian[:, :, idim] = XX
 
@@ -467,7 +471,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         else:
             return jacobian
 
-    def predict_proba(self, X, n_trials=1, chunksize=2000, domain='input'):
+    def predict_proba(self, X, n_trials=1, chunksize=2000, domain="input"):
         """ Computes the probability of the original data under the generative RBIG
         model.
 
@@ -519,8 +523,11 @@ class RBIG(BaseEstimator, TransformerMixin):
 
             for start_idx, end_idx in generate_batches(n_samples, chunksize):
 
-                jacobians[start_idx:end_idx, :, :], data_temp[start_idx:end_idx, :] = \
-                    self.jacobian(data_aux[start_idx:end_idx, :], return_X_transform=True)
+                jacobians[start_idx:end_idx, :, :], data_temp[
+                    start_idx:end_idx, :
+                ] = self.jacobian(
+                    data_aux[start_idx:end_idx, :], return_X_transform=True
+                )
 
             # set all nans to zero
             jacobians[np.isnan(jacobians)] = 0.0
@@ -537,14 +544,12 @@ class RBIG(BaseEstimator, TransformerMixin):
             prob_data_gaussian_domain[np.isnan(prob_data_gaussian_domain)] = 0.0
 
             # compute determinant for each sample's jacobian
-            prob_data_input_domain[:, itrial] = (
-                prob_data_gaussian_domain[:, itrial] * np.abs(det_jacobians)
-            )
+            prob_data_input_domain[:, itrial] = prob_data_gaussian_domain[
+                :, itrial
+            ] * np.abs(det_jacobians)
 
             # set all nans to zero
             prob_data_input_domain[np.isnan(prob_data_input_domain)] = 0.0
-
-
 
         # Average all the jacobians we calculate
         prob_data_input_domain = prob_data_input_domain.mean(axis=1)
@@ -555,23 +560,26 @@ class RBIG(BaseEstimator, TransformerMixin):
         self.jacobians = jacobians
         self.det_jacobians = det_jacobians
 
-        if domain == 'input':
+        if domain == "input":
             return prob_data_input_domain
-        elif domain == 'transform':
+        elif domain == "transform":
             return prob_data_gaussian_domain
-        elif domain == 'both':
+        elif domain == "both":
             return prob_data_input_domain, prob_data_gaussian_domain
 
     def entropy(self, correction=None):
 
-        #TODO check fit
+        # TODO check fit
         if (correction is None) or (correction is False):
             correction = self.entropy_correction
-        return entropy_marginal(self.X_fit_, correction=correction).sum() - self.mutual_information
+        return (
+            entropy_marginal(self.X_fit_, correction=correction).sum()
+            - self.mutual_information
+        )
 
     def total_correlation(self):
 
-        #TODO check fit
+        # TODO check fit
         return self.residual_info.sum()
 
     def univariate_make_normal(self, uni_data, extension, precision):
@@ -596,7 +604,9 @@ class RBIG(BaseEstimator, TransformerMixin):
         params : dictionary
         parameters of the transform. We save these so we can invert them later
         """
-        data_uniform, params = self.univariate_make_uniform(uni_data.T, extension, precision)
+        data_uniform, params = self.univariate_make_uniform(
+            uni_data.T, extension, precision
+        )
         return norm.ppf(data_uniform).T, params
 
     def univariate_make_uniform(self, uni_data, extension, precision):
@@ -618,44 +628,54 @@ class RBIG(BaseEstimator, TransformerMixin):
         parameters of the transform. We save these so we can invert them later
         """
         n_samps = len(uni_data)
-        support_extension = \
-        (extension / 100) * abs(np.max(uni_data) - np.min(uni_data))
+        support_extension = (extension / 100) * abs(np.max(uni_data) - np.min(uni_data))
 
         # not sure exactly what we're doing here, but at a high level we're
         # constructing bins for the histogram
-        bin_edges = np.linspace(np.min(uni_data), np.max(uni_data),
-                            np.sqrt(n_samps) + 1)
+        bin_edges = np.linspace(
+            np.min(uni_data), np.max(uni_data), np.sqrt(n_samps) + 1
+        )
         bin_centers = np.mean(np.vstack((bin_edges[0:-1], bin_edges[1:])), axis=0)
 
         counts, _ = np.histogram(uni_data, bin_edges)
 
         bin_size = bin_edges[2] - bin_edges[1]
-        pdf_support = np.hstack((bin_centers[0] - bin_size, bin_centers,
-                            bin_centers[-1] + bin_size))
+        pdf_support = np.hstack(
+            (bin_centers[0] - bin_size, bin_centers, bin_centers[-1] + bin_size)
+        )
         empirical_pdf = np.hstack((0.0, counts / (np.sum(counts) * bin_size), 0.0))
-        #^ this is unnormalized
+        # ^ this is unnormalized
         c_sum = np.cumsum(counts)
         cdf = (1 - 1 / n_samps) * c_sum / n_samps
 
         incr_bin = bin_size / 2
 
-        new_bin_edges = np.hstack((np.min(uni_data) - support_extension,
-                                np.min(uni_data),
-                                bin_centers + incr_bin,
-                                np.max(uni_data) + support_extension + incr_bin))
+        new_bin_edges = np.hstack(
+            (
+                np.min(uni_data) - support_extension,
+                np.min(uni_data),
+                bin_centers + incr_bin,
+                np.max(uni_data) + support_extension + incr_bin,
+            )
+        )
 
         extended_cdf = np.hstack((0.0, 1.0 / n_samps, cdf, 1.0))
         new_support = np.linspace(new_bin_edges[0], new_bin_edges[-1], precision)
         learned_cdf = interp1d(new_bin_edges, extended_cdf)
         uniform_cdf = make_cdf_monotonic(learned_cdf(new_support))
-        #^ linear interpolation
+        # ^ linear interpolation
         uniform_cdf /= np.max(uniform_cdf)
         uni_uniform_data = interp1d(new_support, uniform_cdf)(uni_data)
 
-        return uni_uniform_data, {'empirical_pdf_support': pdf_support,
-                                'empirical_pdf': empirical_pdf,
-                                'uniform_cdf_support': new_support,
-                                'uniform_cdf': uniform_cdf}
+        return (
+            uni_uniform_data,
+            {
+                "empirical_pdf_support": pdf_support,
+                "empirical_pdf": empirical_pdf,
+                "uniform_cdf_support": new_support,
+                "uniform_cdf": uniform_cdf,
+            },
+        )
 
     def univariate_invert_normalization(self, uni_gaussian_data, trans_params):
         """
@@ -672,8 +692,9 @@ class RBIG(BaseEstimator, TransformerMixin):
         See the companion, univariate_make_normal.py, for more details
         """
         # simple, we just interpolate based on the saved CDF
-        return interp1d(trans_params['uniform_cdf'],
-                    trans_params['uniform_cdf_support'])(uni_uniform_data)
+        return interp1d(
+            trans_params["uniform_cdf"], trans_params["uniform_cdf_support"]
+        )(uni_uniform_data)
 
 
 class RBIGMI(object):
@@ -744,15 +765,18 @@ class RBIGMI(object):
         https://arxiv.org/abs/1602.00229
 
     """
-    def __init__(self, 
-                 n_layers=50, 
-                 rotation_type='PCA', 
-                 pdf_resolution=1000,
-                 pdf_extension=None, 
-                 random_state=None, 
-                 verbose=None,
-                 tolerance=None, 
-                 zero_tolerance=100):
+
+    def __init__(
+        self,
+        n_layers=50,
+        rotation_type="PCA",
+        pdf_resolution=1000,
+        pdf_extension=None,
+        random_state=None,
+        verbose=None,
+        tolerance=None,
+        zero_tolerance=100,
+    ):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
         self.pdf_resolution = pdf_resolution
@@ -761,7 +785,7 @@ class RBIGMI(object):
         self.verbose = verbose
         self.tolerance = tolerance
         self.zero_tolerance = zero_tolerance
-    
+
     def fit(self, X, Y):
         """Inputs for the RBIGMI algorithm.
         
@@ -777,27 +801,31 @@ class RBIGMI(object):
         """
 
         # Initialize RBIG class I
-        self.rbig_model_X = RBIG(n_layers=self.n_layers, 
-                                 rotation_type=self.rotation_type, 
-                                 pdf_resolution=self.pdf_resolution,
-                                 pdf_extension=self.pdf_extension,
-                                 verbose=self.verbose,
-                                 random_state=self.random_state,
-                                 zero_tolerance=self.zero_tolerance,
-                                 tolerance=self.tolerance)
+        self.rbig_model_X = RBIG(
+            n_layers=self.n_layers,
+            rotation_type=self.rotation_type,
+            pdf_resolution=self.pdf_resolution,
+            pdf_extension=self.pdf_extension,
+            verbose=self.verbose,
+            random_state=self.random_state,
+            zero_tolerance=self.zero_tolerance,
+            tolerance=self.tolerance,
+        )
 
         # fit and transform model to the data
         X_transformed = self.rbig_model_X.fit_transform(X)
 
         # Initialize RBIG class II
-        self.rbig_model_Y = RBIG(n_layers=self.n_layers, 
-                                 rotation_type=self.rotation_type, 
-                                 pdf_resolution=self.pdf_resolution,
-                                 pdf_extension=self.pdf_extension,
-                                 verbose=self.verbose,
-                                 random_state=self.random_state,
-                                 zero_tolerance=self.zero_tolerance,
-                                 tolerance=self.tolerance)
+        self.rbig_model_Y = RBIG(
+            n_layers=self.n_layers,
+            rotation_type=self.rotation_type,
+            pdf_resolution=self.pdf_resolution,
+            pdf_extension=self.pdf_extension,
+            verbose=self.verbose,
+            random_state=self.random_state,
+            zero_tolerance=self.zero_tolerance,
+            tolerance=self.tolerance,
+        )
 
         # fit model to the data
         Y_transformed = self.rbig_model_Y.fit_transform(Y)
@@ -806,13 +834,13 @@ class RBIGMI(object):
         XY_transformed = np.hstack([X_transformed, Y_transformed])
 
         # Initialize RBIG class I & II
-        self.rbig_model_XY = RBIG(n_layers=self.n_layers, 
-                                 rotation_type=self.rotation_type, 
-                                 random_state=self.random_state,
-                                 zero_tolerance=self.zero_tolerance,
-                                  tolerance=self.tolerance)
-        
-
+        self.rbig_model_XY = RBIG(
+            n_layers=self.n_layers,
+            rotation_type=self.rotation_type,
+            random_state=self.random_state,
+            zero_tolerance=self.zero_tolerance,
+            tolerance=self.tolerance,
+        )
 
         # Fit RBIG model to combined dataset
         self.rbig_model_XY.fit(XY_transformed)
@@ -905,15 +933,19 @@ class RBIGKLD(object):
         https://arxiv.org/abs/1602.00229
 
     """
-    def __init__(self, 
-                 n_layers=50, 
-                 rotation_type='PCA', 
-                 pdf_resolution=None,
-                 pdf_extension=10, 
-                 random_state=None, 
-                 verbose=None,
-                 tolerance=None, 
-                 zero_tolerance=100):
+
+    def __init__(
+        self,
+        n_layers=50,
+        rotation_type="PCA",
+        pdf_resolution=None,
+        pdf_extension=10,
+        random_state=None,
+        verbose=None,
+        tolerance=None,
+        zero_tolerance=100,
+        increment=1.5,
+    ):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
         self.pdf_resolution = pdf_resolution
@@ -922,66 +954,69 @@ class RBIGKLD(object):
         self.verbose = verbose
         self.tolerance = tolerance
         self.zero_tolerance = zero_tolerance
-    
+        self.increment = increment
+
     def fit(self, X, Y):
-        
+
         # Check Arrays
         X = check_array(X, ensure_2d=True)
         Y = check_array(Y, ensure_2d=True)
-        
+
         mv_g = None
-        
+
         # Loop Until convergence
         while mv_g is None:
-            
+
             if self.verbose:
                 print(f"PDF Extension: {self.pdf_extension}%")
-            
+
             try:
-                
+
                 # initialize RBIG transform for Y
                 self.rbig_model_Y = RBIG(
-                    n_layers=self.n_layers, 
-                    rotation_type=self.rotation_type, 
+                    n_layers=self.n_layers,
+                    rotation_type=self.rotation_type,
                     random_state=self.random_state,
                     zero_tolerance=self.zero_tolerance,
                     tolerance=self.tolerance,
-                    pdf_extension=self.pdf_extension);
-                
+                    pdf_extension=self.pdf_extension,
+                )
+
                 # fit RBIG model to Y
                 self.rbig_model_Y.fit(Y)
-                
+
                 # Transform X using rbig_model_Y
                 X_transformed = self.rbig_model_Y.transform(X)
-                
+
                 # Initialize RBIG transform for X_transformed
-                self.rbig_model_X_trans = RBIG(n_layers=self.n_layers, 
-                                 rotation_type=self.rotation_type, 
-                                 random_state=self.random_state,
-                                 zero_tolerance=self.zero_tolerance,
-                                  tolerance=self.tolerance,
-                                              pdf_extension=self.pdf_extension);
-                
+                self.rbig_model_X_trans = RBIG(
+                    n_layers=self.n_layers,
+                    rotation_type=self.rotation_type,
+                    random_state=self.random_state,
+                    zero_tolerance=self.zero_tolerance,
+                    tolerance=self.tolerance,
+                    pdf_extension=self.pdf_extension,
+                )
+
                 # Fit RBIG model to X_transformed
-                self.rbig_model_X_trans.fit(X_transformed);
-                
+                self.rbig_model_X_trans.fit(X_transformed)
+
                 # Get mutual information
                 mv_g = self.rbig_model_X_trans.residual_info.sum()
-                
+
             except:
-                self.pdf_extension = 1.5 * self.pdf_extension
-        
-        
+                self.pdf_extension = self.increment * self.pdf_extension
+
         self.mv_g = mv_g
-        if self.verbose:
+        if self.verbose == 2:
             print(f"mv_g: {mv_g}")
             print(f"m_g: {neg_entropy_normal(X_transformed)}")
         self.kld = mv_g + neg_entropy_normal(X_transformed).sum()
-        
+
         return self
-    
-    def kld(self):
-        
+
+    def get_kld(self):
+
         return self.kld
 
 
@@ -998,17 +1033,19 @@ def make_cdf_monotonic(cdf):
     # laparra's version
     corrected_cdf = cdf.copy()
     for i in range(1, len(corrected_cdf)):
-        if corrected_cdf[i] <= corrected_cdf[i-1]:
-            if abs(corrected_cdf[i-1]) > 1e-14:
-                corrected_cdf[i] = corrected_cdf[i-1] + 1e-14
-            elif corrected_cdf[i-1] == 0:
+        if corrected_cdf[i] <= corrected_cdf[i - 1]:
+            if abs(corrected_cdf[i - 1]) > 1e-14:
+                corrected_cdf[i] = corrected_cdf[i - 1] + 1e-14
+            elif corrected_cdf[i - 1] == 0:
                 corrected_cdf[i] = 1e-80
             else:
-                corrected_cdf[i] = (corrected_cdf[i-1] +
-                                    10**(np.log10(abs(corrected_cdf[i-1]))))
+                corrected_cdf[i] = corrected_cdf[i - 1] + 10 ** (
+                    np.log10(abs(corrected_cdf[i - 1]))
+                )
     return corrected_cdf
 
-def entropy_marginal(data, bin_est='standard', correction=True):
+
+def entropy_marginal(data, bin_est="standard", correction=True):
     """Calculates the marginal entropy (the entropy per dimension) of a
     multidimensional dataset. Uses histogram bin counnts. Also features
     and option to add the Shannon-Miller correction.
@@ -1033,38 +1070,44 @@ def entropy_marginal(data, bin_est='standard', correction=True):
     Email  : jemanjohnson34@gmail.com
     """
     n_samples, d_dimensions = data.shape
-    
+
     n_bins = bin_estimation(n_samples, rule=bin_est)
-    
+
     H = np.zeros(d_dimensions)
-    
+
     for idim in range(d_dimensions):
         # Get histogram (use default bin estimation)
-        [hist_counts, bin_edges] = np.histogram(a=data[:, idim], bins=n_bins, range=(data[:, idim].min(), data[:, idim].max()))
-        
+        [hist_counts, bin_edges] = np.histogram(
+            a=data[:, idim],
+            bins=n_bins,
+            range=(data[:, idim].min(), data[:, idim].max()),
+        )
+
         # Calculate bin_centers from bin_edges
         bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-        
+
         # get difference between the bins
         delta = bin_centers[3] - bin_centers[2]
-        
+
         # Calculate the marginal entropy
         H[idim] = entropy(hist_counts, correction=correction) + np.log2(delta)
-        
+
     return H
 
-def bin_estimation(n_samples, rule='standard'):
-    
-    if rule is 'sturge':
+
+def bin_estimation(n_samples, rule="standard"):
+
+    if rule is "sturge":
         n_bins = int(np.ceil(1 + 3.322 * np.log10(n_samples)))
-        
-    elif rule is 'standard':
+
+    elif rule is "standard":
         n_bins = int(np.ceil(np.sqrt(n_samples)))
-        
+
     else:
         raise ValueError(f"Unrecognized bin estimation rule: {rule}")
-    
+
     return n_bins
+
 
 def information_reduction(x_data, y_data, tol_dimensions=None, correction=True):
     """Computes the multi-information (total correlation) reduction after a linear
@@ -1097,45 +1140,47 @@ def information_reduction(x_data, y_data, tol_dimensions=None, correction=True):
             Juan Emmanuel Johnson
     """
     # check that number of samples and dimensions are equal
-    err_msg = 'Number of samples for x and y should be equal.'
+    err_msg = "Number of samples for x and y should be equal."
     np.testing.assert_equal(x_data.shape, y_data.shape, err_msg=err_msg)
-    
+
     n_samples, n_dimensions = x_data.shape
-    
+
     # minimum multi-information heuristic
     if tol_dimensions is None or 0:
         xxx = np.logspace(2, 8, 7)
         yyy = [0.1571, 0.0468, 0.0145, 0.0046, 0.0014, 0.0001, 0.00001]
         tol_dimensions = np.interp(n_samples, xxx, yyy)
-    
+
     # preallocate data
     hx = np.zeros(n_dimensions)
     hy = np.zeros(n_dimensions)
-    
+
     # calculate the marginal entropy
     hx = entropy_marginal(x_data, correction=correction)
     hy = entropy_marginal(y_data, correction=correction)
-    
+
     # Information content
     I = np.sum(hy) - np.sum(hx)
     II = np.sqrt(np.sum((hy - hx) ** 2))
-    
+
     p = 0.25
     if II < np.sqrt(n_dimensions * p * tol_dimensions ** 2) or I < 0:
         I = 0
-    
+
     return I
 
+
 def entropy(hist_counts, correction=None):
-    
+
     # MLE Estimator with Miller-Maddow Correction
     if not (correction is None):
-        correction = 0.5 * ( np.sum(hist_counts > 0) - 1 ) / hist_counts.sum()
+        correction = 0.5 * (np.sum(hist_counts > 0) - 1) / hist_counts.sum()
     else:
         correction = 0.0
-    
+
     # Plut in estimator of entropy with correction
     return sci_entropy(hist_counts, base=2) + correction
+
 
 def generate_batches(n_samples, batch_size):
     """A generator to split an array of 0 to n_samples
@@ -1181,6 +1226,7 @@ def generate_batches(n_samples, batch_size):
         # yield the remaining indices
         yield start_index, n_samples
 
+
 def neg_entropy_normal(data):
     """Function to calculate the marginal negative entropy 
     (negative entropy per dimensions). It uses a histogram
@@ -1196,64 +1242,63 @@ def neg_entropy_normal(data):
     neg : array, (dimensions)
     
     """
-    
+
     n_samples, d_dimensions = data.shape
-    
-    
+
     # bin estimation
     # TODO: Use function
     n_bins = int(np.ceil(np.sqrt(n_samples)))
-    
+
     neg = np.zeros(d_dimensions)
-    
+
     # Loop through dimensions
     for idim in range(d_dimensions):
-        
+
         # =====================
         # Histogram Estimation
         # =====================
-        
+
         # Get Histogram
-        [hist_counts, bin_edges] = np.histogram(a=data[:, idim], 
-                                                bins=n_bins, 
-                                                range=(data[:, idim].min(), 
-                                                       data[:, idim].max()))
-        
+        [hist_counts, bin_edges] = np.histogram(
+            a=data[:, idim],
+            bins=n_bins,
+            range=(data[:, idim].min(), data[:, idim].max()),
+        )
+
         # calculate bin centers
-        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2        
-        
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
         # get delta between bin centers
         delta = bin_centers[3] - bin_centers[2]
-        
+
         # Calculate probabilities of normal distribution
         pg = stats.norm.pdf(bin_centers, 0, 1)
-        
+
         # ==================
         # KDE Function Est.
         # ==================
-        
+
         # Initialize KDE function with data
         kde_model = stats.gaussian_kde(data[:, idim])
-        
+
         # Calculate probabilities for each bin
         hx = kde_model.pdf(bin_centers)
-        
+
         # Calculate probabilities
         px = hx / (hx.sum() * delta)
-        
-        
+
         # ====================
         # Compare
         # ====================
-        
+
         # Find the indices greater than zero
         idx = np.where((px > 0) & (pg > 0))
-        
+
         # calculate the negative entropy
         neg[idim] = delta * (px[idx] * np.log2(px[idx] / pg[idx])).sum()
-    
-    
+
     return neg
+
 
 def main():
     pass
