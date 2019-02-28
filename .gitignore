@@ -12,3 +12,6 @@ code_through/
 
 # ignore the RBIG folder.
 \RBIG/
+
+# Ignore .vscode
+\.vscode/
