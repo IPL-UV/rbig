@@ -965,48 +965,51 @@ class RBIGKLD(object):
         mv_g = None
 
         # Loop Until convergence
-        while mv_g is None:
+        try:
+            while mv_g is None:
 
-            if self.verbose:
-                print(f"PDF Extension: {self.pdf_extension}%")
+                if self.verbose:
+                    print(f"PDF Extension: {self.pdf_extension}%")
 
-            try:
+                try:
 
-                # initialize RBIG transform for Y
-                self.rbig_model_Y = RBIG(
-                    n_layers=self.n_layers,
-                    rotation_type=self.rotation_type,
-                    random_state=self.random_state,
-                    zero_tolerance=self.zero_tolerance,
-                    tolerance=self.tolerance,
-                    pdf_extension=self.pdf_extension,
-                )
+                    # initialize RBIG transform for Y
+                    self.rbig_model_Y = RBIG(
+                        n_layers=self.n_layers,
+                        rotation_type=self.rotation_type,
+                        random_state=self.random_state,
+                        zero_tolerance=self.zero_tolerance,
+                        tolerance=self.tolerance,
+                        pdf_extension=self.pdf_extension,
+                    )
 
-                # fit RBIG model to Y
-                self.rbig_model_Y.fit(Y)
+                    # fit RBIG model to Y
+                    self.rbig_model_Y.fit(Y)
 
-                # Transform X using rbig_model_Y
-                X_transformed = self.rbig_model_Y.transform(X)
+                    # Transform X using rbig_model_Y
+                    X_transformed = self.rbig_model_Y.transform(X)
 
-                # Initialize RBIG transform for X_transformed
-                self.rbig_model_X_trans = RBIG(
-                    n_layers=self.n_layers,
-                    rotation_type=self.rotation_type,
-                    random_state=self.random_state,
-                    zero_tolerance=self.zero_tolerance,
-                    tolerance=self.tolerance,
-                    pdf_extension=self.pdf_extension,
-                )
+                    # Initialize RBIG transform for X_transformed
+                    self.rbig_model_X_trans = RBIG(
+                        n_layers=self.n_layers,
+                        rotation_type=self.rotation_type,
+                        random_state=self.random_state,
+                        zero_tolerance=self.zero_tolerance,
+                        tolerance=self.tolerance,
+                        pdf_extension=self.pdf_extension,
+                    )
 
-                # Fit RBIG model to X_transformed
-                self.rbig_model_X_trans.fit(X_transformed)
+                    # Fit RBIG model to X_transformed
+                    self.rbig_model_X_trans.fit(X_transformed)
 
-                # Get mutual information
-                mv_g = self.rbig_model_X_trans.residual_info.sum()
+                    # Get mutual information
+                    mv_g = self.rbig_model_X_trans.residual_info.sum()
 
-            except:
-                self.pdf_extension = self.increment * self.pdf_extension
-
+                except:
+                    self.pdf_extension = self.increment * self.pdf_extension
+        except KeyboardInterrupt:
+            print('Interrupted!')
+        
         self.mv_g = mv_g
         if self.verbose == 2:
             print(f"mv_g: {mv_g}")
