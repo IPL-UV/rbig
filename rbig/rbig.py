@@ -5,7 +5,7 @@ from sklearn.preprocessing import QuantileTransformer
 from sklearn.decomposition import PCA, FastICA
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import normalized_mutual_info_score as mi_score
-from scipy.stats import norm, ortho_group, entropy as sci_entropy
+from scipy.stats import norm, uniform, ortho_group, entropy as sci_entropy
 from scipy import stats
 from scipy.interpolate import interp1d
 import warnings
@@ -111,6 +111,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         zero_tolerance=60,
         entropy_correction=True,
         rotation_kwargs=None,
+        base='gauss'
     ):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
@@ -122,6 +123,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         self.zero_tolerance = zero_tolerance
         self.entropy_correction = entropy_correction
         self.rotation_kwargs = rotation_kwargs
+        self.base = base
 
     def fit(self, X):
         """ Fit the model with X.
@@ -607,7 +609,12 @@ class RBIG(BaseEstimator, TransformerMixin):
         data_uniform, params = self.univariate_make_uniform(
             uni_data.T, extension, precision
         )
-        return norm.ppf(data_uniform).T, params
+        if self.base == 'gauss':
+            return norm.ppf(data_uniform).T, params
+        elif self.base == 'uniform':
+            return uniform.ppf(data_uniform).T, params
+        else:
+            raise ValueError(f'Unrecognized base dist: {self.base}.')
 
     def univariate_make_uniform(self, uni_data, extension, precision):
         """
@@ -682,7 +689,13 @@ class RBIG(BaseEstimator, TransformerMixin):
         Inverts the marginal normalization
         See the companion, univariate_make_normal.py, for more details
         """
-        uni_uniform_data = norm.cdf(uni_gaussian_data)
+        if self.base == 'gauss':
+            uni_uniform_data = norm.cdf(uni_gaussian_data)
+        elif self.base == 'uniform':
+            uni_uniform_data = uniform.cdf(uni_gaussian_data)
+        else:
+            raise ValueError(f"Unrecognized base dist.: {base}.")
+            
         uni_data = self.univariate_invert_uniformization(uni_uniform_data, trans_params)
         return uni_data
 
