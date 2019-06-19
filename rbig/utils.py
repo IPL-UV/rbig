@@ -159,3 +159,21 @@ def make_positive(X):
     """
     X = check_floating(X)
     return np.maximum(X, np.finfo(X.dtype).tiny)
+
+
+def bin_estimation(X, rule="scott"):
+
+    n_samples = X.shape[0]
+
+    if rule == "sqrt":
+        nbins = np.sqrt(n_samples)
+    elif rule == "scott":
+        nbins = (3.49 * np.std(X)) / np.cbrt(n_samples)
+    elif rule == "sturge":
+        nbins = 1 + np.log2(n_samples)
+    elif rule == "rice":
+        nbins = 2 * np.cbrt(n_samples)
+    else:
+        raise ValueError(f"Unrecognized rule: {rule}")
+
+    return int(np.ceil(nbins))

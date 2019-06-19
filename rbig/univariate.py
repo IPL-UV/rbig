@@ -5,6 +5,8 @@ import warnings
 from sklearn.utils import check_random_state
 from sklearn.exceptions import DataConversionWarning
 from sklearn.utils.validation import column_or_1d
+from scipy.interpolate import interp1d
+from scipy.stats import norm, ortho_group, entropy as sci_entropy
 import scipy.stats
 import matplotlib.pyplot as plt
 from rbig.utils import (
@@ -14,9 +16,106 @@ from rbig.utils import (
     make_interior_probability,
     make_positive,
     make_finite,
+    bin_estimation,
 )
 
 plt.style.use("ggplot")
+
+
+class MarginalUniformization(BaseEstimator, TransformerMixin):
+    def __init__(
+        self, bins_est="sqrt", pdf_extension=0.1, cdf_precision=1000, alpha=1e-6
+    ):
+        self.bins_est = bins_est
+        self.pdf_extension = pdf_extension
+        self.cdf_precision = cdf_precision
+        self.alpha = alpha
+
+    def fit(self, X):
+
+        nbins = bin_estimation(X, rule=self.bins_est)
+
+        # PDF, PDF Support
+        hpdf, hbins = np.histogram(X, bins=nbins)
+
+        assert len(hpdf) == nbins
+
+        # CDF
+        hcdf = np.cumsum(hpdf)
+        hcdf = (1 - 1 / X.shape[0]) * hcdf / X.shape[0]
+
+        hbin_widths = hbins[1:] - hbins[:-1]
+        assert len(hbin_widths) == nbins
+
+        hbin_centers = 0.5 * (hbins[:-1] + hbins[1:])
+
+        # Get Bin StepSizde
+        bin_step_size = hbins[2] - hbins[1]
+
+        # Normalize hpdf
+        hpdf = hpdf / float(np.sum(hpdf * hbin_widths))
+
+        # Handle Tails of PDF
+        hpdf = np.hstack([0.0, hpdf, 0.0])
+        hpdf_support = np.hstack(
+            [
+                hbin_centers[0] - bin_step_size,
+                hbin_centers,
+                hbin_centers[-1] + bin_step_size,
+            ]
+        )
+
+        # Support Extension
+        support_extension = (self.pdf_extension / 100) * abs(np.max(X) - np.min(X))
+
+        old_support = np.array([X.min(), X.max()])
+        new_support = (1 + self.pdf_extension) * (old_support - X.mean()) + X.mean()
+
+        # Define New HPDF support
+        hpdf_support_ext = np.hstack(
+            [
+                new_support[0],
+                old_support[0],
+                hbin_centers + bin_step_size,
+                new_support[1] + bin_step_size,
+            ]
+        )
+
+        # Define New HCDF
+        hcdf_ext = np.hstack([0.0, 1.0 / X.shape[0], hcdf, 1.0])
+
+        # Define New support for hcdf
+        hcdf_support = np.linspace(
+            hpdf_support_ext[0], hpdf_support_ext[-1], self.cdf_precision
+        )
+
+        # Interpolate HCDF with new precision
+        hcdf_ext = np.interp(hcdf_support, hpdf_support_ext, hcdf_ext)
+        hcdf_ext /= hcdf_ext.max()
+
+        self.hpdf = hpdf
+        self.hpdf_support = hpdf_support
+        self.hcdf = hcdf_ext
+        self.hcdf_support = hcdf_support
+        assert len(self.hpdf) == len(self.hpdf_support)
+        assert len(self.hcdf) == len(self.hcdf_support)
+
+        return self
+
+    def transform(self, X):
+        return np.interp(X, self.hcdf_support, self.hcdf)
+
+    def inverse_transform(self, X):
+        return np.interp(X, self.hcdf, self.hcdf_support)
+
+    def logdetjacobian(self, X):
+        pass
+
+    def logpdf(self, X):
+        return np.log(self.hpdf[1:-1])
+
+    def entropy(self, X, correction=True):
+        return entropy(self.hpdf, correction=correction)
 
 
 class HistogramUnivariateDensity(BaseEstimator, TransformerMixin):
@@ -61,7 +160,7 @@ class HistogramUnivariateDensity(BaseEstimator, TransformerMixin):
         X = self.check_X(X)
         return self.rv.logpdf(X.ravel()).reshape((-1, 1))
 
-    def get_support(self, X):
+    def get_support(self, X=None):
         # Assumes density is univariate
         return np.array([[self.rv.a, self.rv.b]])
 
@@ -98,7 +197,7 @@ class InverseCDF(BaseEstimator, TransformerMixin):
         pass
 
     def fit(self, X, y=None):
-        pass
+        return self
 
     def transform(self, X, y=None):
         # Check X
@@ -110,8 +209,11 @@ class InverseCDF(BaseEstimator, TransformerMixin):
     def inverse_transform(self, X, y=None):
         return scipy.stats.norm.cdf(X)
 
-    def logdetjacobian(self, X, y=None):
-        pass
+    def logpdf(self, X, y=None):
+        return np.log(self.hpdf)
+
+    def entropy(self, X):
+        return 0.5 + 0.5 * np.log(2 * np.pi) + np.log(1.0)
 
 
 def get_data(seed=123, n_samples=1000, noise=0.25):
@@ -121,6 +223,18 @@ def get_data(seed=123, n_samples=1000, noise=0.25):
     Y = np.sin(X) + noise * rng.randn(n_samples, 1)
 
     return X, Y
+
+
+def entropy(hist_counts, correction=None):
+
+    # MLE Estimator with Miller-Maddow Correction
+    if not (correction is None):
+        correction = 0.5 * (np.sum(hist_counts > 0) - 1) / hist_counts.sum()
+    else:
+        correction = 0.0
+
+    # Plut in estimator of entropy with correction
+    return sci_entropy(hist_counts, base=2) + correction
 
 
 def example():
