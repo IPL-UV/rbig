@@ -32,22 +32,22 @@ class MarginalUniformization(BaseEstimator, TransformerMixin):
         self.alpha = alpha
 
     def fit(self, X):
-
         nbins = bin_estimation(X, rule=self.bins_est)
 
-        # PDF, PDF Support
+        # Get Histogram (Histogram PDF, Histogtam bins)
         hpdf, hbins = np.histogram(X, bins=nbins)
-
+        hpdf = np.array(hpdf, dtype=float)
+        hpdf += self.alpha
         assert len(hpdf) == nbins
 
         # CDF
         hcdf = np.cumsum(hpdf)
         hcdf = (1 - 1 / X.shape[0]) * hcdf / X.shape[0]
 
+        # Get Bin Widths
         hbin_widths = hbins[1:] - hbins[:-1]
-        assert len(hbin_widths) == nbins
-
         hbin_centers = 0.5 * (hbins[:-1] + hbins[1:])
+        assert len(hbin_widths) == nbins
 
         # Get Bin StepSizde
         bin_step_size = hbins[2] - hbins[1]
@@ -65,19 +65,28 @@ class MarginalUniformization(BaseEstimator, TransformerMixin):
             ]
         )
 
-        # Support Extension
-        support_extension = (self.pdf_extension / 100) * abs(np.max(X) - np.min(X))
+        # hcdf = np.hstack([0.0, hcdf])
+        domain_extension = 0.1
+        precision = 1000
+        old_support = np.array([X.min(), X.max()])
+
+        support_extension = (domain_extension / 100) * abs(np.max(X) - np.min(X))
+        # old_support = np.array([X.min(), X.max()])
 
         old_support = np.array([X.min(), X.max()])
-        new_support = (1 + self.pdf_extension) * (old_support - X.mean()) + X.mean()
+        new_support = (1 + domain_extension) * (old_support - X.mean()) + X.mean()
+
+        new_support = np.array(
+            [X.min() - support_extension, X.max() + support_extension]
+        )
 
         # Define New HPDF support
         hpdf_support_ext = np.hstack(
             [
-                new_support[0],
-                old_support[0],
+                X.min() - support_extension,
+                X.min(),
                 hbin_centers + bin_step_size,
-                new_support[1] + bin_step_size,
+                X.max() + support_extension + bin_step_size,
             ]
         )
 
@@ -85,20 +94,14 @@ class MarginalUniformization(BaseEstimator, TransformerMixin):
         hcdf_ext = np.hstack([0.0, 1.0 / X.shape[0], hcdf, 1.0])
 
         # Define New support for hcdf
-        hcdf_support = np.linspace(
-            hpdf_support_ext[0], hpdf_support_ext[-1], self.cdf_precision
-        )
-
+        hcdf_support = np.linspace(hpdf_support_ext[0], hpdf_support_ext[-1], precision)
+        self.hcdf_support = hcdf_support
+        
         # Interpolate HCDF with new precision
         hcdf_ext = np.interp(hcdf_support, hpdf_support_ext, hcdf_ext)
-        hcdf_ext /= hcdf_ext.max()
-
+        self.hcdf = hcdf_ext
         self.hpdf = hpdf
         self.hpdf_support = hpdf_support
-        self.hcdf = hcdf_ext
-        self.hcdf_support = hcdf_support
-        assert len(self.hpdf) == len(self.hpdf_support)
-        assert len(self.hcdf) == len(self.hcdf_support)
 
         return self
 
