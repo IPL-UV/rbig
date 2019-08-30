@@ -789,6 +789,7 @@ class RBIGMI(object):
         verbose=None,
         tolerance=None,
         zero_tolerance=100,
+        increment=1.5,
     ):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
@@ -798,6 +799,7 @@ class RBIGMI(object):
         self.verbose = verbose
         self.tolerance = tolerance
         self.zero_tolerance = zero_tolerance
+        self.increment = 1.5
 
     def fit(self, X, Y):
         """Inputs for the RBIGMI algorithm.
@@ -812,51 +814,72 @@ class RBIGMI(object):
         do not have to be the same.
         
         """
+        
+        # Loop Until Convergence
+        fitted = None
+        try:
+            while fitted is None:
+                
+                if self.verbose:
+                    print(f"PDF Extension: {self.pdf_extension}%")
+                    
+                try:
+                    # Initialize RBIG class I
+                    self.rbig_model_X = RBIG(
+                        n_layers=self.n_layers,
+                        rotation_type=self.rotation_type,
+                        pdf_resolution=self.pdf_resolution,
+                        pdf_extension=self.pdf_extension,
+                        verbose=None,
+                        random_state=self.random_state,
+                        zero_tolerance=self.zero_tolerance,
+                        tolerance=self.tolerance,
+                    )
 
-        # Initialize RBIG class I
-        self.rbig_model_X = RBIG(
-            n_layers=self.n_layers,
-            rotation_type=self.rotation_type,
-            pdf_resolution=self.pdf_resolution,
-            pdf_extension=self.pdf_extension,
-            verbose=self.verbose,
-            random_state=self.random_state,
-            zero_tolerance=self.zero_tolerance,
-            tolerance=self.tolerance,
-        )
+                    # fit and transform model to the data
+                    X_transformed = self.rbig_model_X.fit_transform(X)
 
-        # fit and transform model to the data
-        X_transformed = self.rbig_model_X.fit_transform(X)
+                    # Initialize RBIG class II
+                    self.rbig_model_Y = RBIG(
+                        n_layers=self.n_layers,
+                        rotation_type=self.rotation_type,
+                        pdf_resolution=self.pdf_resolution,
+                        pdf_extension=self.pdf_extension,
+                        verbose=None,
+                        random_state=self.random_state,
+                        zero_tolerance=self.zero_tolerance,
+                        tolerance=self.tolerance,
+                    )
 
-        # Initialize RBIG class II
-        self.rbig_model_Y = RBIG(
-            n_layers=self.n_layers,
-            rotation_type=self.rotation_type,
-            pdf_resolution=self.pdf_resolution,
-            pdf_extension=self.pdf_extension,
-            verbose=self.verbose,
-            random_state=self.random_state,
-            zero_tolerance=self.zero_tolerance,
-            tolerance=self.tolerance,
-        )
+                    # fit model to the data
+                    Y_transformed = self.rbig_model_Y.fit_transform(Y)
 
-        # fit model to the data
-        Y_transformed = self.rbig_model_Y.fit_transform(Y)
+                    # Stack Data
+                    print(X_transformed.shape, Y_transformed.shape)
+                    XY_transformed = np.hstack([X_transformed, Y_transformed])
 
-        # Stack Data
-        XY_transformed = np.hstack([X_transformed, Y_transformed])
+                    # Initialize RBIG class I & II
+                    self.rbig_model_XY = RBIG(
+                        n_layers=self.n_layers,
+                        rotation_type=self.rotation_type,
+                        random_state=self.random_state,
+                        zero_tolerance=self.zero_tolerance,
+                        tolerance=self.tolerance,
+                        pdf_resolution=self.pdf_resolution,
+                        pdf_extension=self.pdf_extension,
+                        verbose=None
+                    )
 
-        # Initialize RBIG class I & II
-        self.rbig_model_XY = RBIG(
-            n_layers=self.n_layers,
-            rotation_type=self.rotation_type,
-            random_state=self.random_state,
-            zero_tolerance=self.zero_tolerance,
-            tolerance=self.tolerance,
-        )
-
-        # Fit RBIG model to combined dataset
-        self.rbig_model_XY.fit(XY_transformed)
+                    # Fit RBIG model to combined dataset
+                    self.rbig_model_XY.fit(XY_transformed)
+                    fitted = True
+                except:
+                    self.pdf_extension = self.increment * self.pdf_extension
+        
+        except KeyboardInterrupt:
+            print('Interrupted!')
+                    
+        
 
         return self
 
