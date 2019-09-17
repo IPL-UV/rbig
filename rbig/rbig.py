@@ -855,7 +855,11 @@ class RBIGMI(object):
                     Y_transformed = self.rbig_model_Y.fit_transform(Y)
 
                     # Stack Data
-                    print(X_transformed.shape, Y_transformed.shape)
+                    if self.verbose:
+                        print(
+                            X_transformed.shape, Y_transformed.shape
+                        )
+                        
                     XY_transformed = np.hstack([X_transformed, Y_transformed])
 
                     # Initialize RBIG class I & II
@@ -878,9 +882,7 @@ class RBIGMI(object):
         
         except KeyboardInterrupt:
             print('Interrupted!')
-                    
-        
-
+            
         return self
 
     def mutual_information(self):
