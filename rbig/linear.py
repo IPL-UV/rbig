@@ -9,6 +9,7 @@ from typing import Optional
 from rbig.ica import OrthogonalICA
 
 # TODO - Whitening transform - https://github.com/lucastheis/isa/blob/master/code/transforms/whiteningtransform.py
+# TODO - Orthogonality Checker - https://github.com/davidinouye/destructive-deep-learning/blob/master/ddl/linear.py#L327
 
 
 class OrthogonalTransform(BaseEstimator, TransformerMixin, ScoreMixin):
