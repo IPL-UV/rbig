@@ -65,7 +65,7 @@ class QuantileTransformer(BaseEstimator, TransformerMixin):
 
         # initialize random state
         rng = check_random_state(self.random_state)
-        self._fit(X, rng)
+        self = self._fit(X, rng)
         return self
 
     def _fit(self, X, random_state):
@@ -112,11 +112,12 @@ class QuantileTransformer(BaseEstimator, TransformerMixin):
         return new_reference, new_quantiles
 
     def transform(self, X, y=None):
-
-        return self._transform(X, inverse=False)
+        X = self._transform(X, inverse=False)
+        return X
 
     def inverse_transform(self, X, y=None):
-        return self._transform(X, inverse=True)
+        X = self._transform(X, inverse=True)
+        return X
 
     def _transform(self, X, inverse=False):
         for feature_idx in range(X.shape[1]):
