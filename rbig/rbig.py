@@ -607,6 +607,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         data_uniform, params = self.univariate_make_uniform(
             uni_data.T, extension, precision
         )
+        # print("After Interp: ", data_uniform.min(), data_uniform.max())
         return norm.ppf(data_uniform).T, params
 
     def univariate_make_uniform(self, uni_data, extension, precision):
@@ -661,12 +662,13 @@ class RBIG(BaseEstimator, TransformerMixin):
 
         extended_cdf = np.hstack((0.0, 1.0 / n_samps, cdf, 1.0))
         new_support = np.linspace(new_bin_edges[0], new_bin_edges[-1], precision)
+
         learned_cdf = interp1d(new_bin_edges, extended_cdf)
         uniform_cdf = make_cdf_monotonic(learned_cdf(new_support))
         # ^ linear interpolation
         uniform_cdf /= np.max(uniform_cdf)
         uni_uniform_data = interp1d(new_support, uniform_cdf)(uni_data)
-
+        # print("New support", new_support.min(), new_support.max())
         return (
             uni_uniform_data,
             {
@@ -1008,8 +1010,8 @@ class RBIGKLD(object):
                 except:
                     self.pdf_extension = self.increment * self.pdf_extension
         except KeyboardInterrupt:
-            print('Interrupted!')
-        
+            print("Interrupted!")
+
         self.mv_g = mv_g
         if self.verbose == 2:
             print(f"mv_g: {mv_g}")
