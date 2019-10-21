@@ -12,12 +12,12 @@ import warnings
 import logging
 
 warnings.filterwarnings("ignore")  # get rid of annoying warnings
-logging.basicConfig(
-    filename="rbig_demo.log",
-    level=logging.DEBUG,
-    format="%(asctime)s: %(name)-12s %(levelname)-8s: %(message)s",
-    filemode="w",
-)
+# logging.basicConfig(
+#     filename="rbig_demo.log",
+#     level=logging.INFO,
+#     format="%(asctime)s: %(name)-12s %(levelname)-8s: %(message)s",
+#     filemode="w",
+# )
 
 
 class RBIG(BaseEstimator, TransformerMixin):
