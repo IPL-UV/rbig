@@ -5,9 +5,11 @@ from sklearn.preprocessing import QuantileTransformer
 from sklearn.decomposition import PCA, FastICA
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import normalized_mutual_info_score as mi_score
+from rbig.ica import OrthogonalICA
 from scipy.stats import norm, ortho_group, entropy as sci_entropy
 from scipy import stats
 from scipy.interpolate import interp1d
+from .information.entropy import MarginalEntropy
 import warnings
 import logging
 
@@ -220,11 +222,9 @@ class RBIG(BaseEstimator, TransformerMixin):
 
                 # initialize model fastica model
                 if self.rotation_kwargs is not None:
-                    ica_model = FastICA(
-                        random_state=self.random_state, **self.rotation_kwargs
-                    )
+                    ica_model = OrthogonalICA(random_state=self.random_state, **self.kwargs)
                 else:
-                    ica_model = FastICA(random_state=self.random_state)
+                    ica_model = OrthogonalICA(random_state=self.random_state)
                 # fit-transform data
                 gauss_data = ica_model.fit_transform(gauss_data)
 
@@ -1157,12 +1157,22 @@ def information_reduction(x_data, y_data, tol_dimensions=None, correction=True):
         tol_dimensions = np.interp(n_samples, xxx, yyy)
 
     # preallocate data
-    hx = np.zeros(n_dimensions)
-    hy = np.zeros(n_dimensions)
+    ent_clf = MarginalEntropy(
+        univariate_method='histogram',
+        bins='fd',
+        correction=True,
+        k=10,
+        kernel='gau',
+        bw='normal_reference',
+    )
+    # hx = np.zeros(n_dimensions)
+    # hy = np.zeros(n_dimensions)
 
-    # calculate the marginal entropy
-    hx = entropy_marginal(x_data, correction=correction)
-    hy = entropy_marginal(y_data, correction=correction)
+    # # calculate the marginal entropy
+    # hx = entropy_marginal(x_data, correction=correction)
+    # hy = entropy_marginal(y_data, correction=correction)
+    hx = ent_clf.entropy(x_data)
+    hy = ent_clf.entropy(y_data)
 
     # Information content
     I = np.sum(hy) - np.sum(hx)

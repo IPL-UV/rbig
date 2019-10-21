@@ -30,3 +30,4 @@ class ToyData:
         data = np.hstack((X, Y))
 
         return data
+

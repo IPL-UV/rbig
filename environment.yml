@@ -8,6 +8,8 @@ dependencies:
 - numpy
 - matplotlib
 - numexpr
+- cython
 - pip
 - pip:
-    - picard
+    - python-picard
+    - git+https://github.com/statsmodels/statsmodels

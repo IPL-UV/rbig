@@ -1,14 +1,28 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 from .base import ScoreMixin, DensityMixin
-from .gaussian import QuantileGaussian
+from .quantile import QuantileGaussian
 from .linear import OrthogonalTransform
 import numpy as np
 from sklearn.utils import check_array
 
 
 class RBIGBlock(BaseEstimator, TransformerMixin, DensityMixin, ScoreMixin):
-    def __init__(self, rotation="ica"):
+    def __init__(
+        self,
+        rotation="ica",
+        n_quantiles=1_000,
+        subsample=2_000,
+        random_state=123,
+        support_ext=0.0,
+        interp="linear",
+    ):
         self.rotation = rotation
+        self.n_quantiles = n_quantiles
+        self.bin_est = None
+        self.subsample = subsample
+        self.random_state = random_state
+        self.support_ext = support_ext
+        self.interp = interp
 
     def fit(self, X, y=None):
 
@@ -26,12 +40,14 @@ class RBIGBlock(BaseEstimator, TransformerMixin, DensityMixin, ScoreMixin):
         # ========================
         # Marginal Gaussianization
         # ========================
-        n_quantiles = 1_000
-        subsample = 10_000
-        random_state = 123
 
         transform_MG = QuantileGaussian(
-            n_quantiles=n_quantiles, subsample=subsample, random_state=random_state
+            n_quantiles=self.n_quantiles,
+            bin_est=self.bin_est,
+            support_ext=self.support_ext,
+            subsample=self.subsample,
+            random_state=self.random_state,
+            interp=self.interp,
         )
 
         transform_MG.fit(data_R)
