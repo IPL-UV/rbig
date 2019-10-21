@@ -15,11 +15,13 @@ class QuantileGaussian(BaseEstimator, TransformerMixin):
     def __init__(
         self,
         n_quantiles: int = 1_000,
+        bin_est: Optional[str] = None,
         subsample: int = 1_000,
         random_state: int = 123,
         domain_ext: float = 0.0,
     ) -> None:
         self.n_quantiles = n_quantiles
+        self.bin_est = bin_est
         self.subsample = subsample
         self.random_state = random_state
         self.domain_ext = domain_ext
@@ -61,9 +63,6 @@ class QuantileGaussian(BaseEstimator, TransformerMixin):
 
         self.n_quantiles_ = max(1, min(self.n_quantiles, n_samples))
 
-        # create the quantiles reference
-        self.references_ = np.linspace(0, 1, self.n_quantiles_, endpoint=True)
-
         # initialize random state
         rng = check_random_state(self.random_state)
 
@@ -76,10 +75,8 @@ class QuantileGaussian(BaseEstimator, TransformerMixin):
         # dimensions of data
         n_samples, n_features = X.shape
 
-        # reference quantiles
-        references = self.references_ * 100
-
         self.quantiles_ = []
+        self.references_ = []
         for ifeature in X.T:
             if self.subsample < n_samples:
                 subsample_idx = random_state.choice(
@@ -88,32 +85,49 @@ class QuantileGaussian(BaseEstimator, TransformerMixin):
 
                 ifeature = ifeature.take(subsample_idx, mode="clip")
 
-            self.quantiles_.append(np.nanpercentile(ifeature, references))
+            # create the quantiles reference for each feature
+            if self.bin_est is None:
+                references = np.linspace(0, 1, self.n_quantiles_, endpoint=True)
+            else:
+                references = np.histogram_bin_edges(
+                    ifeature, bins=self.bin_est, range=(0, 1)
+                )
+            # save quantiles
+            quantiles = np.nanpercentile(ifeature, references * 100)
+            self.quantiles_.append(quantiles)
 
-        self.quantiles_ = np.transpose(self.quantiles_)
+            # save references
+            self.references_.append(references)
 
         # extend support
         if self.domain_ext != 0.0:
+            for ifeature in X.shape[1]:
 
-            new_reference = np.hstack(
-                [self.domain_ext, self.references_, self.domain_ext + 1]
-            )
+                # Extend the support
+                new_reference, new_quantiles = self.extend_support(
+                    self.references_[ifeature],
+                    self.quantiles_[ifeature],
+                    self.domain_ext,
+                )
+                # new_reference = np.hstack(
+                #     [self.domain_ext, self.references_[ifeature], self.domain_ext + 1]
+                # )
 
-            # scale between 0 and 1
+                # scale between 0 and 1
 
-            self.quantiles_ = interp1d(
-                self.references_,
-                self.quantiles_,
-                kind="linear",
-                fill_value="extrapolate",
-                axis=0,
-            )(new_reference)
+                # self.quantiles_[ifeature] = interp1d(
+                #     self.references_[ifeature],
+                #     self.quantiles_[ifeature],
+                #     kind="linear",
+                #     fill_value="extrapolate",
+                #     axis=0,
+                # )(new_reference)
 
-            # references_, quantiles_ = self.extend_support(
-            #     self.references_, quantiles_, self.domain_ext
-            # )
-            new_reference = minmax_scale(new_reference, axis=0)
-            self.references_ = new_reference
+                # references_, quantiles_ = self.extend_support(
+                #     self.references_, quantiles_, self.domain_ext
+                # )
+                self.quantiles_[ifeature] = new_quantiles
+                self.references_[ifeature] = new_reference
 
         return self
 
@@ -127,6 +141,8 @@ class QuantileGaussian(BaseEstimator, TransformerMixin):
             references, quantiles, kind="linear", fill_value="extrapolate", axis=0
         )(new_reference)
 
+        # Scale new reference between 0 and 1
+        new_reference = minmax_scale(new_reference, axis=0)
         return new_reference, new_quantiles
 
     def transform(self, X, y=None):
@@ -140,22 +156,26 @@ class QuantileGaussian(BaseEstimator, TransformerMixin):
         return X
 
     def _transform(self, X, inverse=False):
+        # print(X.shape, self.quantiles_.shape, self.references_.shape)
         for feature_idx in range(X.shape[1]):
             X[:, feature_idx] = self.transform_col(
-                X[:, feature_idx], self.quantiles_[:, feature_idx], inverse=inverse
+                X[:, feature_idx],
+                self.quantiles_[feature_idx],
+                self.references_[feature_idx],
+                inverse=inverse,
             )
         return X
 
-    def transform_col(self, X_col, quantiles, inverse):
-
+    def transform_col(self, X_col, quantiles, references, inverse):
+        print(X_col.shape, quantiles.shape, references.shape)
         if not inverse:
             lower_bound_x = quantiles[0]
             upper_bound_x = quantiles[-1]
-            lower_bound_y = self.references_[0]
-            upper_bound_y = self.references_[1]
+            lower_bound_y = 0
+            upper_bound_y = 1
         else:
-            lower_bound_x = self.references_[0]  # CHECK: references[0]
-            upper_bound_x = self.references_[1]
+            lower_bound_x = 0  # CHECK: references[0]
+            upper_bound_x = 1
             lower_bound_y = quantiles[0]
             upper_bound_y = quantiles[1]
 
@@ -181,29 +201,29 @@ class QuantileGaussian(BaseEstimator, TransformerMixin):
             # lower for descending). We take the mean of these two
             X_col[isfinite_mask] = 0.5 * (
                 interp1d(
-                    quantiles, self.references_, kind="linear", fill_value="extrapolate"
+                    quantiles, references, kind="linear", fill_value="extrapolate"
                 )(X_col_finite)
                 - interp1d(
                     -quantiles[::-1],
-                    -self.references_[::-1],
+                    -references[::-1],
                     kind="linear",
                     fill_value="extrapolate",
                     copy=True,
                 )(-X_col_finite)
             )
             # X_col[isfinite_mask] = 0.5 * (
-            #     np.interp(X_col_finite, quantiles, self.references_)
-            #     - np.interp(-X_col_finite, -quantiles[::-1], -self.references_[::-1])
+            #     np.interp(X_col_finite, quantiles, references)
+            #     - np.interp(-X_col_finite, -quantiles[::-1], -references[::-1])
             # )
         else:
             X_col[isfinite_mask] = interp1d(
-                self.references_,
+                references,
                 quantiles,
                 kind="linear",
                 fill_value="extrapolate",
                 copy=True,
             )(X_col_finite)
-            # X_col[isfinite_mask] = np.interp(X_col_finite, self.references_, quantiles)
+            # X_col[isfinite_mask] = np.interp(X_col_finite, references, quantiles)
         print("After Interp:", X_col.min(), X_col.max())
         X_col[upper_bounds_idx] = upper_bound_y
         X_col[lower_bounds_idx] = lower_bound_y
