@@ -12,10 +12,49 @@ import statsmodels.api as sm
 
 
 class KNNEstimator(BaseEstimator, Ensemble):
+    """Performs the KNN search to
+    
+    Parameters
+    ----------
+    n_neighbors : int, default = 10
+        The kth neigbour to use for distance
+
+    algorithm : str, default='auto' 
+        The algorithm to use for the knn search. 
+        ['auto', 'brute', 'kd_tree', 'ball_tree']
+        * Auto - automatically found
+        * brute - brute-force search
+        * kd_tree - KDTree, fast for generalized N-point problems
+        * ball_tree - BallTree, fast for generalized N-point problems
+        KDTree has a faster query time but longer build time.
+        BallTree has a faster build time but longer query time.
+        
+    n_jobs : int, default=-1
+        Number of cores to use for nn search
+    
+    ensemble : bool, default=False
+        Whether to use an ensemble of estimators via batches
+    
+    batch_size : int, default=100
+        If ensemble=True, this determines the number of batches
+        of data to use to estimate the entropy
+
+    kwargs : any extra kwargs to use. Please see 
+        sklearn.neighbors.NearestNeighbors function.
+    
+    min_dist : float, default=0.0
+        Ensures that all distances are at least 0.0.
+
+    Attributes
+    ----------
+    H_x : float,
+        The estimated entropy of the data.
+    """
+
     def __init__(
         self,
-        n_neighbors: int = 20,
-        algorithm: str = "brute",
+        n_neighbors: int = 10,
+        algorithm: str = "auto",
         n_jobs: int = -1,
         ensemble=False,
         batch_size=100,
@@ -28,9 +67,14 @@ class KNNEstimator(BaseEstimator, Ensemble):
         self.kwargs = kwargs
         self.batch_size = batch_size
 
-    def fit(self, X: np.ndarray) -> BaseEstimator:
-
-        self.vol = volume_unit_ball(X.shape[1])
+    def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> BaseEstimator:
+        """
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, n_features)
+            Data to be estimated.
+        """
 
         if self.ensemble:
             self.H_x = self._fit_ensemble(X, self.batch_size)
@@ -41,24 +85,35 @@ class KNNEstimator(BaseEstimator, Ensemble):
 
     def _fit(self, X: np.ndarray) -> float:
 
-        # 1. Calculate the K-nearest neighbors
+        n_samples, d_dimensions = X.shape
 
-        dist = knn_distance(
+        # volume of unit ball in d^n
+        vol = np.pi ** (0.5 * d_dimensions) / gamma(0.5 * d_dimensions + 1)
+
+        # 1. Calculate the K-nearest neighbors
+        distances = knn_distance(
             X,
-            n_neighbors=self.n_neighbors,
+            n_neighbors=self.n_neighbors + 1,
             algorithm=self.algorithm,
             n_jobs=self.n_jobs,
             kwargs=self.kwargs,
         )
 
+        # log the distances
+        distances = distances[:, -1]
+
+        # add error margin
+        distances += np.finfo(X.dtype).eps
+
+        # estimation
         return (
-            np.log(X.shape[0] - 1)
+            d_dimensions * np.mean(np.log(distances))
+            + np.log(vol)
+            + psi(n_samples)
             - psi(self.n_neighbors)
-            + np.log(self.vol)
-            + (X.shape[1] / X.shape[0]) * np.log(dist[:, self.n_neighbors - 1]).sum()
         )
 
-    def score(self, X):
+    def score(self, X: np.ndarray, y: Optional[np.ndarray] = None):
 
         return self.H_x
 
@@ -197,20 +252,39 @@ class MarginalEntropy(Univariate):
 
 
 # volume of unit ball
-def volume_unit_ball(d_dimensions: int) -> float:
+def volume_unit_ball(d_dimensions: int, radii: int, norm=2) -> float:
     """Volume of the d-dimensional unit ball
     
     Parameters
     ----------
     d_dimensions : int
         Number of dimensions to estimate the volume
-        
+    
+    radii : int,
+    
+    norm : int, default=2
+        The type of ball to get the volume.
+        * 2 : euclidean distance
+        * 1 : manhattan distance
+        * 0 : chebyshev distance
+    
     Returns
     -------
     vol : float
         The volume of the d-dimensional unit ball
     """
-    return (np.pi ** (0.5 * d_dimensions)) / gamma(0.5 * d_dimensions + 1)
+
+    # get ball
+    if norm == 0:
+        b = float("inf")
+    elif norm == 1:
+        b = 1.0
+    elif norm == 2:
+        b = 2.0
+    else:
+        raise ValueError(f"Unrecognized norm: {norm}")
+
+    return (np.pi ** (0.5 * d_dimensions)) ** d_dimensions / gamma(b / d_dimensions + 1)
 
 
 # KNN Distances
@@ -220,6 +294,7 @@ def knn_distance(
     algorithm: str = "brute",
     n_jobs: int = -1,
     kwargs: Optional[dict] = None,
+    p_norm: int = 2,
 ) -> np.ndarray:
     """Light wrapper around sklearn library.
     
@@ -247,12 +322,16 @@ def knn_distance(
     """
     if kwargs:
         clf_knn = NearestNeighbors(
-            n_neighbors=n_neighbors, algorithm=algorithm, n_jobs=n_jobs, **kwargs
+            n_neighbors=n_neighbors,
+            algorithm=algorithm,
+            n_jobs=n_jobs,
+            p_norm=p_norm,
+            **kwargs,
         )
     else:
 
         clf_knn = NearestNeighbors(
-            n_neighbors=n_neighbors, algorithm=algorithm, n_jobs=n_jobs
+            n_neighbors=n_neighbors, algorithm=algorithm, n_jobs=n_jobs, p_norm=p_norm
         )
 
     clf_knn.fit(X)
