@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.utils import check_array
 
 
-class MutualInformation(BaseEstimator):
+class MutualInformation:
     def __init__(self, estimator: str = "knn", kwargs: Optional[dict] = None) -> None:
         self.estimator = estimator
         self.kwargs = kwargs
@@ -31,10 +31,7 @@ class MutualInformation(BaseEstimator):
 
         else:
             raise ValueError(f"Unrecognized estimator: {self.estimator}")
-        if Y is None and X.shape[1] > 1:
-
-            self._fit_multi_info(X)
-        elif Y is not None:
+        if Y is not None:
             Y = check_array(Y)
             self._fit_mutual_info(X, Y)
         else:
