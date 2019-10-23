@@ -24,7 +24,7 @@ class MutualInformation:
             self.model = (
                 KNNEstimator(**self.kwargs)
                 if self.kwargs is not None
-                else KNNEstimator(**self.kwargs)
+                else KNNEstimator()
             )
         elif self.estimator in ["rbig", "kde", "histogram"]:
             raise NotImplementedError(f"{self.estimator} is not implemented yet.")
@@ -62,14 +62,17 @@ class MutualInformation:
         # MI for X
         model_x = self.model.fit(X)
         H_x = model_x.score(X)
+        print("Marginal:", H_x)
 
         # MI for Y
         model_y = self.model.fit(Y)
         H_y = model_y.score(Y)
+        print("Marginal:", H_y)
 
         # MI for XY
-        model_xy = self.model.fit(np.vstack([X, Y]))
+        model_xy = self.model.fit(np.hstack([X, Y]))
         H_xy = model_xy.score(X)
+        print("Full:", H_xy)
 
         # save the MI
         self.MI = H_x + H_y - H_xy
@@ -95,11 +98,12 @@ class TotalCorrelation(BaseEstimator):
             Data to be estimated.
         """
         X = check_array(X)
+
         if self.estimator == "knn":
             self.model = (
                 KNNEstimator(**self.kwargs)
                 if self.kwargs is not None
-                else KNNEstimator(**self.kwargs)
+                else KNNEstimator()
             )
         elif self.estimator in ["rbig", "kde", "histogram"]:
             raise NotImplementedError(f"{self.estimator} is not implemented yet.")
@@ -107,7 +111,7 @@ class TotalCorrelation(BaseEstimator):
         else:
             raise ValueError(f"Unrecognized estimator: {self.estimator}")
 
-        if Y is None and X.shape[1] > 1:
+        if y is None and X.shape[1] > 1:
 
             self._fit_multi_info(X)
         else:
@@ -120,19 +124,23 @@ class TotalCorrelation(BaseEstimator):
         # fit full
         model_full = self.model.fit(X)
         H_x = model_full.score(X)
-
+        print("Full:", H_x)
         # fit marginals
         H_x_marg = 0
         for ifeature in X.T:
 
-            model_marginal = self.model.fit(ifeature)
-            H_x_marg += model_marginal.score(ifeature)
+            model_marginal = self.model.fit(ifeature[:, None])
+
+            H_xi = model_marginal.score(ifeature[:, None])
+            print("Marginal:", H_xi)
+            H_x_marg += H_xi
 
         # calcualte the multiinformation
         self.MI = H_x_marg - H_x
 
-        return H_x_marg - H_x
+        return self
 
     def score(self, X: np.ndarray, y: Optional[np.ndarray] = None):
 
         return self.MI
+
