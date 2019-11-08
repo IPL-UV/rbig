@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.utils import check_array
 
 
-class MutualInformation:
+class MutualInformation(BaseEstimator):
     def __init__(self, estimator: str = "knn", kwargs: Optional[dict] = None) -> None:
         self.estimator = estimator
         self.kwargs = kwargs
