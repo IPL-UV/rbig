@@ -4,8 +4,9 @@
 - [High-Level Instructions](#high-level-instructions)
 - [Mathematical Details](#mathematical-details)
   - [Data](#data)
-  - [Marginal Uniformization](#marginal-uniformization)
-  - [Gaussianization of Uniform Variable](#gaussianization-of-uniform-variable)
+- [Marginal Uniformization](#marginal-uniformization)
+  - [Histogram Estimation](#histogram-estimation)
+- [Gaussianization of Uniform Variable](#gaussianization-of-uniform-variable)
 - [Log Determinant Jacobian](#log-determinant-jacobian)
 - [Log-Likelihood of the Data](#log-likelihood-of-the-data)
 - [Quantile Transform](#quantile-transform)
@@ -42,7 +43,7 @@ The idea is to transform each dimension/feature into a Gaussian distribution, i.
 
 ## Mathematical Details
 
-For all instructions in the following, we will assume we are looking at a univariate distribution to make the concepts and notation easier. Overall, we can essentially break these pieces up into two steps: 1) we make the  
+For all instructions in the following, we will assume we are looking at a univariate distribution to make the concepts and notation easier. Overall, we can essentially break these pieces up into two steps: 1) we make the marginal distribution uniform and 2) we make the marginal distribution Gaussian.
 
 ---
 
@@ -57,24 +58,32 @@ where $x \leq 0, a > 0$ where $\Gamma(a)$ is the gamma function with the paramet
 <center>
 
 <p align="center">
-<img src="docs/pics/demo/input_dist.png" />
+<img src="pics/demo/input_dist.png" />
 
 <b>Fig I</b>: Input Distribution.
 </center>
 </p>
 
+This distribution is very skewed so through-out this tutorial, we will transform this distribution to a normal distribution.
+
 ---
 
-### Marginal Uniformization
+## Marginal Uniformization
 
 The first step, we map $x_d$ to the uniform domain $U_d$. This is based on the cumulative distribution of the PDF.
 
 $$u = U_d (x_d) = \int_{-\infty}^{x_d} p_d (x_d') \, d x_d'$$
 
+---
+
+### Histogram Estimation
+
+
+
 
 ---
 
-### Gaussianization of Uniform Variable
+## Gaussianization of Uniform Variable
 
 In this section, we need to perform some Gaussianization of the uniform variable that we have transformed in the above section. This is a very simple operation because we
 
