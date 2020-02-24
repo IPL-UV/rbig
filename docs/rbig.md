@@ -128,7 +128,7 @@ Where we have the following spaces:
 
 <figure>
 <center>
-<img src="pics/rbig_it/Fig_1.png" alt="IT measures" style="width:60%">
+<img src="docs/pics/rbig_it/Fig_1.png" alt="IT measures" style="width:60%">
 </center>
 <center>
 <figurecaption>
@@ -150,7 +150,7 @@ Where we have the following spaces:
 
 <figure>
 <center>
-<img src="pics/rbig_it/mi.png" alt="MI using RBIG" style="width:60%">
+<img src="docs/pics/rbig_it/mi.png" alt="MI using RBIG" style="width:60%">
 </center>
 <center>
 <figurecaption>
@@ -176,7 +176,7 @@ $$
 
 <figure>
 <center>
-<img src="pics/rbig_it/kld.png" alt="MI using RBIG" style="width:80%">
+<img src="docs/pics/rbig_it/kld.png" alt="MI using RBIG" style="width:80%">
 </center>
 <center>
 <figurecaption>
