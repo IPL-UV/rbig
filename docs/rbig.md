@@ -151,7 +151,7 @@ Where we have the following spaces:
 
 <figure>
 <center>
-<img src="docs/pics/rbig_it/mi.png" alt="MI using RBIG" style="width:60%">
+<img src="pics/rbig_it/mi.png" alt="MI using RBIG" style="width:60%">
 </center>
 <center>
 <figurecaption>
@@ -177,7 +177,7 @@ $$
 
 <figure>
 <center>
-<img src="docs/pics/rbig_it/kld.png" alt="MI using RBIG" style="width:80%">
+<img src="pics/rbig_it/kld.png" width="500">
 </center>
 <center>
 <figurecaption>

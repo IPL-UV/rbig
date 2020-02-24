@@ -14,7 +14,7 @@
 
 <!-- <figure> -->
 <center>
-<img src="docs/pics/rbig_it/Fig_1.png" alt="IT measures" style="width:60%">
+<img src="docs/pics/rbig_it/Fig_1.png" width="500">
 </center>
 <center>
 <figurecaption>
