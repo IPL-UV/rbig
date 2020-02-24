@@ -14,7 +14,7 @@
 
 **Walk-Throughs**
 * [Uniformization](/)
-* [Marginal Gaussianization](/)
+* [Marginal Gaussianization](mg.md)
 * [Rotation](rotation.md)
 
 **Supplementary**
