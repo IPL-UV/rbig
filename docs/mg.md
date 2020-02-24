@@ -43,11 +43,13 @@ $$f(x,a) = \frac{x^{a-1}\exp{(-x)}}{\Gamma(a)}$$
 where $x \leq 0, a > 0$ where $\Gamma(a)$ is the gamma function with the parameter $a$.
 
 <center>
-<img 
-    src="pics/demo/input_dist.png" 
-    alt="Input Distribution" style="width:40%" />
-    <figcaption>Fig 1: Input Distribution</figcaption>
+
+<p align="center">
+<img src="docs/pics/demo/input_dist.png" />
+
+<b>Fig I</b>: Input Distribution.
 </center>
+</p>
 
 ---
 
