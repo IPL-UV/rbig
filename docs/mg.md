@@ -123,10 +123,19 @@ $$\text{nll} = \frac{1}{N} \sum_{n=1}^N \log p(\mathcal{X}|\mathcal{N})$$
 2. Modify ranking through interpolation, `numpy.interp`
 3. Map to normal distribution by inverting CDF, `scipy.stats.norm.ppf`
 
+**Sources**:
+* Quantile Transformation with Gaussian Distribution - Sklearn Implementation - [StackOverFlow](https://stats.stackexchange.com/questions/325570/quantile-transformation-with-gaussian-distribution-sklearn-implementation)
+* Differentiable Quantile Transformation - Miles Cranmer - [PyTorch](https://github.com/MilesCranmer/differentiable_quantile_transform)
 
 ## KDE Transform
 
 
 ## Spline Functions
+
+* Rational Quadratic Trigonometric Interpolation Spline for Data Visualization - Lui et al - [PDF](https://www.hindawi.com/journals/mpe/2015/983120/)
+* [TensorFlow](https://github.com/tensorflow/probability/blob/master/tensorflow_probability/python/bijectors/rational_quadratic_spline.py)
+* PyTorch Implementations
+  * Neural Spline Flows - [Paper](https://github.com/bayesiains/nsf)
+  * Tony Duan Implementation - [Paper](https://github.com/tonyduan/normalizing-flows)
 
 ## Gaussian Transform
