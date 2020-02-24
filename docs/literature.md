@@ -2,6 +2,7 @@
 
 - [Theory](#theory)
   - [Gaussianization](#gaussianization)
+  - [Journal Articles](#journal-articles)
   - [RBIG](#rbig)
     - [Generalized Divisive Normalization](#generalized-divisive-normalization)
 
@@ -21,6 +22,16 @@
 **Applications**
 
 * Gaussianization for fast and accurate inference from cosmological data - Schuhman et. al. - (2016) - [PDF](https://papers.nips.cc/paper/1856-gaussianization.pdf)
+* Estimating Information in Earth Data Cubes - Johnson et. al. - EGU 2018
+* Multivariate Gaussianization in Earth and Climate Sciences - Johnson et. al. - Climate Informatics 2019 - [repo](https://github.com/IPL-UV/2019_ci_rbig)
+* Climate Model Intercomparison with Multivariate Information Theoretic Measures - Johnson et. al. - AGU 2019 - [slides](https://docs.google.com/presentation/d/18KfmAbaJI49EycNule8vvfR1dd0W6VDwrGCXjzZe5oE/edit?usp=sharing)
+* Information theory measures and RBIG for Spatial-Temporal Data analysis - Johnson et. al. - In progress
+
+
+### Journal Articles
+
+* Iterative Gaussianization: from ICA to Random Rotations - Laparra et. al. (2011) - IEEE Transactions on Neural Networks
+
 
 
 ### RBIG

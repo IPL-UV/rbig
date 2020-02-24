@@ -19,3 +19,6 @@
 
 **Supplementary**
 * [Information Theory](itm.md)
+* [Gaussian Distribution](gaussian.md)
+* [Uniform Distribution](uniform.md)
+* [Exponential Family](exponential.md)
