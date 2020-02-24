@@ -124,6 +124,7 @@ $$\text{nll} = \frac{1}{N} \sum_{n=1}^N \log p(\mathcal{X}|\mathcal{N})$$
 3. Map to normal distribution by inverting CDF, `scipy.stats.norm.ppf`
 
 **Sources**:
+* PyTorch Percentile - [gist](https://gist.github.com/spezold/42a451682422beb42bc43ad0c0967a30) | [package](https://github.com/aliutkus/torchpercentile)
 * Quantile Transformation with Gaussian Distribution - Sklearn Implementation - [StackOverFlow](https://stats.stackexchange.com/questions/325570/quantile-transformation-with-gaussian-distribution-sklearn-implementation)
 * Differentiable Quantile Transformation - Miles Cranmer - [PyTorch](https://github.com/MilesCranmer/differentiable_quantile_transform)
 
