@@ -9,7 +9,7 @@
 
 ## Summary
 
-<figure>
+<!-- <figure> -->
 <center>
 <img src="pics/rbig_it/Fig_1.png" alt="IT measures" style="width:60%">
 </center>
@@ -18,7 +18,7 @@
 <b>Caption</b>: Information Theory measures in a nutshell.
 </figurecaption>
 </center>
-</figure>
+<!-- </figure> -->
 
 ## Information
 
