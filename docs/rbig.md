@@ -126,6 +126,10 @@ Where we have the following spaces:
 
 ## Information Theory Measures
 
+<img src="docs/pics/rbig_it/Fig_1.png" width="200">
+
+<img src="docs/pics/rbig_it/Fig_1.png" style="width:60%">
+
 <figure>
 <center>
 <img src="docs/pics/rbig_it/Fig_1.png" alt="IT measures" style="width:60%">
