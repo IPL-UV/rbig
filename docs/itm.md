@@ -9,6 +9,10 @@
 
 ## Summary
 
+<!-- <img src="pics/rbig_it/Fig_1.png" alt="IT measures" width="300"> -->
+
+<img src="pics/rbig_it/Fig_1.png" alt="IT measures" width="300">
+
 <!-- <figure> -->
 <center>
 <img src="pics/rbig_it/Fig_1.png" alt="IT measures" style="width:60%">
