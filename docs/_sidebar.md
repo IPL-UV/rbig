@@ -1,8 +1,12 @@
 <!-- docs/_sidebar.md -->
 
-* [pyRBIG](/)
+* [pyRBIG](README.md)
+
+**Theory**
+* [Literature](literature.md)
 * [What is Gaussianization?](gaussianization.md)
-* [Visualizing Similarity](viz/taylor.md)
+* [What is RBIG?](rbig.md)
+* [Normalizing Flows](nfs.md)
 
 **Demos**
 * [Gaussianization](/)
@@ -11,6 +15,7 @@
 **Walk-Throughs**
 * [Uniformization](/)
 * [Marginal Gaussianization](/)
-* [Rotation](/)
+* [Rotation](rotation.md)
 
-
+**Supplementary**
+* [Information Theory](itm.md)
