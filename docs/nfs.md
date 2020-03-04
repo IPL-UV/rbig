@@ -1,6 +1,11 @@
 # Normalizing Flows
 
-- [Density Destructor](#density-destructor)
+- [Main Idea](#main-idea)
+- [Loss Function](#loss-function)
+- [Choice of Transformations](#choice-of-transformations)
+  - [Prior Distribution](#prior-distribution)
+- [Resources](#resources)
+    - [Best Tutorials](#best-tutorials)
 - [Survey of Literature](#survey-of-literature)
   - [Neural Density Estimators](#neural-density-estimators)
   - [Deep Density Destructors](#deep-density-destructors)
@@ -11,28 +16,75 @@
   - [Cutting Edge](#cutting-edge)
   - [Github Implementations](#github-implementations)
 
----
-## Density Destructor
 
-We can view the approach of modeling from two perspectives: constructive or destructive. A constructive process tries to learn how to build an exact sequence of transformations to go from $z$ to $x$. The destructive process does the complete opposite and decides to create a sequence of transforms from $x$ to $z$ while also remembering the exact transforms; enabling it to reverse that sequence of transforms.
+## Main Idea
 
-We can write some equations to illustrate exactly what we mean by these two terms. Let's define two spaces: one is our data space $\mathcal X$ and the other is the base space $\mathcal Z$. We want to learn a transformation $f_\theta$ that maps us from $\mathcal X$ to $\mathcal Z$, $f : \mathcal X \rightarrow \mathcal Z$. We also want a function $G_\theta$ that maps us from $\mathcal Z$ to $\mathcal X$, $f : \mathcal Z \rightarrow \mathcal X$.
+> *Distribution flows through a sequence of invertible transformations* - Rezende & Mohamed (2015)
 
-**TODO: Plot**
+This is an idea where we exploit the rule for the change of variables. We begin with in initial distribution and then we apply a sequence of $L$ invertible transformations in hopes that we obtain something that is more expressive. This originally came from the context of Variational AutoEncoders (VAE) where the posterior was approximated by a neural network. The authors wanted to 
 
-More concretely, let's define the following pair of equations:
+$$
+\begin{aligned}
+\mathbf{z}_L = f_L \circ f_{L-1} \circ \ldots \circ f_2 \circ f_1 (\mathbf{z}_0)
+\end{aligned}
+$$
 
-$$z \sim \mathcal{P}_\mathcal{Z}$$
-$$\hat x = \mathcal G_\theta (z)$$
+From here, we can come up with an expression for the likelihood by simply calculating the maximum likelihood of the initial distribution $\mathbf{z}_0$ given the transformations $f_L$. 
 
-This is called the generative step; how well do we fit our parameters such that $x \approx \hat x$. We can define the alternative step below:
+$$
+\begin{aligned}
+q(z') = q(z) \left| \text{det} \frac{\partial f}{\partial z} \right|^{-1}
+\end{aligned}
+$$
 
-$$x \sim \mathcal{P}_\mathcal{X}$$
-$$\hat z = \mathcal f_\theta (x)$$
+We can make this transformation a bit easier to handle empirically by calculating the Log-Transformation of this expression. This removes the inverse and introduces a summation of each of the transformations individually which gives us many computational advantages.
 
-This is called the inference step: how well do we fit the parameters of our transformation $f_\theta$ s.t. $z \approx \hat z$. So there are immediately some things to notice about this. Depending on the method you use in the deep learning community, the functions $\mathcal G_\theta$ and $f_\theta$ can be defined differently. Typically we are looking at the class of algorithms where we want $f_\theta = \mathcal G_\theta^{-1}$. In this ideal scenario, we only need to learn one transformation instead of two. With this requirement, we can actually compute the likelihood values exactly. The likelihood of the value $x$ given the transformation $\mathcal G_\theta$ is given as:
+$$
+\begin{aligned}
+\log q_L (\mathbf{z}_L) = \log q_0 (\mathbf{z}_0) - \sum_{l=1}^L \log \text{det}\left| \frac{\partial f_l}{\partial \mathbf{z}_l} \right|
+\end{aligned}
+$$
 
-$$\mathcal P_{\hat x}(x)=\mathcal P_{z} \left( \mathcal G_\theta (x) \right)\left| \text{det } \mathbf J_{\mathcal G_\theta} \right|$$
+TODO: Diagram with plots of the Normalizing Flow distributions which show the direction for the idea.
+
+## Loss Function
+
+In order to train this, we need to take expectations of the transformations.
+
+$$
+\begin{aligned}
+\mathcal{L}(\theta) &= 
+\mathbb{E}_{q_0(\mathbf{z}_0)} \left[ \log p(\mathbf{x,z}_L)\right] -
+\mathbb{E}_{q_0(\mathbf{z}_0)} \left[ \log q_0(\mathbf{z}_0) \right] -
+\mathbb{E}_{q_0(\mathbf{z}_0)} 
+\left[ \sum_{l=1}^L \log \text{det}\left| \frac{\partial f_l}{\partial \mathbf{z}_k} \right| \right]
+\end{aligned}
+$$
+
+
+
+## Choice of Transformations
+
+The main thing that many of the communities have been looking into is how one chooses the aspects of the normalizing flow: the prior distribution and the Jacobian. 
+
+
+### Prior Distribution
+
+This is very consistent across the literature: most people use a fully-factorized Gaussian distribution. Very simple.
+
+### Jacobian
+
+This is the area of the most research within the community. There are many different complicated frameworks but almost all of them can be put into different categories for how the Jacobian is constructed.
+
+## Resources
+
+#### Best Tutorials
+
+* [Flow-Based Deep Generative Models](https://lilianweng.github.io/lil-log/2018/10/13/flow-based-deep-generative-models.html) - Lilian Weng
+  > An excellent blog post for Normalizing Flows. Probably the most thorough introduction available.
+
+
+
 
 ---
 

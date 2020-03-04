@@ -1,5 +1,17 @@
 # Marginal Gaussianization
 
+> A dimension-wise transform, whose Jacobian is a diagonal matrix.
+
+* Author: J. Emmanuel Johnson
+* Website: [jejjohnson.netlify.com](https://jejjohnson.netlify.com)
+* Email: jemanjohnson34@gmail.com
+* Notebooks:
+  * [Marginal Uniformization](https://colab.research.google.com/drive/1Zk1UnfN573yOIdtHUI-tbzks8MMLtuy-)
+  * [Inverse Gaussian CDF]()
+
+---
+
+
 - [Idea](#idea)
 - [High-Level Instructions](#high-level-instructions)
 - [Mathematical Details](#mathematical-details)
@@ -70,7 +82,7 @@ This distribution is very skewed so through-out this tutorial, we will transform
 
 ## Marginal Uniformization
 
-The first step, we map $x_d$ to the uniform domain $U_d$. This is based on the cumulative distribution of the PDF.
+The first step, we map $x_d$ to the uniform domain $U_d$. This is based on the cumulative distribution of the PDF. 
 
 $$u = U_d (x_d) = \int_{-\infty}^{x_d} p_d (x_d') \, d x_d'$$
 
@@ -79,13 +91,55 @@ $$u = U_d (x_d) = \int_{-\infty}^{x_d} p_d (x_d') \, d x_d'$$
 ### Histogram Estimation
 
 
-
-
 ---
+
+Below we use the `np.percentile` function which essentially calculates q-th percentile for an element in an array.
+
+
+```python
+
+# number of quantiles
+n_quantiles = 100
+n_quantiles = max(1, min(n_quantiles, n_samples))  # check to ensure the quantiles make sense
+
+# calculate reference values
+references = np.linspace(0, 1, n_quantiles, endpoint=True)
+
+# calculate kth percentile of the data along the axis
+quantiles = np.percentile(X_samples, references * 100)
+```
+
+<center>
+
+<p align="center">
+<img src="pics/demo/u_cdf.png" />
+
+<b>Fig 2</b>: CDF.
+</center>
+</p>
+
+**Extending the Support**
+
+We need to extend the support of the distribution because it may be the case that we have data that lies outside of the distribution. In this case, we want to be able to map those datapoints with the CDF function as well. This is a very simple operation because we need to just squash the CDF function such that we have more values between the end points of the support and the original data distribution. Below, we showcase an example where we extend the CDF function near the tails. 
+
+<center>
+
+<p align="center">
+<img src="pics/demo/u_cdf_ext.png" />
+
+<b>Fig 3</b>: CDF with extended support. We used approximately 1% extra on either tail.
+</center>
+</p>
+
+Looking at figure 3, we see that the new function has the same support but the tail is extended near the higher values. This corresponds to the region near the right side of the equation in figure 1.
+
+
+
+
 
 ## Gaussianization of Uniform Variable
 
-In this section, we need to perform some Gaussianization of the uniform variable that we have transformed in the above section. This is a very simple operation because we
+In this section, we need to perform some Gaussianization of the uniform variable that we have transformed in the above section. 
 
 
 $$G^{-1}(x_d) = \int_{-\infty}^{x_d} g(x_d') \, d x_d'$$
