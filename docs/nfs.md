@@ -1,9 +1,11 @@
 # Normalizing Flows
 
 - [Main Idea](#main-idea)
-- [Loss Function](#loss-function)
+  - [Loss Function](#loss-function)
+  - [Sampling](#sampling)
 - [Choice of Transformations](#choice-of-transformations)
   - [Prior Distribution](#prior-distribution)
+  - [Jacobian](#jacobian)
 - [Resources](#resources)
     - [Best Tutorials](#best-tutorials)
 - [Survey of Literature](#survey-of-literature)
@@ -21,7 +23,29 @@
 
 > *Distribution flows through a sequence of invertible transformations* - Rezende & Mohamed (2015)
 
-This is an idea where we exploit the rule for the change of variables. We begin with in initial distribution and then we apply a sequence of $L$ invertible transformations in hopes that we obtain something that is more expressive. This originally came from the context of Variational AutoEncoders (VAE) where the posterior was approximated by a neural network. The authors wanted to 
+
+We want to fit a density model $p_\theta(x)$ with continuous data $x \in \mathbb{R}^N$. Ideally, we want this model to:
+
+* **Modeling**: Find the underlying distribution for the training data.
+* **Probability**: For a new $x' \sim \mathcal{X}$, we want to be able to evaluate $p_\theta(x')$
+* **Sampling**: We also want to be able to generate samples from $p_\theta(x')$.
+* **Latent Representation**: Ideally we want this representation to be meaningful.
+
+
+Let's assume that we can find some probability distribution for $\mathcal{X}$ but it's very difficult to do. So, instead of $p_\theta(x)$, we want to find some parameterized function $f_\theta(x)$ that we can learn.
+
+$$x = f_\theta(x)$$
+
+We'll define this as $z=f_\theta(x)$. So we also want $z$ to have certain properties. 
+
+1. We want this $z$ to be defined by a probabilistic function and have a valid distribution $z \sim p_\mathcal{Z}(z)$
+2. We also would prefer this distribution to be simply. We typically pick a normal distribution, $z \sim \mathcal{N}(0,1)$
+
+
+
+
+
+ We begin with in initial distribution and then we apply a sequence of $L$ invertible transformations in hopes that we obtain something that is more expressive. This originally came from the context of Variational AutoEncoders (VAE) where the posterior was approximated by a neural network. The authors wanted to 
 
 $$
 \begin{aligned}
@@ -29,25 +53,70 @@ $$
 \end{aligned}
 $$
 
-From here, we can come up with an expression for the likelihood by simply calculating the maximum likelihood of the initial distribution $\mathbf{z}_0$ given the transformations $f_L$. 
+
+
+### Loss Function
+
+We can do a simple maximum-likelihood of our distribution $p_\theta(x)$. 
+
+$$\underset{\theta}{\text{max}} \sum_i \log p_\theta(x^{(i)})$$
+
+However, this expression needs to be transformed in terms of the invertible functions $f_\theta(x)$. This is where we exploit the rule for the change of variables. From here, we can come up with an expression for the likelihood by simply calculating the maximum likelihood of the initial distribution $\mathbf{z}_0$ given the transformations $f_L$. 
+
+
 
 $$
 \begin{aligned}
-q(z') = q(z) \left| \text{det} \frac{\partial f}{\partial z} \right|^{-1}
+p_\theta(x) = p_\mathcal{Z}(f_\theta(x)) \left| \frac{\partial f_\theta(x)}{\partial x} \right|
 \end{aligned}
 $$
+
+So now, we can do the same maximization function but with our change of variables formulation:
+
+$$
+\begin{aligned}
+\underset{\theta}{\text{max}} \sum_i \log p_\theta(x^{(i)}) &= 
+\underset{\theta}{\text{max}} \sum_i \log p_\mathcal{Z}\left(f_\theta(x^{(i)})\right) +
+\log \left| \frac{\partial f_\theta (x^{(i)})}{\partial x} \right|
+\end{aligned}
+$$
+
+And we can optimize this using stochastic gradient descent (SGD) which means we can use all of the autogradient and deep learning libraries available to make this procedure relatively painless.
+
+### Sampling
+
+If we want to sample from our base distribution $z$, then we just need to use the inverse of our function. 
+
+$$x = f_\theta^{-1}(z)$$
+
+where $z \sim p_\mathcal{Z}(z)$. Remember, our $f_\theta(\cdot)$ is invertible and differentiable so this should be no problem.
+
+
+---
+
+
+$$
+\begin{aligned}
+q(z') = q(z) \left| \frac{\partial f}{\partial z} \right|^{-1}
+\end{aligned}
+$$
+
+or the same but only in terms of the original distribution $\mathcal{X}$
+
 
 We can make this transformation a bit easier to handle empirically by calculating the Log-Transformation of this expression. This removes the inverse and introduces a summation of each of the transformations individually which gives us many computational advantages.
 
 $$
 \begin{aligned}
-\log q_L (\mathbf{z}_L) = \log q_0 (\mathbf{z}_0) - \sum_{l=1}^L \log \text{det}\left| \frac{\partial f_l}{\partial \mathbf{z}_l} \right|
+\log q_L (\mathbf{z}_L) = \log q_0 (\mathbf{z}_0) - \sum_{l=1}^L \log \left| \frac{\partial f_l}{\partial \mathbf{z}_l} \right|
 \end{aligned}
 $$
 
-TODO: Diagram with plots of the Normalizing Flow distributions which show the direction for the idea.
+So now, our original expression with $p_\theta(x)$ can be written in terms of $z$.
 
-## Loss Function
+
+
+TODO: Diagram with plots of the Normalizing Flow distributions which show the direction for the idea.
 
 In order to train this, we need to take expectations of the transformations.
 
@@ -82,7 +151,8 @@ This is the area of the most research within the community. There are many diffe
 
 * [Flow-Based Deep Generative Models](https://lilianweng.github.io/lil-log/2018/10/13/flow-based-deep-generative-models.html) - Lilian Weng
   > An excellent blog post for Normalizing Flows. Probably the most thorough introduction available.
-
+* [Flow Models](https://docs.google.com/presentation/d/1WqEy-b8x-PhvXB_IeA6EoOfSTuhfgUYDVXlYP8Jh_n0/edit#slide=id.g7d4f9f0446_0_43) - [Deep Unsupervised Learning Class](https://sites.google.com/view/berkeley-cs294-158-sp20/home), Spring 2010 
+* [Normalizing Flows: A Tutorial](https://docs.google.com/presentation/d/1wHJz9Awhlp-PWLZGWJKzF66gzvqdSrhknb-iLFJ1Owo/edit#slide=id.p) - Eric Jang
 
 
 
