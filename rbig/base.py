@@ -1,11 +1,55 @@
+from abc import abstractmethod
+from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
-from sklearn.utils import check_random_state
+from numpy.random import RandomState
+from sklearn.utils import check_array, check_random_state
+from typing import Optional, Union
+
+
+class UniformMixin(BaseEstimator, TransformerMixin):
+    @abstractmethod
+    def fit(self, X: np.ndarray) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def transform(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
+        raise NotImplementedError
+
+    @abstractmethod
+    def inverse_transform(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        raise NotImplementedError
+
+    @abstractmethod
+    def derivative(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
+        raise NotImplementedError
+
+
+class GaussMixin:
+    @abstractmethod
+    def fit(self, X: np.ndarray) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def transform(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
+        raise NotImplementedError
+
+    @abstractmethod
+    def inverse_transform(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        raise NotImplementedError
+
+    @abstractmethod
+    def derivative(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
+        raise NotImplementedError
 
 
 class ScoreMixin(object):
     """Mixin for :func:`score` that returns mean of :func:`score_samples`."""
 
-    def score(self, X, y=None):
+    def score(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
         """Return the mean log likelihood (or log(det(Jacobian))).
         Parameters
         ----------
@@ -25,20 +69,27 @@ class ScoreMixin(object):
 class DensityMixin(object):
     """Mixin for :func:`sample` that returns the """
 
-    def sample(self, n_samples=1, random_state=None):
+    @abstractmethod
+    def abs_det_jacobian(self, X: np.ndarray) -> np.ndarray:
+        raise NotImplementedError
 
-        # random state
-        rng = check_random_state(random_state)
+    @abstractmethod
+    def log_abs_det_jacobian(self, X: np.ndarray) -> np.ndarray:
+        return np.log(self.abs_det_jacobian(X))
 
-        # get features
-        d_dimensions = get_n_features(self)
+    @abstractmethod
+    def pdf(self, X: np.ndarray) -> np.ndarray:
+        raise NotImplementedError
 
-        # Gaussian samples
-        X_gauss = rng.randn(n_samples, d_dimensions)
+    @abstractmethod
+    def logpdf(self, X: np.ndarray) -> np.ndarray:
+        return np.log(self.pdf(X))
 
-        # Inverse transformation
-        X = self.inverse_transform(X_gauss)
-        return X
+    @abstractmethod
+    def sample(
+        self, n_samples: int, random_state: Optional[Union[RandomState, int]] = None
+    ) -> np.ndarray:
+        raise NotImplementedError
 
 
 def get_n_features(model):

@@ -106,11 +106,14 @@ class OrthogonalTransform(BaseEstimator, TransformerMixin, ScoreMixin):
 
         return self
 
-    def transform(self, X):
+    def transform(self, X, return_jacobian: bool = False):
 
-        X = check_array(X)
+        X = check_array(X, ensure_2d=True, copy=True)
 
-        return X @ self.R
+        if return_jacobian:
+            return np.dot(X, self.R), self.abs_det_jacobian(X, log=True)
+        else:
+            return np.dot(X, self.R)
 
     def inverse_transform(self, X: np.ndarray, y: Optional[np.ndarray] = None):
         """Apply inverse destructive transformation to X.
@@ -127,9 +130,20 @@ class OrthogonalTransform(BaseEstimator, TransformerMixin, ScoreMixin):
         X_new : np.ndarray, shape (n_samples, n_features)
             Transformed data.
         """
-        X = check_array(X)
+        X = check_array(X, ensure_2d=True, copy=True)
 
         return X @ self.R.T
+
+    def abs_det_jacobian(self, X: np.ndarray, log: bool = True):
+
+        X = check_array(X, ensure_2d=True, copy=True)
+
+        # logdet = np.linalg.slogdet(self.R)[1]
+
+        if log:
+            return np.zeros(X.shape)
+        else:
+            return np.ones(X.shape)
 
     def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None):
         """Calculates the log determinant Jacobian for each sample.
@@ -145,7 +159,24 @@ class OrthogonalTransform(BaseEstimator, TransformerMixin, ScoreMixin):
         y : np.ndarray, default=None 
             Not used in the transformation but kept for compatibility.
         """
-        X = check_array(X)
+        X = check_array(X, ensure_2d=True, copy=True)
 
-        return np.zeros((X.shape[0],))
+        return self.abs_det_jacobian(X, log=True)
+
+    def score(self, X: np.ndarray, y: Optional[np.ndarray] = None):
+        """Calculates the log determinant Jacobian for each sample.
+        We have constrained our rotation matrix to be orthogonal.
+        So the logdetj will be zero. Therefore the score will simply be
+        a vector of zeros of length n_features.
+        
+        Parameters
+        ----------
+        X : np.ndarray, 
+            The data matrix. We just need the number of features.
+        
+        y : np.ndarray, default=None 
+            Not used in the transformation but kept for compatibility.
+        """
+
+        return np.mean(self.score(X))
 

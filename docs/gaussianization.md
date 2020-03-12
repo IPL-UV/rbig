@@ -1,5 +1,12 @@
 # Gaussianization
 
+* Author: J. Emmanuel Johnson
+* Email: jemanjohnson34@gmail.com
+* Notebooks:
+  * [1D Gaussianization](https://colab.research.google.com/drive/1C-hP2XCii-DLwLmK1wyvET095ZLQTdON)
+  * 
+
+---
 
 - [Why Gaussianization?](#why-gaussianization)
 - [Main Idea](#main-idea)

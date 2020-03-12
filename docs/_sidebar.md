@@ -13,7 +13,7 @@
 * [Information Theory](/)
 
 **Walk-Throughs**
-* [Uniformization](uniformization.md)
+* [Uniformization](mu.md)
 * [Marginal Gaussianization](mg.md)
 * [Rotation](rotation.md)
 

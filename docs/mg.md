@@ -6,8 +6,8 @@
 * Website: [jejjohnson.netlify.com](https://jejjohnson.netlify.com)
 * Email: jemanjohnson34@gmail.com
 * Notebooks:
-  * [Marginal Uniformization](https://colab.research.google.com/drive/1Zk1UnfN573yOIdtHUI-tbzks8MMLtuy-)
-  * [Inverse Gaussian CDF]()
+  * [Marginal Uniformization](https://colab.research.google.com/drive/1aJaELyFPlFFROozW-S51VBZ4PfpBeSVR)
+  * [Inverse Gaussian CDF](https://colab.research.google.com/drive/1spSjeUpTF1b2euZ0TE6c2ZrHQZC_p4gm)
 
 ---
 
