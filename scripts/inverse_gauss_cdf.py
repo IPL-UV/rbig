@@ -1,7 +1,7 @@
 import sys
 
 sys.path.insert(0, "/home/emmanuel/code/projects/rbig")
-
+sys.path.insert(0, "/Users/eman/Documents/code_projects/rbig")
 
 from rbig.transform import InverseGaussCDF
 
@@ -43,8 +43,7 @@ plt.show()
 # ========================
 # Generate Uniform Samples
 # ========================
-gauss_samples = stats.norm().rvs(size=1000)
-Xu_approx = icdf_clf.inverse_transform(gauss_samples)
+Xu_approx = icdf_clf.inverse_transform(Xg)
 
 fig, ax = plt.subplots()
 ax.hist(Xu_approx, nbins)
@@ -61,7 +60,7 @@ X_approx = icdf_clf.sample(1000)
 fig, ax = plt.subplots()
 ax.hist(X_approx, nbins)
 ax.set_title("Generate Samples (from Function)")
-ax.set_xlabel(r"$F^{-1}(u)$")
+ax.set_xlabel(r"$F^{-1}(\hat{u})$")
 ax.set_ylabel(r"$p(x_d)$")
 plt.show()
 
@@ -89,5 +88,5 @@ fig, ax = plt.subplots()
 ax.hist(x_der, nbins)
 ax.set_title("Generate Samples (transformed)")
 ax.set_xlabel(r"$F^{-1}(u)$")
-ax.set_ylabel(r"$p(x_d)$")
+ax.set_ylabel(r"$\log p(x_d)$")
 plt.show()

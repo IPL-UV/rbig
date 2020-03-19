@@ -52,8 +52,8 @@ class HistogramGaussianization(BaseEstimator, TransformerMixin, ScoreMixin):
         if not return_jacobian:
             return Xg
         else:
-            Xu_der = self.abs_det_jacobian(X)
-            Xg_der = InverseGaussCDF().abs_det_jacobian(Xu)
+            Xu_der = self.abs_det_jacobian(X, log=True)
+            Xg_der = InverseGaussCDF().abs_det_jacobian(Xu, log=True)
             return Xg, Xg_der + Xu_der
 
     def inverse_transform(self, X, y=None):
@@ -92,6 +92,6 @@ class HistogramGaussianization(BaseEstimator, TransformerMixin, ScoreMixin):
         else:
             raise ValueError("Unrecognized command for log.")
 
-    def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None,) -> float:
+    def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
 
         return self.abs_det_jacobian(X, log=True)

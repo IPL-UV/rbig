@@ -19,7 +19,7 @@ class InverseGaussCDF(GaussMixin, DensityMixin, ScoreMixin):
         return self
 
     def transform(
-        self, X: np.ndarray, return_jacobian: bool = False,
+        self, X: np.ndarray, return_jacobian: bool = False
     ) -> Tuple[np.ndarray, np.ndarray]:
 
         # Calculate the transformation
@@ -58,13 +58,16 @@ class InverseGaussCDF(GaussMixin, DensityMixin, ScoreMixin):
 
         return X
 
-    def abs_det_jacobian(self, X: np.ndarray):
+    def abs_det_jacobian(self, X: np.ndarray, log: bool = True):
         X = check_array(X, ensure_2d=False, copy=True)
-        return 1 / stats.norm.pdf(self.transform(X))
 
-    def log_abs_det_jacobian(self, X: np.ndarray):
-        X = check_array(X, ensure_2d=False, copy=True)
-        return -stats.norm.logpdf(self.transform(X))
+        X_slogdet = -stats.norm.logpdf(self.transform(X))
+
+        if log == True:
+            return X_slogdet
+        else:
+            return np.exp(X_slogdet)
+        return 1 / stats.norm.pdf(self.transform(X))
 
     def sample(
         self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None

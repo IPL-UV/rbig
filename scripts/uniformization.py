@@ -1,6 +1,7 @@
 import sys
 
 sys.path.insert(0, "/home/emmanuel/code/projects/rbig")
+sys.path.insert(0, "/Users/eman/Documents/code_projects/rbig")
 
 
 from rbig.density import Histogram

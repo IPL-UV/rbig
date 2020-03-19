@@ -1,6 +1,7 @@
 import sys
 
 sys.path.insert(0, "/home/emmanuel/code/projects/rbig")
+sys.path.insert(0, "/Users/eman/Documents/code_projects/rbig")
 
 
 import numpy as np
@@ -58,23 +59,23 @@ plt.show()
 # plt.tight_layout()
 # plt.show()
 
-# =========================
-# Marginal Transformation
-# =========================
+# # =========================
+# # Marginal Transformation
+# # =========================
 
-print(data.shape)
+# print(data.shape)
 
-# RBIG Transformation 1
-mg_clf = MarginalGaussianization().fit(data)
+# # RBIG Transformation 1
+# mg_clf = MarginalGaussianization().fit(data)
 
-Xt = mg_clf.transform(data)
+# Xt = mg_clf.transform(data)
 
-pts = sns.jointplot(x=Xt[:, 0], y=Xt[:, 1],)
-plt.xlabel("X")
-plt.ylabel("Y")
-plt.title("Transformed data")
-plt.tight_layout()
-plt.show()
+# pts = sns.jointplot(x=Xt[:, 0], y=Xt[:, 1])
+# plt.xlabel("X")
+# plt.ylabel("Y")
+# plt.title("Transformed data")
+# plt.tight_layout()
+# plt.show()
 
 # fig, ax = plt.subplots(ncols=2)
 # ax[0].hist(Xt[:, 0], bins=100)
@@ -87,18 +88,18 @@ plt.show()
 # plt.show()
 
 
-# =========================
-# Inverse Transformation
-# =========================
+# # =========================
+# # Inverse Transformation
+# # =========================
 
-data_approx = mg_clf.inverse_transform(Xt)
+# data_approx = mg_clf.inverse_transform(Xt)
 
-pts = sns.jointplot(x=data_approx[:, 0], y=data_approx[:, 1],)
-plt.xlabel("X")
-plt.ylabel("Y")
-plt.title("Approximate data")
-plt.tight_layout()
-plt.show()
+# pts = sns.jointplot(x=data_approx[:, 0], y=data_approx[:, 1])
+# plt.xlabel("X")
+# plt.ylabel("Y")
+# plt.title("Approximate data")
+# plt.tight_layout()
+# plt.show()
 
 # =========================
 # Jacobian
@@ -131,6 +132,8 @@ Xt_lder = mg_clf.abs_det_jacobian(data, log=True)
 
 # probability
 x_lprob = (stats.norm().logpdf(Xt) + Xt_lder).sum(axis=1)
+
+
 x_prob = np.exp(x_lprob)
 
 
