@@ -2,9 +2,10 @@ from typing import Optional
 import numpy as np
 from sklearn.utils import check_array
 from rbig.transform import HistogramGaussianization
+from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class MarginalGaussianization:
+class MarginalGaussianization(BaseEstimator, TransformerMixin):
     def __init__(self, kwargs=None):
         self.transformer = HistogramGaussianization()
         if kwargs is None:
@@ -72,7 +73,7 @@ class MarginalGaussianization:
             X[itrans, :] = self.marginal_transforms[itrans].inverse_transform(ifeature)
         return X.T
 
-    def abs_det_jacobian(self, X: np.ndarray, log: bool = True) -> np.ndarray:
+    def log_abs_det_jacobian(self, X: np.ndarray, log: bool = True) -> np.ndarray:
 
         # check input array
         X = check_array(X, ensure_2d=True, copy=True).T

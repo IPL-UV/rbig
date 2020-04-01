@@ -66,29 +66,69 @@ class ScoreMixin(object):
         return np.mean(self.score_samples(X, y))
 
 
+class DensityTransformerMixin(TransformerMixin):
+    @abstractmethod
+    def log_abs_det_jacobian(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        raise NotImplementedError
+
+
 class DensityMixin(object):
     """Mixin for :func:`sample` that returns the """
 
     @abstractmethod
-    def abs_det_jacobian(self, X: np.ndarray) -> np.ndarray:
+    def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
+        """Return the mean log likelihood (or log(det(Jacobian))).
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            New data, where n_samples is the number of samples and n_features
+            is the number of features.
+        y : None, default=None
+            Not used but kept for compatibility.
+        Returns
+        -------
+        log_likelihood : float
+            Mean log likelihood data points in X.
+        """
         raise NotImplementedError
 
-    @abstractmethod
-    def log_abs_det_jacobian(self, X: np.ndarray) -> np.ndarray:
-        return np.log(self.abs_det_jacobian(X))
-
-    @abstractmethod
-    def pdf(self, X: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
-
-    @abstractmethod
-    def logpdf(self, X: np.ndarray) -> np.ndarray:
-        return np.log(self.pdf(X))
+    def score(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
+        """Return the mean log likelihood (or log(det(Jacobian))).
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            New data, where n_samples is the number of samples and n_features
+            is the number of features.
+        y : None, default=None
+            Not used but kept for compatibility.
+        Returns
+        -------
+        log_likelihood : float
+            Mean log likelihood data points in X.
+        """
+        return np.mean(self.score_samples(X, y))
 
     @abstractmethod
     def sample(
-        self, n_samples: int, random_state: Optional[Union[RandomState, int]] = None
+        self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None
     ) -> np.ndarray:
+        """Take samples from the base distribution.
+        
+        Parameters 
+        ----------
+        n_samples : int, default=1
+            the number of samples
+        
+        random_state: default=1
+            the random state
+        
+        Returns
+        -------
+        samples : np.ndarray, (n_samples, n_features)
+            the generated samples
+        """
         raise NotImplementedError
 
 

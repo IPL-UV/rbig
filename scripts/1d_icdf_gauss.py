@@ -18,7 +18,7 @@ nbins = 100
 data_dist = stats.uniform()
 
 # get some samples
-Xu_samples = data_dist.rvs(size=n_samples)
+Xu_samples = data_dist.rvs(size=(n_samples, 1))
 # X_samples = np.array([1.0, 2.0, 1.0])
 
 # initialize HistogramClass
@@ -33,6 +33,7 @@ icdf_clf.fit(Xu_samples)
 
 # transform data
 Xg = icdf_clf.transform(Xu_samples)
+
 
 fig, ax = plt.subplots()
 ax.hist(Xg, nbins)
@@ -55,10 +56,10 @@ plt.show()
 # ========================
 # Generate Uniform Samples
 # ========================
-X_approx = icdf_clf.sample(1000)
+X_generated = icdf_clf.sample(1000)
 
 fig, ax = plt.subplots()
-ax.hist(X_approx, nbins)
+ax.hist(X_generated, nbins)
 ax.set_title("Generate Samples (from Function)")
 ax.set_xlabel(r"$F^{-1}(\hat{u})$")
 ax.set_ylabel(r"$p(x_d)$")
@@ -66,27 +67,15 @@ plt.show()
 
 
 # ========================
-# Evaluate Jacobian
+# Evaluate Log-Det-Jac
 # ========================
 
-x_der = icdf_clf.abs_det_jacobian(Xu_samples)
-fig, ax = plt.subplots()
-
-ax.hist(x_der, nbins)
-ax.set_title("Generate Samples (transformed)")
-ax.set_xlabel(r"$F^{-1}(u)$")
-ax.set_ylabel(r"$p(x_d)$")
-plt.show()
-
-
-# ========================
-# Evaluate Log Probability
-# ========================
 x_der = icdf_clf.log_abs_det_jacobian(Xu_samples)
 
-fig, ax = plt.subplots()
+
+fig, ax = plt.subplots(nrows=1)
 ax.hist(x_der, nbins)
-ax.set_title("Generate Samples (transformed)")
+ax.set_title("Log Determinant Jacobian")
 ax.set_xlabel(r"$F^{-1}(u)$")
-ax.set_ylabel(r"$\log p(x_d)$")
+ax.set_ylabel(r"$p(x_d)$")
 plt.show()
