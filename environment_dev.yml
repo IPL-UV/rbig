@@ -1,0 +1,24 @@
+name: rbig_dev
+channels:
+- defaults
+- conda-forge
+dependencies:
+- python=3.8
+- numpy
+- scipy
+- scikit-learn
+# Plotting Packages
+- matplotlib
+- seaborn
+# Dev Packages
+- ipykernel
+- mypy
+- black
+- isort
+# Test Packages
+- pytest
+# Pip Packages
+- pip
+- pip:
+    - statsmodels
+    - python-picard

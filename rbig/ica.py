@@ -1,4 +1,4 @@
-# from picard import picard
+from picard import picard
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from typing import Optional
@@ -65,4 +65,3 @@ class OrthogonalICA(BaseEstimator, TransformerMixin):
             X += self.mean_
 
         return X
-
