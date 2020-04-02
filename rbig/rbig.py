@@ -111,7 +111,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         zero_tolerance=60,
         entropy_correction=True,
         rotation_kwargs=None,
-        base='gauss'
+        base="gauss",
     ):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
@@ -609,12 +609,12 @@ class RBIG(BaseEstimator, TransformerMixin):
         data_uniform, params = self.univariate_make_uniform(
             uni_data.T, extension, precision
         )
-        if self.base == 'gauss':
+        if self.base == "gauss":
             return norm.ppf(data_uniform).T, params
-        elif self.base == 'uniform':
+        elif self.base == "uniform":
             return uniform.ppf(data_uniform).T, params
         else:
-            raise ValueError(f'Unrecognized base dist: {self.base}.')
+            raise ValueError(f"Unrecognized base dist: {self.base}.")
 
     def univariate_make_uniform(self, uni_data, extension, precision):
         """
@@ -689,13 +689,13 @@ class RBIG(BaseEstimator, TransformerMixin):
         Inverts the marginal normalization
         See the companion, univariate_make_normal.py, for more details
         """
-        if self.base == 'gauss':
+        if self.base == "gauss":
             uni_uniform_data = norm.cdf(uni_gaussian_data)
-        elif self.base == 'uniform':
+        elif self.base == "uniform":
             uni_uniform_data = uniform.cdf(uni_gaussian_data)
         else:
             raise ValueError(f"Unrecognized base dist.: {base}.")
-            
+
         uni_data = self.univariate_invert_uniformization(uni_uniform_data, trans_params)
         return uni_data
 
@@ -814,15 +814,15 @@ class RBIGMI(object):
         do not have to be the same.
         
         """
-        
+
         # Loop Until Convergence
         fitted = None
         try:
             while fitted is None:
-                
+
                 if self.verbose:
                     print(f"PDF Extension: {self.pdf_extension}%")
-                    
+
                 try:
                     # Initialize RBIG class I
                     self.rbig_model_X = RBIG(
@@ -856,10 +856,8 @@ class RBIGMI(object):
 
                     # Stack Data
                     if self.verbose:
-                        print(
-                            X_transformed.shape, Y_transformed.shape
-                        )
-                        
+                        print(X_transformed.shape, Y_transformed.shape)
+
                     XY_transformed = np.hstack([X_transformed, Y_transformed])
 
                     # Initialize RBIG class I & II
@@ -871,7 +869,7 @@ class RBIGMI(object):
                         tolerance=self.tolerance,
                         pdf_resolution=self.pdf_resolution,
                         pdf_extension=self.pdf_extension,
-                        verbose=None
+                        verbose=None,
                     )
 
                     # Fit RBIG model to combined dataset
@@ -879,10 +877,10 @@ class RBIGMI(object):
                     fitted = True
                 except:
                     self.pdf_extension = self.increment * self.pdf_extension
-        
+
         except KeyboardInterrupt:
-            print('Interrupted!')
-            
+            print("Interrupted!")
+
         return self
 
     def mutual_information(self):
@@ -1046,8 +1044,8 @@ class RBIGKLD(object):
                 except:
                     self.pdf_extension = self.increment * self.pdf_extension
         except KeyboardInterrupt:
-            print('Interrupted!')
-        
+            print("Interrupted!")
+
         self.mv_g = mv_g
         if self.verbose == 2:
             print(f"mv_g: {mv_g}")
@@ -1138,10 +1136,10 @@ def entropy_marginal(data, bin_est="standard", correction=True):
 
 def bin_estimation(n_samples, rule="standard"):
 
-    if rule is "sturge":
+    if rule == "sturge":
         n_bins = int(np.ceil(1 + 3.322 * np.log10(n_samples)))
 
-    elif rule is "standard":
+    elif rule == "standard":
         n_bins = int(np.ceil(np.sqrt(n_samples)))
 
     else:
