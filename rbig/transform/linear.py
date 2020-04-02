@@ -4,7 +4,7 @@ from numpy.linalg import slogdet, inv
 from scipy import stats
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_array
-from rbig.base import ScoreMixin
+from rbig.base import ScoreMixin, DensityTransformerMixin
 from typing import Optional
 from rbig.ica import OrthogonalICA
 
@@ -12,7 +12,7 @@ from rbig.ica import OrthogonalICA
 # TODO - Orthogonality Checker - https://github.com/davidinouye/destructive-deep-learning/blob/master/ddl/linear.py#L327
 
 
-class OrthogonalTransform(BaseEstimator, TransformerMixin, ScoreMixin):
+class OrthogonalTransform(BaseEstimator, DensityTransformerMixin):
     """This transformation performs an orthogonal (orthonormal) rotation of
     your input X
     
@@ -59,7 +59,7 @@ class OrthogonalTransform(BaseEstimator, TransformerMixin, ScoreMixin):
         -------
         obj : object
         """
-        X = check_array(X)
+        X = check_array(X, ensure_2d=True, copy=True)
 
         # get data dimensions
         d_dimensions = X.shape[1]
@@ -106,11 +106,11 @@ class OrthogonalTransform(BaseEstimator, TransformerMixin, ScoreMixin):
 
         return self
 
-    def transform(self, X):
+    def transform(self, X: np.ndarray) -> np.ndarray:
 
-        X = check_array(X)
+        X = check_array(X, ensure_2d=True, copy=True)
 
-        return X @ self.R
+        return np.dot(X, self.R)
 
     def inverse_transform(self, X: np.ndarray, y: Optional[np.ndarray] = None):
         """Apply inverse destructive transformation to X.
@@ -127,25 +127,14 @@ class OrthogonalTransform(BaseEstimator, TransformerMixin, ScoreMixin):
         X_new : np.ndarray, shape (n_samples, n_features)
             Transformed data.
         """
-        X = check_array(X)
+        X = check_array(X, ensure_2d=True, copy=True)
 
         return X @ self.R.T
 
-    def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None):
-        """Calculates the log determinant Jacobian for each sample.
-        We have constrained our rotation matrix to be orthogonal.
-        So the logdetj will be zero. Therefore the score will simply be
-        a vector of zeros of length n_features.
-        
-        Parameters
-        ----------
-        X : np.ndarray, 
-            The data matrix. We just need the number of features.
-        
-        y : np.ndarray, default=None 
-            Not used in the transformation but kept for compatibility.
-        """
-        X = check_array(X)
+    def log_abs_det_jacobian(self, X: np.ndarray) -> np.ndarray:
 
-        return np.zeros((X.shape[0],))
+        X = check_array(X, ensure_2d=True, copy=True)
 
+        # logdet = np.linalg.slogdet(self.R)[1]
+
+        return np.zeros(X.shape)

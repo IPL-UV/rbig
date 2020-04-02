@@ -1,11 +1,55 @@
+from abc import abstractmethod
+from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
-from sklearn.utils import check_random_state
+from numpy.random import RandomState
+from sklearn.utils import check_array, check_random_state
+from typing import Optional, Union
+
+
+class UniformMixin(BaseEstimator, TransformerMixin):
+    @abstractmethod
+    def fit(self, X: np.ndarray) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def transform(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
+        raise NotImplementedError
+
+    @abstractmethod
+    def inverse_transform(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        raise NotImplementedError
+
+    @abstractmethod
+    def derivative(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
+        raise NotImplementedError
+
+
+class GaussMixin:
+    @abstractmethod
+    def fit(self, X: np.ndarray) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def transform(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
+        raise NotImplementedError
+
+    @abstractmethod
+    def inverse_transform(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        raise NotImplementedError
+
+    @abstractmethod
+    def derivative(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
+        raise NotImplementedError
 
 
 class ScoreMixin(object):
     """Mixin for :func:`score` that returns mean of :func:`score_samples`."""
 
-    def score(self, X, y=None):
+    def score(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
         """Return the mean log likelihood (or log(det(Jacobian))).
         Parameters
         ----------
@@ -22,23 +66,70 @@ class ScoreMixin(object):
         return np.mean(self.score_samples(X, y))
 
 
+class DensityTransformerMixin(TransformerMixin):
+    @abstractmethod
+    def log_abs_det_jacobian(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        raise NotImplementedError
+
+
 class DensityMixin(object):
     """Mixin for :func:`sample` that returns the """
 
-    def sample(self, n_samples=1, random_state=None):
+    @abstractmethod
+    def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
+        """Return the mean log likelihood (or log(det(Jacobian))).
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            New data, where n_samples is the number of samples and n_features
+            is the number of features.
+        y : None, default=None
+            Not used but kept for compatibility.
+        Returns
+        -------
+        log_likelihood : float
+            Mean log likelihood data points in X.
+        """
+        raise NotImplementedError
 
-        # random state
-        rng = check_random_state(random_state)
+    def score(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
+        """Return the mean log likelihood (or log(det(Jacobian))).
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            New data, where n_samples is the number of samples and n_features
+            is the number of features.
+        y : None, default=None
+            Not used but kept for compatibility.
+        Returns
+        -------
+        log_likelihood : float
+            Mean log likelihood data points in X.
+        """
+        return np.mean(self.score_samples(X, y))
 
-        # get features
-        d_dimensions = get_n_features(self)
-
-        # Gaussian samples
-        X_gauss = rng.randn(n_samples, d_dimensions)
-
-        # Inverse transformation
-        X = self.inverse_transform(X_gauss)
-        return X
+    @abstractmethod
+    def sample(
+        self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None
+    ) -> np.ndarray:
+        """Take samples from the base distribution.
+        
+        Parameters 
+        ----------
+        n_samples : int, default=1
+            the number of samples
+        
+        random_state: default=1
+            the random state
+        
+        Returns
+        -------
+        samples : np.ndarray, (n_samples, n_features)
+            the generated samples
+        """
+        raise NotImplementedError
 
 
 def get_n_features(model):

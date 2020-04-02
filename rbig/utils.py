@@ -3,6 +3,17 @@ import warnings
 from sklearn.utils import check_random_state
 from sklearn.exceptions import DataConversionWarning
 from sklearn.utils.validation import column_or_1d
+from typing import Tuple
+
+
+def check_input_output_dims(
+    input: np.ndarray, dims: Tuple[int, int], method: str, transform: str
+) -> None:
+    assert input.shape == (
+        dims[0],
+        dims[1],
+    ), f"{method.capitalize()}: {transform.capitalize()} lost dims, {input.shape} =/= {dims}"
+    return None
 
 
 class BoundaryWarning(DataConversionWarning):
