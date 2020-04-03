@@ -1,18 +1,19 @@
-import numpy as np
-from .base import ScoreMixin, DensityMixin
-from sklearn.base import BaseEstimator, TransformerMixin
-from scipy import stats
-from typing import Optional
-from sklearn.utils import check_array, check_random_state
 import warnings
-from scipy.interpolate import interp1d
-from sklearn.preprocessing import minmax_scale
+from typing import Optional
 
+import numpy as np
+from scipy import stats
+from scipy.interpolate import interp1d
+from sklearn.base import BaseEstimator
+from sklearn.preprocessing import minmax_scale
+from sklearn.utils import check_array, check_random_state
+
+from rbig.base import DensityTransformerMixin, ScoreMixin
 
 BOUNDS_THRESHHOLD = 1e-7
 
 
-class QuantileGaussian(BaseEstimator, TransformerMixin, ScoreMixin, DensityMixin):
+class QuantileTransformer(BaseEstimator, DensityTransformerMixin, ScoreMixin):
     def __init__(
         self,
         n_quantiles: int = 1_000,

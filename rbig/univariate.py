@@ -1,23 +1,19 @@
-import numpy as np
-import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin
 import warnings
-from sklearn.utils import check_random_state
-from sklearn.exceptions import DataConversionWarning
-from sklearn.utils.validation import column_or_1d
-from scipy.interpolate import interp1d
-from scipy.stats import norm, ortho_group, entropy as sci_entropy
-import scipy.stats
+
 import matplotlib.pyplot as plt
-from rbig.utils import (
-    check_bounds,
-    make_interior,
-    check_floating,
-    make_interior_probability,
-    make_positive,
-    make_finite,
-    bin_estimation,
-)
+import numpy as np
+import scipy.stats
+from scipy.interpolate import interp1d
+from scipy.stats import entropy as sci_entropy
+from scipy.stats import norm, ortho_group
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.exceptions import DataConversionWarning
+from sklearn.utils import check_random_state
+from sklearn.utils.validation import column_or_1d
+
+from rbig.utils import (bin_estimation, check_bounds, check_floating,
+                        make_finite, make_interior, make_interior_probability,
+                        make_positive)
 
 plt.style.use("ggplot")
 

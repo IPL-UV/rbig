@@ -3,10 +3,11 @@ channels:
 - defaults
 - conda-forge
 dependencies:
+- python=3.8
 - scipy
 - scikit-learn
 - numpy
 - pip
 - pip:
     - python-picard
-    - git+https://github.com/statsmodels/statsmodels
+    - statsmodels

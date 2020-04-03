@@ -1,88 +1,98 @@
-from sklearn.base import BaseEstimator, TransformerMixin
-from .base import ScoreMixin, DensityMixin
-from .quantile import QuantileGaussian
-from .linear import OrthogonalTransform
+from typing import Dict, NamedTuple, Optional, Tuple
+
 import numpy as np
-from sklearn.utils import check_array
+from sklearn.base import BaseEstimator, TransformerMixin
+
+from rbig.transform import HistogramGaussianization, OrthogonalTransform
 
 
-class RBIGBlock(BaseEstimator, TransformerMixin, DensityMixin, ScoreMixin):
+class RBIGBlock(BaseEstimator, TransformerMixin):
     def __init__(
-        self,
-        rotation="ica",
-        n_quantiles=1_000,
-        subsample=2_000,
-        random_state=123,
-        support_ext=0.0,
-        interp="linear",
-    ):
-        self.rotation = rotation
-        self.n_quantiles = n_quantiles
-        self.bin_est = None
-        self.subsample = subsample
-        self.random_state = random_state
-        self.support_ext = support_ext
-        self.interp = interp
+        self, mg_params: Optional[Dict] = {}, rot_params: Optional[Dict] = {}
+    ) -> None:
+        self.mg_params_ = mg_params
+        self.rot_params_ = rot_params
 
-    def fit(self, X, y=None):
+    def __repr__(self):
 
-        X = check_array(X)
+        # loop through and get mg
+        rep_str = ["MG Params:"]
+        rep_str += [f"{ikey}={iparam}" for ikey, iparam in self.mg_params_.items()]
+        rep_str += ["\nRotation Params:"]
+        rep_str += [f"{ikey}={iparam}" for ikey, iparam in self.rot_params_.items()]
+        return " ".join(rep_str)
 
-        self.d_dimensions = X.shape[1]
+    def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
 
-        # ========
-        # Rotation
-        # ========
-        transform_R = OrthogonalTransform(rotation=self.rotation, random_state=123)
+        # marginal transformation
+        self.marginal_gaussian_ = HistogramGaussianization(**self.mg_params_)
 
-        data_R = transform_R.fit_transform(X)
+        X = self.marginal_gaussian_.fit_transform(X)
 
-        # ========================
-        # Marginal Gaussianization
-        # ========================
-
-        transform_MG = QuantileGaussian(
-            n_quantiles=self.n_quantiles,
-            bin_est=self.bin_est,
-            support_ext=self.support_ext,
-            subsample=self.subsample,
-            random_state=self.random_state,
-            interp=self.interp,
-        )
-
-        transform_MG.fit(data_R)
-
-        # save transforms
-        self.transform_R = transform_R
-        self.transform_MG = transform_MG
+        # rotation
+        self.rotation_ = OrthogonalTransform(**self.rot_params_).fit(X)
 
         return self
 
-    def transform(self, X, y=None):
+    def transform(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None, return_jacobian=False
+    ) -> Tuple[np.ndarray, np.ndarray]:
 
-        # Rotation
-        data_R = self.transform_R.transform(X)
+        # marginal transformation
+        Xmg = self.marginal_gaussian_.transform(X)
 
-        # Marginal Gaussianization
-        data_MG = self.transform_MG.transform(data_R)
+        # rotation
+        Xtrans = self.rotation_.transform(Xmg)
 
-        return data_MG
+        if not return_jacobian:
+            return Xtrans
+        else:
+            dX_mg = self.marginal_gaussian_.log_abs_det_jacobian(X)
+            dX_rot = self.rotation_.log_abs_det_jacobian(Xmg)
+            return Xtrans, dX_mg + dX_rot
 
-    def inverse_transform(self, X, y=None):
+    def inverse_transform(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> np.ndarray:
 
-        # Inverse Marginal Gaussianization
-        data_iMG = self.transform_MG.inverse_transform(X)
+        # rotation transpose
+        X = self.rotation_.inverse_transform(X)
 
-        # Rotation Transpose
-        data_Rt = self.transform_R.inverse_transform(data_iMG)
+        # inverse marginal gaussianization
+        X = self.marginal_gaussian_.inverse_transform(X)
+        return X
 
-        return data_Rt
+    def log_abs_det_jacobian(self, X: np.ndarray) -> np.ndarray:
 
-    def score_samples(self, X, y=None):
+        # marginal transformation
+        Xmg = self.marginal_gaussian_.transform(X)
+        dX_mg = self.marginal_gaussian_.log_abs_det_jacobian(X)
 
-        # Rotation score (ignore because it's zero...)
+        # rotation
+        dX_rot = self.rotation_.log_abs_det_jacobian(Xmg)
 
-        # MG score
-        X_log_prob = self.transform_MG.score_samples(X)
+        return dX_mg + dX_rot
 
-        return X_log_prob
+
+class RBIGParams(NamedTuple):
+    # marginal transform parameters
+    nbins: int = 100
+    alpha: float = 1e-6
+    # rotation parameters
+    rotation: str = "pca"
+    random_state: int = 123
+    rot_kwargs: Dict = {}
+
+    def fit_data(self, X: np.ndarray) -> RBIGBlock:
+
+        # initialize RBIG Block
+        gauss_block = RBIGBlock(
+            mg_params={"nbins": self.nbins, "alpha": self.alpha,},
+            rot_params={
+                "rotation": self.rotation,
+                "random_state": self.random_state,
+                "kwargs": self.rot_kwargs,
+            },
+        )
+
+        return gauss_block.fit(X)

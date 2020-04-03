@@ -1,12 +1,15 @@
-from sklearn.base import BaseEstimator, TransformerMixin
-from rbig.base import UniformMixin, DensityTransformerMixin, DensityMixin
-from typing import Optional, Union, Callable
+from typing import Callable, Optional, Union
+
+import numpy as np
 from scipy import stats
-from sklearn.utils import check_random_state, check_array
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.utils import check_array, check_random_state
+
+from rbig.base import DensityMixin, DensityTransformerMixin
 
 # from rbig.density import Histogram
-from rbig.transform import MarginalHistogramTransform, InverseGaussCDF
-import numpy as np
+from rbig.transform.gauss_icdf import InverseGaussCDF
+from rbig.transform.histogram import MarginalHistogramTransform
 
 
 class HistogramGaussianization(BaseEstimator, DensityTransformerMixin, DensityMixin):

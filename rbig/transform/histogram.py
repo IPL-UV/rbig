@@ -1,18 +1,14 @@
-from typing import Tuple, Optional, Union, Callable
+from typing import Callable, Optional, Tuple, Union
+
 import numpy as np
 from numpy.random import RandomState
 from scipy import stats
-from sklearn.utils import check_array, check_random_state
-
 # Base classes
 from sklearn.base import BaseEstimator
-from rbig.base import DensityMixin, DensityTransformerMixin
-
 from sklearn.utils import check_array, check_random_state
-from numpy.random import RandomState
-from typing import Optional, Union, Callable
-from rbig.utils import check_input_output_dims
 
+from rbig.base import DensityMixin, DensityTransformerMixin
+from rbig.utils import check_input_output_dims
 
 BOUNDS_THRESHOLD = 1e-7
 

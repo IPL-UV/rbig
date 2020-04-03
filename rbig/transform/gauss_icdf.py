@@ -1,11 +1,13 @@
-from typing import Optional, Union, Callable, Tuple
+from typing import Callable, Optional, Tuple, Union
+
 import numpy as np
 from numpy.random import RandomState
 from scipy import stats
-from sklearn.utils import check_random_state, check_array
-from rbig.base import DensityMixin, ScoreMixin, DensityTransformerMixin
-from rbig.utils import check_input_output_dims
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.utils import check_array, check_random_state
+
+from rbig.base import DensityMixin, DensityTransformerMixin, ScoreMixin
+from rbig.utils import check_input_output_dims
 
 BOUNDS_THRESHOLD = 1e-7
 CLIP_MIN = stats.norm.ppf(BOUNDS_THRESHOLD - np.spacing(1))

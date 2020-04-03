@@ -1,8 +1,10 @@
 from typing import Optional
+
 import numpy as np
-from sklearn.utils import check_array
-from rbig.transform import HistogramGaussianization
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.utils import check_array
+
+from rbig.transform import HistogramGaussianization
 
 
 class MarginalGaussianization(BaseEstimator, TransformerMixin):

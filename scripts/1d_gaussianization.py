@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 
 plt.style.use(["seaborn-paper"])
 
+
 seed = 123
 n_samples = 1_000
 a = 10
@@ -121,7 +122,7 @@ plt.show()
 # ==================================
 # Evaluate Negative Log-Likelihood
 # ==================================
+print("Negative Log-Likelihood")
 x_prob = histgauss_clf.score(X_samples)
 data_prob = data_dist.logpdf(X_samples).mean()
-print(x_prob)
-print(data_prob)
+print(x_prob, data_prob)

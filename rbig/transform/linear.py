@@ -1,12 +1,13 @@
+from typing import Optional
+
 import numpy as np
-from sklearn.decomposition import PCA
-from numpy.linalg import slogdet, inv
+from numpy.linalg import inv, slogdet
 from scipy import stats
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.decomposition import PCA
 from sklearn.utils.validation import check_array
-from rbig.base import ScoreMixin, DensityTransformerMixin
-from typing import Optional
-from rbig.ica import OrthogonalICA
+
+from rbig.base import DensityTransformerMixin, ScoreMixin
 
 # TODO - Whitening transform - https://github.com/lucastheis/isa/blob/master/code/transforms/whiteningtransform.py
 # TODO - Orthogonality Checker - https://github.com/davidinouye/destructive-deep-learning/blob/master/ddl/linear.py#L327
@@ -23,8 +24,6 @@ class OrthogonalTransform(BaseEstimator, DensityTransformerMixin):
         pca       - prinicpal components analysis
         random_o  - random orthogonal matrix from Haar O() group
         random_so - random orthogonal matrix from Haar SO() group
-        ica       - independent components analysis with orthogonal
-                    constraints
 
     random_state : int,
         To control the seed for the random initializations
@@ -96,18 +95,6 @@ class OrthogonalTransform(BaseEstimator, DensityTransformerMixin):
                 dim=self.n_features_, random_state=self.random_state
             )
 
-        elif self.rotation == "ica":
-
-            if self.kwargs is not None:
-                model = OrthogonalICA(random_state=self.random_state, **self.kwargs)
-
-            else:
-
-                model = OrthogonalICA(random_state=self.random_state)
-
-            model.fit(X)
-
-            self.R_ = model.components_.T
         else:
             raise ValueError(f"Unrecognized rotation: {self.rotation}")
 

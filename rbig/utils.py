@@ -1,9 +1,10 @@
-import numpy as np
 import warnings
-from sklearn.utils import check_random_state
-from sklearn.exceptions import DataConversionWarning
-from sklearn.utils.validation import column_or_1d
 from typing import Tuple
+
+import numpy as np
+from sklearn.exceptions import DataConversionWarning
+from sklearn.utils import check_random_state
+from sklearn.utils.validation import column_or_1d
 
 
 def check_input_output_dims(
@@ -188,3 +189,28 @@ def bin_estimation(X, rule="scott"):
         raise ValueError(f"Unrecognized rule: {rule}")
 
     return int(np.ceil(nbins))
+
+
+def make_cdf_monotonic(cdf):
+    """
+    Take a cdf and just sequentially readjust values to force monotonicity
+    There's probably a better way to do this but this was in the original
+    implementation. We just readjust values that are less than their predecessors
+    Parameters
+    ----------
+    cdf : ndarray
+      The values of the cdf in order (1d)
+    """
+    # laparra's version
+    corrected_cdf = cdf.copy()
+    for i in range(1, len(corrected_cdf)):
+        if corrected_cdf[i] <= corrected_cdf[i - 1]:
+            if abs(corrected_cdf[i - 1]) > 1e-14:
+                corrected_cdf[i] = corrected_cdf[i - 1] + 1e-14
+            elif corrected_cdf[i - 1] == 0:
+                corrected_cdf[i] = 1e-80
+            else:
+                corrected_cdf[i] = corrected_cdf[i - 1] + 10 ** (
+                    np.log10(abs(corrected_cdf[i - 1]))
+                )
+    return corrected_cdf

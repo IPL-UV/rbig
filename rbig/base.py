@@ -1,49 +1,10 @@
 from abc import abstractmethod
-from sklearn.base import BaseEstimator, TransformerMixin
-import numpy as np
-from numpy.random import RandomState
-from sklearn.utils import check_array, check_random_state
 from typing import Optional, Union
 
-
-class UniformMixin(BaseEstimator, TransformerMixin):
-    @abstractmethod
-    def fit(self, X: np.ndarray) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def transform(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
-        raise NotImplementedError
-
-    @abstractmethod
-    def inverse_transform(
-        self, X: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        raise NotImplementedError
-
-    @abstractmethod
-    def derivative(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
-        raise NotImplementedError
-
-
-class GaussMixin:
-    @abstractmethod
-    def fit(self, X: np.ndarray) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def transform(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
-        raise NotImplementedError
-
-    @abstractmethod
-    def inverse_transform(
-        self, X: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        raise NotImplementedError
-
-    @abstractmethod
-    def derivative(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
-        raise NotImplementedError
+import numpy as np
+from numpy.random import RandomState
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.utils import check_array, check_random_state
 
 
 class ScoreMixin(object):
