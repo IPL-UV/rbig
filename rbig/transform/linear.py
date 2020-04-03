@@ -34,9 +34,12 @@ class OrthogonalTransform(BaseEstimator, DensityTransformerMixin):
 
     Attributes
     ----------
-    R : np.ndarray
+    R_ : np.ndarray, (n_features, n_features)
         The rotation matrix used to transform and inverse transform
-        fitted to data X  
+        fitted to data X
+    
+    n_features_ : int, (n_features)
+        the number of dimensions
     """
 
     def __init__(
@@ -47,22 +50,26 @@ class OrthogonalTransform(BaseEstimator, DensityTransformerMixin):
         self.kwargs = kwargs
 
     def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
-        """Finds the Orthogonal transformation using PCA
-        or some random orthogonal rotation matrix.
+        """Fits the Linear transform to the data
+        
+        This method finds the Orthogonal transformation using PCA
+        or some random orthonormal transformation.
         
         Parameters
         ----------
-        X : np.ndarray, (n_samples x n_features)
+        X : np.ndarray, (n_samples, n_features)
             The data to be fitted to find the transformation
+
+        y : not used, only for compatibility
 
         Returns
         -------
-        obj : object
+        obj : instance of self
         """
         X = check_array(X, ensure_2d=True, copy=True)
 
         # get data dimensions
-        d_dimensions = X.shape[1]
+        self.n_features_ = X.shape[1]
 
         if self.rotation == "pca":
 
@@ -75,18 +82,18 @@ class OrthogonalTransform(BaseEstimator, DensityTransformerMixin):
 
             model.fit(X)
 
-            self.R = model.components_.T
+            self.R_ = model.components_.T
 
         elif self.rotation == "random_o":
 
-            self.R = stats.special_ortho_group.rvs(
-                dim=d_dimensions, random_state=self.random_state
+            self.R_ = stats.special_ortho_group.rvs(
+                dim=self.n_features_, random_state=self.random_state
             )
 
         elif self.rotation == "random_so":
 
-            self.R = stats.ortho_group.rvs(
-                dim=d_dimensions, random_state=self.random_state
+            self.R_ = stats.ortho_group.rvs(
+                dim=self.n_features_, random_state=self.random_state
             )
 
         elif self.rotation == "ica":
@@ -100,7 +107,7 @@ class OrthogonalTransform(BaseEstimator, DensityTransformerMixin):
 
             model.fit(X)
 
-            self.R = model.components_.T
+            self.R_ = model.components_.T
         else:
             raise ValueError(f"Unrecognized rotation: {self.rotation}")
 
@@ -110,10 +117,11 @@ class OrthogonalTransform(BaseEstimator, DensityTransformerMixin):
 
         X = check_array(X, ensure_2d=True, copy=True)
 
-        return np.dot(X, self.R)
+        return np.dot(X, self.R_)
 
     def inverse_transform(self, X: np.ndarray, y: Optional[np.ndarray] = None):
         """Apply inverse destructive transformation to X.
+
         Parameters
         ----------
         X : np.ndarray,  (n_samples x n_features)
@@ -129,12 +137,22 @@ class OrthogonalTransform(BaseEstimator, DensityTransformerMixin):
         """
         X = check_array(X, ensure_2d=True, copy=True)
 
-        return X @ self.R.T
+        return X @ self.R_.T
 
     def log_abs_det_jacobian(self, X: np.ndarray) -> np.ndarray:
+        """Calculates the log abs det jacobian for some input
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, n_features)
+            the input data
+        
+        Returns
+        -------
+        dX : np.ndarray, (n_samples, n_features)
+            the log abs det jacobian for some input
+        """
 
         X = check_array(X, ensure_2d=True, copy=True)
-
-        # logdet = np.linalg.slogdet(self.R)[1]
 
         return np.zeros(X.shape)

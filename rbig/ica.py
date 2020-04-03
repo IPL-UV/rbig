@@ -31,7 +31,7 @@ class OrthogonalICA(BaseEstimator, TransformerMixin):
         whitening, unmixing, sources, X_mean, self.n_iter_ = picard(
             X.T,
             ortho=self.ortho,
-            random_state=123,
+            random_state=self.random_state,
             whiten=self.whiten,
             return_X_mean=True,
             return_n_iter=True,

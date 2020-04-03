@@ -6,7 +6,6 @@ dependencies:
 - scipy
 - scikit-learn
 - numpy
-- cython
 - pip
 - pip:
     - python-picard

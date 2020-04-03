@@ -1,25 +1,49 @@
 import numpy as np
-from sklearn.datasets import make_moons
+from sklearn import datasets
 
 
 class ToyData:
-    def __init__(self, dataset="rbig", n_samples=1000, noise=0.05, random_state=123):
+    def __init__(
+        self,
+        dataset="rbig",
+        n_samples=1_000,
+        n_features=2,
+        noise=0.05,
+        random_state=123,
+    ):
         self.dataset = dataset
         self.n_samples = n_samples
+        self.n_features = n_features
         self.noise = noise
         self.rng = np.random.RandomState(random_state)
 
-    def generate_samples(self):
+    def generate_samples(self, **kwargs):
 
         if self.dataset == "rbig":
-            return self._dataset_rbig()
+            X = self._dataset_rbig()
 
         elif self.dataset == "moons":
-            dataset, y = make_moons(n_samples=self.n_samples, noise=self.noise)
-            return dataset
+            X, _ = datasets.make_moons(
+                n_samples=self.n_samples,
+                noise=self.noise,
+                random_state=self.rng,
+                **kwargs,
+            )
+
+        elif self.dataset == "blobs":
+            X, _ = datasets.make_blobs(
+                n_samples=self.n_samples,
+                n_features=self.features,
+                noise=self.noise,
+                random_state=self.rng,
+                **kwargs,
+            )
+
         else:
 
-            return None
+            raise ValueError(f"Unrecognized dataset: {self.dataset}")
+
+        return X
 
     def _dataset_rbig(self):
         seed = 123
@@ -30,4 +54,3 @@ class ToyData:
         data = np.hstack((X, Y))
 
         return data
-
