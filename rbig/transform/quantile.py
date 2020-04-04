@@ -4,16 +4,15 @@ from typing import Optional
 import numpy as np
 from scipy import stats
 from scipy.interpolate import interp1d
-from sklearn.base import BaseEstimator
 from sklearn.preprocessing import minmax_scale
 from sklearn.utils import check_array, check_random_state
 
-from rbig.base import DensityTransformerMixin, ScoreMixin
+from rbig.transform.base import DensityMixin, BaseTransform
 
 BOUNDS_THRESHHOLD = 1e-7
 
 
-class QuantileTransformer(BaseEstimator, DensityTransformerMixin, ScoreMixin):
+class QuantileTransformer(BaseTransform, DensityMixin):
     def __init__(
         self,
         n_quantiles: int = 1_000,

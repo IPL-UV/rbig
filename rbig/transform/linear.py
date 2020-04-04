@@ -3,17 +3,16 @@ from typing import Optional
 import numpy as np
 from numpy.linalg import inv, slogdet
 from scipy import stats
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 from sklearn.utils.validation import check_array
 
-from rbig.base import DensityTransformerMixin, ScoreMixin
+from rbig.transform.base import BaseTransform
 
 # TODO - Whitening transform - https://github.com/lucastheis/isa/blob/master/code/transforms/whiteningtransform.py
 # TODO - Orthogonality Checker - https://github.com/davidinouye/destructive-deep-learning/blob/master/ddl/linear.py#L327
 
 
-class OrthogonalTransform(BaseEstimator, DensityTransformerMixin):
+class OrthogonalTransform(BaseTransform):
     """This transformation performs an orthogonal (orthonormal) rotation of
     your input X
     

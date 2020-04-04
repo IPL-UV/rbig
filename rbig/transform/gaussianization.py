@@ -1,18 +1,18 @@
 from typing import Callable, Optional, Union
 
 import numpy as np
+from numpy.random import RandomState
 from scipy import stats
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array, check_random_state
 
-from rbig.base import DensityMixin, DensityTransformerMixin
+from rbig.transform.base import DensityMixin, BaseTransform
 
 # from rbig.density import Histogram
 from rbig.transform.gauss_icdf import InverseGaussCDF
-from rbig.transform.histogram import MarginalHistogramTransform
+from rbig.transform.histogram import ScipyHistogramUniformization
 
 
-class HistogramGaussianization(BaseEstimator, DensityTransformerMixin, DensityMixin):
+class HistogramGaussianization(BaseTransform, DensityMixin):
     """This performs a univariate transformation on a datasets.
     
     Assuming that the data is independent across features, this
@@ -31,7 +31,7 @@ class HistogramGaussianization(BaseEstimator, DensityTransformerMixin, DensityMi
     def fit(self, X, y=None):
 
         # Uniformization
-        self.marg_uniformer_ = MarginalHistogramTransform(
+        self.marg_uniformer_ = ScipyHistogramUniformization(
             nbins=self.nbins, alpha=self.alpha
         )
         self.marg_uniformer_.fit(X)
@@ -108,3 +108,29 @@ class HistogramGaussianization(BaseEstimator, DensityTransformerMixin, DensityMi
         x_logprob = stats.norm().logpdf(self.transform(X))
 
         return (x_logprob + self.log_abs_det_jacobian(X)).sum(axis=1)
+
+    def sample(
+        self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None
+    ) -> np.ndarray:
+        """Generate random samples from this.
+        
+        Parameters
+        ----------
+        n_samples : int, default=1
+            The number of samples to generate. 
+        
+        random_state : int, RandomState,None, Optional, default=None
+            The int to be used as a seed to generate the random 
+            uniform samples.
+        
+        Returns
+        -------
+        X : np.ndarray, (n_samples, )
+        """
+        #
+        rng = check_random_state(random_state)
+
+        U = rng.rand(n_samples, self.n_features_)
+
+        X = self.inverse_transform(U)
+        return X

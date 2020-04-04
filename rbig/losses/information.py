@@ -1,9 +1,56 @@
-from typing import Optional, Dict, NamedTuple
+from typing import Dict, Optional
 
 import numpy as np
 from scipy.interpolate import interp1d
 from sklearn.utils import check_array
+
 from rbig.information.entropy import marginal_entropy
+from rbig.losses import RBIGLoss
+
+
+class InformationLoss(RBIGLoss):
+    def __init__(
+        self,
+        method: str = "histogram",
+        p_value: float = 0.25,
+        kwargs: Dict = {},
+        tol_layers: Optional[int] = None,
+    ) -> None:
+
+        super().__init__(n_layers=None, tol_layers=tol_layers)
+        self.method = method
+        self.p_value = p_value
+        self.kwargs = kwargs
+        self.info_losses_ = list()
+
+    def calculate_loss(
+        self, Xtrans: np.ndarray, X: np.ndarray, dX: Optional[np.ndarray] = None
+    ) -> float:
+
+        delta_tc = information_reduction(
+            X, Xtrans, method=self.method, p_value=self.p_value, kwargs=self.kwargs
+        )
+        # add loss values
+        self.loss_vals.append(delta_tc)
+
+        # return change in marginal entropy
+        return delta_tc
+
+    def check_tolerance(self, current_layer: int) -> bool:
+        if current_layer <= self.tol_layers:
+            return True
+        else:
+            # get the abs sum of the last n layers
+            tol = np.abs(self.loss_vals[-self.tol_layers :]).sum()
+
+            # calculate the changes
+            if tol == 0:
+                # no changes, don't use the last n layers
+                self.loss_vals = self.loss_vals[: self.tol_layers]
+                return False
+            else:
+                # continue
+                return True
 
 
 def information_reduction(
@@ -76,7 +123,7 @@ def information_reduction(
     return delta_info
 
 
-def get_reduction_tolerance(n_samples: int) -> int:
+def get_reduction_tolerance(n_samples: int) -> float:
     """A tolerance indicator for the information reduction"""
     xxx = np.logspace(2, 8, 7)
     yyy = [0.1571, 0.0468, 0.0145, 0.0046, 0.0014, 0.0001, 0.00001]

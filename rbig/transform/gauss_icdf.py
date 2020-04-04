@@ -3,18 +3,16 @@ from typing import Callable, Optional, Tuple, Union
 import numpy as np
 from numpy.random import RandomState
 from scipy import stats
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array, check_random_state
 
-from rbig.base import DensityMixin, DensityTransformerMixin, ScoreMixin
-from rbig.utils import check_input_output_dims
+from rbig.transform.base import DensityMixin, BaseTransform
 
 BOUNDS_THRESHOLD = 1e-7
 CLIP_MIN = stats.norm.ppf(BOUNDS_THRESHOLD - np.spacing(1))
 CLIP_MAX = stats.norm.ppf(1 - (BOUNDS_THRESHOLD - np.spacing(1)))
 
 
-class InverseGaussCDF(BaseEstimator, DensityTransformerMixin):
+class InverseGaussCDF(BaseTransform, DensityMixin):
     def __init__(self) -> None:
         pass
 

@@ -1,12 +1,12 @@
 from typing import Dict, NamedTuple, Optional, Tuple
 
 import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin
 
+from rbig.layers.base import BaseLayer
 from rbig.transform import HistogramGaussianization, OrthogonalTransform
 
 
-class RBIGBlock(BaseEstimator, TransformerMixin):
+class RBIGBlock(BaseLayer):
     def __init__(
         self, mg_params: Optional[Dict] = {}, rot_params: Optional[Dict] = {}
     ) -> None:
