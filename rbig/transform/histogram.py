@@ -1,21 +1,18 @@
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Optional, Tuple, Union, Dict
 
 import numpy as np
 from numpy.random import RandomState
 from scipy import stats
+from rbig.information.histogram import ScipyHistogram
 
 # Base classes
 from sklearn.utils import check_array, check_random_state
 
 from rbig.transform.base import DensityMixin, BaseTransform
 from rbig.utils import (
+    get_domain_extension,
     bin_estimation,
-    check_bounds,
-    check_floating,
-    make_finite,
     make_interior,
-    make_interior_probability,
-    make_positive,
     check_input_output_dims,
 )
 
@@ -24,10 +21,16 @@ BOUNDS_THRESHOLD = 1e-7
 
 class ScipyHistogramUniformization(BaseTransform, DensityMixin):
     def __init__(
-        self, nbins: Optional[Union[int, str]] = "auto", alpha: float = 1e-5
+        self,
+        nbins: Optional[Union[int, str]] = "auto",
+        alpha: float = 1e-5,
+        support_extension: Union[float, int] = 10,
+        kwargs: Dict = {},
     ) -> None:
         self.nbins = nbins
         self.alpha = alpha
+        self.support_extension = support_extension
+        self.kwargs = kwargs
 
     def fit(self, X: np.ndarray) -> None:
         """Finds an empirical distribution based on the
@@ -53,8 +56,14 @@ class ScipyHistogramUniformization(BaseTransform, DensityMixin):
         # Loop through features
         for feature in X.T:
 
+            support_bounds = get_domain_extension(
+                feature, extension=self.support_extension
+            )
+
             # calculate histogram
-            hist, edges = np.histogram(feature, bins=self.nbins)
+            hist, edges = np.histogram(
+                feature, bins=self.nbins, range=support_bounds, **self.kwargs
+            )
 
             # print("Hist:", np.min(hist), np.max(hist))
 
@@ -219,17 +228,22 @@ class ScipyHistogramUniformization(BaseTransform, DensityMixin):
         """
         X = check_array(X, ensure_2d=True, copy=True)
 
+        n_samples = X.shape[0]
+
         log_scores = list()
 
         for feature_idx in range(X.shape[1]):
 
-            # transform each column
-            X[:, feature_idx] = np.clip(
+            # clip extreme values that are input
+            X[:, feature_idx] = make_interior(
                 X[:, feature_idx],
-                self.marginal_transforms_[feature_idx].a + 10 * np.spacing(1),
-                self.marginal_transforms_[feature_idx].b - 10 * np.spacing(1),
+                bounds=(
+                    self.marginal_transforms_[feature_idx].a,
+                    self.marginal_transforms_[feature_idx].b,
+                ),
             )
 
+            # transform each column
             iscore = self.marginal_transforms_[feature_idx].logpdf(X[:, feature_idx])
             log_scores.append(iscore)
 
@@ -238,7 +252,7 @@ class ScipyHistogramUniformization(BaseTransform, DensityMixin):
         log_scores = np.vstack(log_scores).T
 
         assert log_scores.shape == (
-            self.n_samples_,
+            n_samples,
             self.n_features_,
         ), f"Histogram: Jacobian lost dims, {X.shape}"
 

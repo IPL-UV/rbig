@@ -1,10 +1,47 @@
 import warnings
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 from sklearn.exceptions import DataConversionWarning
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import column_or_1d
+
+
+def get_domain_extension(
+    data: np.ndarray, extension: Union[float, int],
+) -> Tuple[float, float]:
+
+    if isinstance(extension, float):
+        pass
+    elif isinstance(extension, int):
+        extension /= 100
+    else:
+        raise ValueError(f"Unrecognized type extension: {type(extension)}")
+
+    domain = np.abs(data.max() - data.min())
+
+    domain_ext = extension * domain
+
+    lower_bound = data.min() - domain_ext
+    upper_bound = data.max() + domain_ext
+
+    return lower_bound, upper_bound
+
+
+def get_support_reference(
+    support: np.ndarray, extension: Union[float, int], n_quantiles: int = 1_000
+) -> np.ndarray:
+
+    lb, ub = get_domain_extension(support, extension)
+
+    # get new support
+    new_support = np.linspace(lb, ub, n_quantiles, endpoint=True)
+
+    return new_support
+
+
+def interp_support():
+    return None
 
 
 def check_input_output_dims(

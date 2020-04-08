@@ -4,7 +4,7 @@ from rbig.transform.histogram import (
     HistogramUniformization,
 )
 from rbig.transform.linear import OrthogonalTransform
-from rbig.transform.gaussianization import HistogramGaussianization
+from rbig.transform.gaussianization import HistogramGaussianization, KDEGaussianization
 from rbig.transform.quantile import QuantileTransformer
 
 # from rbig.transform.histogram import MarginalHistogramTransform
@@ -18,4 +18,5 @@ __all__ = [
     "OrthogonalTransform",
     "HistogramGaussianization",
     "QuantileTransformer",
+    "KDEGaussianization",
 ]

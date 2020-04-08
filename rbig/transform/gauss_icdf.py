@@ -6,6 +6,7 @@ from scipy import stats
 from sklearn.utils import check_array, check_random_state
 
 from rbig.transform.base import DensityMixin, BaseTransform
+from rbig.utils import make_interior
 
 BOUNDS_THRESHOLD = 1e-7
 CLIP_MIN = stats.norm.ppf(BOUNDS_THRESHOLD - np.spacing(1))
@@ -33,6 +34,10 @@ class InverseGaussCDF(BaseTransform, DensityMixin):
         # Loop through features
         for feature_idx in range(X.shape[1]):
 
+            # make interior probability
+            X[:, feature_idx] = make_interior(X[:, feature_idx], bounds=(0.0, 1.0),)
+
+            # do transformation
             X[:, feature_idx] = self._transform(
                 X[:, feature_idx], stats.norm.ppf, inverse=False
             )
@@ -86,13 +91,9 @@ class InverseGaussCDF(BaseTransform, DensityMixin):
 
         X = check_array(X, ensure_2d=False, copy=True)
 
-        # X = np.clip(X, CLIP_MIN, CLIP_MAX)
+        X = make_interior(X, bounds=(0.0, 1.0))
 
         X = -stats.norm.logpdf(self.transform(X))
-
-        # check_input_output_dims(
-        #     X, (X.shape[0], self.n_features_), "ICDF Gauss", "Jacobian"
-        # )
 
         return X
 

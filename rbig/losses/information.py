@@ -41,7 +41,7 @@ class InformationLoss(RBIGLoss):
             return True
         else:
             # get the abs sum of the last n layers
-            tol = np.abs(self.loss_vals[-self.tol_layers :]).sum()
+            tol = np.sum(self.loss_vals[-self.tol_layers :])
 
             # calculate the changes
             if tol == 0:

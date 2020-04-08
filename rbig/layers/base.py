@@ -27,5 +27,4 @@ class BaseLayer(BaseEstimator, TransformerMixin):
         raise NotImplementedError
 
     def log_abs_det_jacobian(self, X: np.ndarray) -> np.ndarray:
-
         raise NotImplementedError

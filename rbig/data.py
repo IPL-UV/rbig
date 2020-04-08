@@ -10,11 +10,13 @@ class ToyData:
         n_features=2,
         noise=0.05,
         random_state=123,
+        clusters=2,
     ):
         self.dataset = dataset
         self.n_samples = n_samples
         self.n_features = n_features
         self.noise = noise
+        self.clusters = clusters
         self.rng = np.random.RandomState(random_state)
 
     def generate_samples(self, **kwargs):
@@ -33,9 +35,10 @@ class ToyData:
         elif self.dataset == "blobs":
             X, _ = datasets.make_blobs(
                 n_samples=self.n_samples,
-                n_features=self.features,
-                noise=self.noise,
+                n_features=self.n_features,
+                cluster_std=self.noise,
                 random_state=self.rng,
+                centers=self.clusters,
                 **kwargs,
             )
 
@@ -46,9 +49,6 @@ class ToyData:
         return X
 
     def _dataset_rbig(self):
-        seed = 123
-
-        num_samples = 5000
         X = np.abs(2 * self.rng.randn(self.n_samples, 1))
         Y = np.sin(X) + self.noise * self.rng.randn(self.n_samples, 1)
         data = np.hstack((X, Y))

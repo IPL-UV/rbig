@@ -19,18 +19,8 @@ class BaseModel(BaseTransform, DensityMixin):
         self.flow = flow
         self.loss = loss
 
-    def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
-
-        raise NotImplementedError
-
     def transform(
         self, X: np.ndarray, y: Optional[np.ndarray] = None, return_jacobian=False
-    ) -> np.ndarray:
-
-        raise NotImplementedError
-
-    def inverse_transform(
-        self, X: np.ndarray, y: Optional[np.ndarray] = None
     ) -> np.ndarray:
 
         raise NotImplementedError
