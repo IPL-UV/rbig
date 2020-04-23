@@ -1,3 +1,4 @@
+from rbig.transform.gaussianization import QuantileGaussianization, PowerGaussianization
 from typing import Dict, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
@@ -37,6 +38,10 @@ class RBIGBlock(BaseLayer):
             self.marginal_gaussian_ = HistogramGaussianization(**self.mg_params_)
         elif self.mg_method == "kde":
             self.marginal_gaussian_ = KDEGaussianization(**self.mg_params_)
+        elif self.mg_method == "quantile":
+            self.marginal_gaussian_ = QuantileGaussianization(**self.mg_params_)
+        elif self.mg_method == "power":
+            self.marginal_gaussian_ = PowerGaussianization(**self.mg_params_)
         else:
             raise ValueError(
                 f"Unrecognized Marginal Gaussianization method: {self.mg_method}"
@@ -151,4 +156,66 @@ class RBIGHistParams(NamedTuple):
         return gauss_block.fit(X)
 
 
-RBIGParams = Union[RBIGKDEParams, RBIGHistParams]
+class RBIGQuantileParams(NamedTuple):
+    # marginal transform parameters
+    n_quantiles: int = 1_000
+    support_extension: Union[int, float] = 10
+    subsample: int = 1e5
+    random_state: int = 123
+    # rotation parameters
+    rotation: str = "pca"
+    random_state: int = 123
+    rot_kwargs: Dict = {}
+
+    def fit_data(self, X: np.ndarray) -> RBIGBlock:
+
+        # initialize RBIG Block
+        gauss_block = RBIGBlock(
+            mg_method="quantile",
+            mg_params={
+                "n_quantiles": self.n_quantiles,
+                "subsample": self.subsample,
+                "random_state": self.random_state,
+                "support_extension": self.support_extension,
+            },
+            rot_params={
+                "rotation": self.rotation,
+                "random_state": self.random_state,
+                "kwargs": self.rot_kwargs,
+            },
+        )
+
+        return gauss_block.fit(X)
+
+
+class RBIGPowerParams(NamedTuple):
+    # marginal transform parameters
+    standardize: bool = True
+    support_extension: Union[int, float] = 10
+    copy: bool = True
+    # rotation parameters
+    rotation: str = "pca"
+    random_state: int = 123
+    rot_kwargs: Dict = {}
+
+    def fit_data(self, X: np.ndarray) -> RBIGBlock:
+
+        # initialize RBIG Block
+        gauss_block = RBIGBlock(
+            mg_method="power",
+            mg_params={
+                "standardize": self.standardize,
+                "copy": self.copy,
+                "support_extension": self.support_extension,
+            },
+            rot_params={
+                "rotation": self.rotation,
+                "random_state": self.random_state,
+                "kwargs": self.rot_kwargs,
+            },
+        )
+
+        return gauss_block.fit(X)
+
+
+RBIGParams = Union[RBIGKDEParams, RBIGHistParams, RBIGQuantileParams, RBIGPowerParams]

@@ -4,6 +4,7 @@ import numpy as np
 from numpy.random import RandomState
 from scipy import stats
 from sklearn.utils import check_array, check_random_state
+from sklearn.preprocessing import QuantileTransformer, PowerTransformer
 
 from rbig.transform.base import DensityMixin, BaseTransform
 
@@ -11,6 +12,211 @@ from rbig.transform.base import DensityMixin, BaseTransform
 from rbig.transform.gauss_icdf import InverseGaussCDF
 from rbig.transform.histogram import ScipyHistogramUniformization
 from rbig.transform.kde import ScipyKDEUniformization, SklearnKDEUniformization
+from rbig.utils import get_domain_extension, get_support_reference
+import warnings
+
+
+class QuantileGaussianization(QuantileTransformer, DensityMixin):
+    def __init__(
+        self,
+        n_quantiles: int = 1_000,
+        support_extension: Union[float, int] = 10,
+        subsample: int = 1e5,
+        random_state: Optional[int] = None,
+    ) -> None:
+        super().__init__(
+            n_quantiles=n_quantiles,
+            output_distribution="normal",
+            subsample=subsample,
+            random_state=random_state,
+            copy=True,
+        )
+        self.support_extension = support_extension
+
+    def _dense_fit(self, X, random_state):
+        """Compute percentiles for dense matrices.
+        Parameters
+        ----------
+        X : ndarray, shape (n_samples, n_features)
+            The data used to scale along the features axis.
+        """
+        if self.ignore_implicit_zeros:
+            warnings.warn(
+                "'ignore_implicit_zeros' takes effect only with"
+                " sparse matrix. This parameter has no effect."
+            )
+
+        n_samples, n_features = X.shape
+        references = self.references_ * 100
+
+        self.quantiles_ = []
+        for col in X.T:
+            # extend the domain for the feature
+            new_support = get_support_reference(
+                support=col, extension=self.support_extension
+            )
+
+            if self.subsample < n_samples:
+                subsample_idx = random_state.choice(
+                    n_samples, size=self.subsample, replace=False
+                )
+                col = col.take(subsample_idx, mode="clip")
+
+            # interp
+            # col_new = np.interp(col,)
+
+            quantiles = np.nanpercentile(col, references)
+            quantiles = np.interp(new_support, quantiles, references)
+
+            self.quantiles_.append(quantiles)
+        self.quantiles_ = np.transpose(self.quantiles_)
+        # Due to floating-point precision error in `np.nanpercentile`,
+        # make sure that quantiles are monotonically increasing.
+        # Upstream issue in numpy:
+        # https://github.com/numpy/numpy/issues/14685
+        self.quantiles_ = np.maximum.accumulate(self.quantiles_)
+
+    def log_abs_det_jacobian(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> float:
+        """Returns the log likelihood. It
+        calculates the mean of the log probability.
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+         incoming samples
+        
+        Returns
+        -------
+        X_jacobian : (n_samples, n_features),
+            the mean of the log probability
+        """
+        X = check_array(X, ensure_2d=True, copy=True)
+
+        n_samples = X.shape[0]
+
+        # forward transformation
+
+        # log pdf of a
+        ldj = -stats.norm().logpdf(self.transform(X))
+
+        return ldj
+
+    # def logpdf()
+    def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
+        """Returns the log likelihood. It
+        calculates the mean of the log probability.
+        """
+        X = check_array(X, ensure_2d=True, copy=False)
+
+        # forward transformation
+        x_logprob = -stats.norm().logpdf(self.transform(X))
+
+        return x_logprob.sum(axis=-1)
+
+    def sample(
+        self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None
+    ) -> np.ndarray:
+        """Generate random samples from this.
+        
+        Parameters
+        ----------
+        n_samples : int, default=1
+            The number of samples to generate. 
+        
+        random_state : int, RandomState,None, Optional, default=None
+            The int to be used as a seed to generate the random 
+            uniform samples.
+        
+        Returns
+        -------
+        X : np.ndarray, (n_samples, )
+        """
+        #
+        rng = check_random_state(random_state)
+
+        X_gauss = rng.randn(n_samples, self.quantiles_.shape[1])
+
+        X = self.inverse_transform(X_gauss)
+        return X
+
+
+class PowerGaussianization(PowerTransformer, DensityMixin):
+    def __init__(
+        self,
+        standardize: bool = True,
+        support_extension: Union[float, int] = 10,
+        copy: bool = True,
+    ) -> None:
+        super().__init__(
+            method="yeo-johnson", standardize=standardize, copy=copy,
+        )
+        self.support_extension = support_extension
+
+    def log_abs_det_jacobian(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> float:
+        """Returns the log likelihood. It
+        calculates the mean of the log probability.
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+         incoming samples
+        
+        Returns
+        -------
+        X_jacobian : (n_samples, n_features),
+            the mean of the log probability
+        """
+        X = check_array(X, ensure_2d=True, copy=True)
+
+        n_samples = X.shape[0]
+
+        # forward transformation
+        X = self.transform(X)
+
+        # log pdf of a
+        ldj = stats.norm().logpdf(X)
+
+        return ldj
+
+    def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
+        """Returns the log likelihood. It
+        calculates the mean of the log probability.
+        """
+
+        # forward transformation
+        log_prob = self.log_abs_det_jacobian(X, y).sum(axis=1)
+
+        return log_prob
+
+    def sample(
+        self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None
+    ) -> np.ndarray:
+        """Generate random samples from this.
+        
+        Parameters
+        ----------
+        n_samples : int, default=1
+            The number of samples to generate. 
+        
+        random_state : int, RandomState,None, Optional, default=None
+            The int to be used as a seed to generate the random 
+            uniform samples.
+        
+        Returns
+        -------
+        X : np.ndarray, (n_samples, )
+        """
+        #
+        rng = check_random_state(random_state)
+
+        X_gauss = rng.randn(n_samples, self.quantiles_.shape[1])
+
+        X = self.inverse_transform(X_gauss)
+        return X
 
 
 class HistogramGaussianization(BaseTransform, DensityMixin):
