@@ -7,6 +7,14 @@ from sklearn.utils import check_random_state
 from sklearn.utils.validation import column_or_1d
 
 
+def make_interior_log_prob(X: np.ndarray):
+
+    # remove numbers that are close to zero
+    X[X <= -np.inf] = -np.finfo(X.dtype).eps
+
+    return X
+
+
 def get_domain_extension(
     data: np.ndarray, extension: Union[float, int],
 ) -> Tuple[float, float]:

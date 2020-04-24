@@ -2,7 +2,7 @@ from typing import Union, Optional, Dict
 import numpy as np
 from scipy import stats
 from rbig.information.base import PDFEstimator
-from rbig.utils import make_interior
+from rbig.utils import make_interior_log_prob, make_interior_probability
 from sklearn.utils import check_array
 from rbig.utils import get_domain_extension
 
@@ -71,12 +71,14 @@ class ScipyHistogram(PDFEstimator):
     def __init__(
         self,
         bins: Optional[int] = None,
-        alpha: float = 1e-3,
+        alpha: float = 1e-5,
+        prob_tol: float = 1e-7,
         support_extension: Union[float, int] = 10,
         kwargs: Dict = {},
     ) -> None:
         self.bins = bins
         self.alpha = alpha
+        self.prob_tol = prob_tol
         self.support_extension = support_extension
         self.kwargs = kwargs
 
@@ -88,22 +90,33 @@ class ScipyHistogram(PDFEstimator):
         support_bounds = get_domain_extension(X, self.support_extension)
 
         # calculate histogram
+        print("Support Bounds:", support_bounds)
         hist = np.histogram(
             X.squeeze(), bins=self.bins, range=support_bounds, **self.kwargs
         )
 
+        # needed for the entropy calculation
         self.hist_counts_ = hist[0]
 
         # fit model
         self.estimator_ = stats.rv_histogram(hist)
+        print("Histogram Support:", self.estimator_.support())
+
+        # Add some noise to the pdfs to prevent zero probability
+        self.estimator_._hpdf += self.alpha
 
         return self
 
+    def pdf(self, X: np.ndarray) -> np.ndarray:
+
+        X_prob = self.estimator_.pdf(X.squeeze())
+
+        X_prob = make_interior_probability(X_prob, eps=self.prob_tol)
+        return X_prob
+
     def logpdf(self, X: np.ndarray) -> np.ndarray:
 
-        X = make_interior(X, bounds=(self.estimator_.support()))
-
-        return self.estimator_.logpdf(X.squeeze())
+        return np.log(self.pdf(X))
 
     def cdf(self, X: np.ndarray) -> np.ndarray:
         return self.estimator_.cdf(X.squeeze())
