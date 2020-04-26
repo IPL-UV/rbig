@@ -3,9 +3,11 @@ from typing import Dict, Optional
 import numpy as np
 from scipy import stats
 
-from rbig.layers import RBIGParams
+from rbig.layers import RBIGLayer
 from rbig.losses import RBIGLoss
 from rbig.models.base import BaseModel
+from sklearn.base import clone
+from copy import deepcopy
 
 
 class GaussianizationModel(BaseModel):
@@ -15,7 +17,7 @@ class GaussianizationModel(BaseModel):
     ----------
     """
 
-    def __init__(self, flow: RBIGParams, loss: RBIGLoss,) -> None:
+    def __init__(self, flow: RBIGLayer, loss: RBIGLoss,) -> None:
         self.flow = flow
         self.loss = loss
 
@@ -34,7 +36,7 @@ class GaussianizationModel(BaseModel):
             n_layers += 1
 
             # initialize rbig block
-            iflow = self.flow.fit_data(X)
+            iflow = deepcopy(self.flow)
 
             # transform data
             Xtrans, dX = iflow.transform(X, y=None, return_jacobian=True)

@@ -13,6 +13,10 @@ BOUNDS_THRESHHOLD = 1e-7
 
 
 class QuantileTransformer(BaseTransform, DensityMixin):
+    pass
+
+
+class QuantileTransformerOld(BaseTransform, DensityMixin):
     def __init__(
         self,
         n_quantiles: int = 1_000,

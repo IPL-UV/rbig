@@ -9,7 +9,7 @@ from rbig.information.histogram import ScipyHistogram
 from sklearn.utils import check_array, check_random_state
 
 from rbig.transform.base import DensityMixin, BaseTransform
-from rbig.information.kde import KDEScipy, KDESklearn
+from rbig.density.kde import KDEScipy, KDESklearn
 from rbig.utils import (
     get_domain_extension,
     bin_estimation,

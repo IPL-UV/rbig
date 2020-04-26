@@ -4,16 +4,15 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class BaseLayer(BaseEstimator, TransformerMixin):
+class BaseLayer(TransformerMixin):
     def __init__(
         self, mg_params: Optional[Dict] = {}, rot_params: Optional[Dict] = {}
     ) -> None:
         self.mg_params_ = mg_params
         self.rot_params_ = rot_params
 
-    def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
-
-        raise NotImplementedError
+    def fit(self, X: np.ndarray) -> None:
+        return self
 
     def transform(
         self, X: np.ndarray, y: Optional[np.ndarray] = None, return_jacobian=False

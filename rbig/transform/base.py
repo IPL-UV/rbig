@@ -3,6 +3,7 @@ from abc import abstractmethod
 import numpy as np
 from numpy.random import RandomState
 from sklearn.base import BaseEstimator, TransformerMixin
+from rbig.density.base import PDFEstimator
 
 
 class BaseTransform(BaseEstimator, TransformerMixin):

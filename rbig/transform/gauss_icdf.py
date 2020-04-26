@@ -29,39 +29,20 @@ class InverseGaussCDF(BaseTransform, DensityMixin):
     def transform(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
         # check inputs
-        X = check_array(X, ensure_2d=True, copy=True)
+        X = check_array(X.reshape(-1, 1), ensure_2d=True, copy=True)
 
-        # Loop through features
-        for feature_idx in range(X.shape[1]):
+        # make interior probability
+        X = make_interior(X, bounds=(0.0, 1.0),)
 
-            # make interior probability
-            X[:, feature_idx] = make_interior(X[:, feature_idx], bounds=(0.0, 1.0),)
-
-            # do transformation
-            X[:, feature_idx] = self._transform(
-                X[:, feature_idx], stats.norm.ppf, inverse=False
-            )
-
-        # check_input_output_dims(
-        #     X, (X.shape[0], self.n_features_), "ICDF Gauss", "Foward"
-        # )
-        return X
+        return self._transform(X, stats.norm.ppf, inverse=False)
 
     def inverse_transform(self, X: np.ndarray):
 
         # check inputs
-        X = check_array(X, ensure_2d=True, copy=True)
+        X = check_array(X.reshape(-1, 1), ensure_2d=True, copy=True)
 
-        # Loop through features
-        for feature_idx in range(X.shape[1]):
+        return self._transform(X, stats.norm.cdf, inverse=True)
 
-            X[:, feature_idx] = self._transform(
-                X[:, feature_idx], stats.norm.cdf, inverse=False
-            )
-
-        # check_input_output_dims(
-        #     X, (X.shape[0], self.n_features_), "ICDF Gauss", "Inverse"
-        # )
         return X
 
     def _transform(
@@ -89,7 +70,7 @@ class InverseGaussCDF(BaseTransform, DensityMixin):
 
     def log_abs_det_jacobian(self, X: np.ndarray, y: np.ndarray = None) -> np.ndarray:
 
-        X = check_array(X, ensure_2d=False, copy=True)
+        X = check_array(X.reshape(-1, 1), ensure_2d=False, copy=True)
 
         X = make_interior(X, bounds=(0.0, 1.0))
 
@@ -118,7 +99,7 @@ class InverseGaussCDF(BaseTransform, DensityMixin):
         #
         rng = check_random_state(random_state)
 
-        U = rng.randn(n_samples, self.n_features_)
+        G = rng.randn(n_samples, self.n_features_)
 
-        X = self.inverse_transform(U)
+        X = self.inverse_transform(G)
         return X
