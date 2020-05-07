@@ -1,0 +1,1206 @@
+
+
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="RBIG">
+      
+      
+        <link rel="canonical" href="https://jejjohnson.github.io/rbig/notebooks/Untitled/">
+      
+      
+        <meta name="author" content="J. Emmanuel Johnson">
+      
+      <link rel="shortcut icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.1, mkdocs-material-5.1.3">
+    
+    
+      
+        <title>Untitled - RBIG</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.62d34fff.min.css">
+      
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.c8acc6db.min.css">
+      
+      
+        
+        
+        <meta name="theme-color" content="">
+      
+    
+    
+    
+      
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=source+code+pro:300,400,400i,700%7Csource+code+pro&display=fallback">
+        <style>body,input{font-family:"source code pro",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"source code pro",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+      <link rel="stylesheet" href="../../css/ansi-colours.css">
+    
+      <link rel="stylesheet" href="../../css/jupyter-cells.css">
+    
+      <link rel="stylesheet" href="../../css/pandas-dataframe.css">
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    <body dir="ltr" data-md-color-primary="black" data-md-color-accent="gray">
+  
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#data" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href="https://jejjohnson.github.io/rbig" title="RBIG" class="md-header-nav__button md-logo" aria-label="RBIG">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,8A3,3 0 0,0 15,5A3,3 0 0,0 12,2A3,3 0 0,0 9,5A3,3 0 0,0 12,8M12,11.54C9.64,9.35 6.5,8 3,8V19C6.5,19 9.64,20.35 12,22.54C14.36,20.35 17.5,19 21,19V8C17.5,8 14.36,9.35 12,11.54Z" /></svg>
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" /></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            RBIG
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              Untitled
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z" /></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z" /></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" /></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/jejjohnson/rbig/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jejjohnson/rbig
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+        
+      
+      
+        
+          
+
+  
+
+<nav class="md-tabs md-tabs--active" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  <li class="md-tabs__item">
+    
+      <a href="../.." class="md-tabs__link">
+        Rotation-Based Iterative Gaussianization
+      </a>
+    
+  </li>
+
+      
+        
+  
+  
+    <li class="md-tabs__item">
+      
+        <a href="../../Notes/" class="md-tabs__link">
+          Notes
+        </a>
+      
+    </li>
+  
+
+      
+        
+  
+  
+    <li class="md-tabs__item">
+      
+        <a href="../../demos/demo_1_marginal_uniformization/" class="md-tabs__link">
+          Demos
+        </a>
+      
+    </li>
+  
+
+      
+        
+  
+  
+    <li class="md-tabs__item">
+      
+        <a href="./" class="md-tabs__link md-tabs__link--active">
+          Notebooks
+        </a>
+      
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://jejjohnson.github.io/rbig" title="RBIG" class="md-nav__button md-logo" aria-label="RBIG">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,8A3,3 0 0,0 15,5A3,3 0 0,0 12,2A3,3 0 0,0 9,5A3,3 0 0,0 12,8M12,11.54C9.64,9.35 6.5,8 3,8V19C6.5,19 9.64,20.35 12,22.54C14.36,20.35 17.5,19 21,19V8C17.5,8 14.36,9.35 12,11.54Z" /></svg>
+
+    </a>
+    RBIG
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/jejjohnson/rbig/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jejjohnson/rbig
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../.." title="Rotation-Based Iterative Gaussianization" class="md-nav__link">
+      Rotation-Based Iterative Gaussianization
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-2" type="checkbox" id="nav-2">
+    
+    <label class="md-nav__link" for="nav-2">
+      Notes
+      <span class="md-nav__icon md-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" /></svg>
+      </span>
+    </label>
+    <nav class="md-nav" aria-label="Notes" data-md-level="1">
+      <label class="md-nav__title" for="nav-2">
+        <span class="md-nav__icon md-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+        </span>
+        Notes
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/" title="Index" class="md-nav__link">
+      Index
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-2-2" type="checkbox" id="nav-2-2">
+    
+    <label class="md-nav__link" for="nav-2-2">
+      Unsorted
+      <span class="md-nav__icon md-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" /></svg>
+      </span>
+    </label>
+    <nav class="md-nav" aria-label="Unsorted" data-md-level="2">
+      <label class="md-nav__title" for="nav-2-2">
+        <span class="md-nav__icon md-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+        </span>
+        Unsorted
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/dds/" title="Density Destructors" class="md-nav__link">
+      Density Destructors
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/exponential/" title="Exponential Family of Distributions" class="md-nav__link">
+      Exponential Family of Distributions
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/gaussian/" title="Gaussian Distribution" class="md-nav__link">
+      Gaussian Distribution
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/gaussianization/" title="Gaussianization" class="md-nav__link">
+      Gaussianization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/itm/" title="Information Theory Measures" class="md-nav__link">
+      Information Theory Measures
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/kde/" title="Kernel Density Estimation" class="md-nav__link">
+      Kernel Density Estimation
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/literature/" title="Literature Review" class="md-nav__link">
+      Literature Review
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/mg/" title="Marginal Gaussianization" class="md-nav__link">
+      Marginal Gaussianization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/mixtures/" title="Mixture Models" class="md-nav__link">
+      Mixture Models
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/mu/" title="Uniformization" class="md-nav__link">
+      Uniformization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/nfs/" title="Normalizing Flows" class="md-nav__link">
+      Normalizing Flows
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/pdf_est/" title="PDF Estimation" class="md-nav__link">
+      PDF Estimation
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/rbig/" title="Rotation-Based Iterative Gaussianization (RBIG)" class="md-nav__link">
+      Rotation-Based Iterative Gaussianization (RBIG)
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/refactor/" title="Refactoring RBIG (RBIG 1.1)" class="md-nav__link">
+      Refactoring RBIG (RBIG 1.1)
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/rotation/" title="Rotation" class="md-nav__link">
+      Rotation
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Notes/Unsorted/uniform/" title="Uniform Distribution" class="md-nav__link">
+      Uniform Distribution
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
+    
+    <label class="md-nav__link" for="nav-3">
+      Demos
+      <span class="md-nav__icon md-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" /></svg>
+      </span>
+    </label>
+    <nav class="md-nav" aria-label="Demos" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        <span class="md-nav__icon md-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+        </span>
+        Demos
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../demos/demo_1_marginal_uniformization/" title="Demo 1 marginal uniformization" class="md-nav__link">
+      Demo 1 marginal uniformization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../demos/demo_innf/" title="Demo: Gaussianization" class="md-nav__link">
+      Demo: Gaussianization
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4" checked>
+    
+    <label class="md-nav__link" for="nav-4">
+      Notebooks
+      <span class="md-nav__icon md-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" /></svg>
+      </span>
+    </label>
+    <nav class="md-nav" aria-label="Notebooks" data-md-level="1">
+      <label class="md-nav__title" for="nav-4">
+        <span class="md-nav__icon md-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+        </span>
+        Notebooks
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Untitled
+        <span class="md-nav__icon md-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3,9H17V7H3V9M3,13H17V11H3V13M3,17H17V15H3V17M19,17H21V15H19V17M19,7V9H21V7H19M19,13H21V11H19V13Z" /></svg>
+        </span>
+      </label>
+    
+    <a href="./" title="Untitled" class="md-nav__link md-nav__link--active">
+      Untitled
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+      </span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#data" class="md-nav__link">
+    Data
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#histogram-estimation" class="md-nav__link">
+    Histogram Estimation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kernel-density-estimation" class="md-nav__link">
+    Kernel Density Estimation
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../demo_1_marginal_uniformization/" title="Demo 1 marginal uniformization" class="md-nav__link">
+      Demo 1 marginal uniformization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../demo_2_icdf_gaussuan/" title="Demo 2 icdf gaussuan" class="md-nav__link">
+      Demo 2 icdf gaussuan
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../demo_3_marginal_gaussianization/" title="Demo 3 marginal gaussianization" class="md-nav__link">
+      Demo 3 marginal gaussianization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../demo_4_rbig_model/" title="Demo 4 rbig model" class="md-nav__link">
+      Demo 4 rbig model
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../demo_5_rbig_loss/" title="Demo 5 rbig loss" class="md-nav__link">
+      Demo 5 rbig loss
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../demo_6_it_measures/" title="Demo 6 it measures" class="md-nav__link">
+      Demo 6 it measures
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../demo_7.1_pdf_estimation/" title="Demo 7.1 pdf estimation" class="md-nav__link">
+      Demo 7.1 pdf estimation
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../demo_7.2_boundary_issues/" title="Demo 7.2 boundary issues" class="md-nav__link">
+      Demo 7.2 boundary issues
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+      </span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#data" class="md-nav__link">
+    Data
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#histogram-estimation" class="md-nav__link">
+    Histogram Estimation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kernel-density-estimation" class="md-nav__link">
+    Kernel Density Estimation
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/jejjohnson/rbig/edit/master/docs/notebooks/Untitled.ipynb" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" /></svg>
+                  </a>
+                
+                
+                  
+                
+                
+                  <h1>Untitled</h1>
+                
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script>
+(function() {
+  function addWidgetsRenderer() {
+    var mimeElement = document.querySelector('script[type="application/vnd.jupyter.widget-view+json"]');
+    var scriptElement = document.createElement('script');
+    var widgetRendererSrc = 'https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js';
+    var widgetState;
+
+    // Fallback for older version:
+    try {
+      widgetState = mimeElement && JSON.parse(mimeElement.innerHTML);
+
+      if (widgetState && (widgetState.version_major < 2 || !widgetState.version_major)) {
+        widgetRendererSrc = 'jupyter-js-widgets@*/dist/embed.js';
+      }
+    } catch(e) {}
+
+    scriptElement.src = widgetRendererSrc;
+    document.body.appendChild(scriptElement);
+  }
+
+  document.addEventListener('DOMContentLoaded', addWidgetsRenderer);
+}());
+</script>
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="n">cwd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+<span class="c1"># sys.path.insert(0, f&quot;{cwd}/../&quot;)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;/home/emmanuel/code/rbig&quot;</span><span class="p">)</span>
+
+<span class="c1"># RBIG Packages</span>
+<span class="kn">from</span> <span class="nn">rbig.data</span> <span class="kn">import</span> <span class="n">ToyData</span>
+<span class="kn">from</span> <span class="nn">rbig.information.kde</span> <span class="kn">import</span> <span class="n">KDESklearn</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">NamedTuple</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span>
+
+<span class="c1"># Plot Functions</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">([</span><span class="s2">&quot;seaborn-paper&quot;</span><span class="p">])</span>
+
+<span class="o">%</span><span class="n">load_ext</span> <span class="n">autoreload</span>
+<span class="o">%</span><span class="n">autoreload</span> <span class="mi">2</span>
+</code></pre></div>
+
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<p><div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1"></p>
+<h2 id="data">Data<a class="headerlink" href="#data" title="Permanent link">&para;</a></h2>
+<p></div>
+</div></p>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">seed</span> <span class="o">=</span> <span class="mi">123</span>
+<span class="n">n_samples</span> <span class="o">=</span> <span class="mi">10_000</span>
+<span class="n">a</span> <span class="o">=</span> <span class="mi">4</span>
+
+<span class="c1"># initialize data distribution</span>
+<span class="n">data_dist</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">gamma</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">)</span>
+
+<span class="c1"># get some samples</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">data_dist</span><span class="o">.</span><span class="n">rvs</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Entropy: </span><span class="si">{</span><span class="n">data_dist</span><span class="o">.</span><span class="n">entropy</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># plot distribution</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">distplot</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Entropy: 2.0234
+</pre>
+</div>
+</div>
+
+<div class="output_area" markdown="1">
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>&lt;matplotlib.axes._subplots.AxesSubplot at 0x7f52674788b0&gt;</pre>
+</div>
+
+</div>
+
+<div class="output_area" markdown="1">
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,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
+"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+<div class="cell border-box-sizing text_cell rendered">
+<p><div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1"></p>
+<h2 id="histogram-estimation">Histogram Estimation<a class="headerlink" href="#histogram-estimation" title="Permanent link">&para;</a></h2>
+<p></div>
+</div></p>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">rbig.information.histogram</span> <span class="kn">import</span> <span class="n">hist_entropy</span>
+</code></pre></div>
+
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered"></div>
+</div>
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">H_x</span> <span class="o">=</span> <span class="n">hist_entropy</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+<span class="o">%</span><span class="n">timeit</span> <span class="n">_</span> <span class="o">=</span> <span class="n">hist_entropy</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">H_x</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>1.53 ms ± 224 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+2.0237449741172817
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="cell border-box-sizing text_cell rendered">
+<p><div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1"></p>
+<h2 id="kernel-density-estimation">Kernel Density Estimation<a class="headerlink" href="#kernel-density-estimation" title="Permanent link">&para;</a></h2>
+<p></div>
+</div></p>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">rbig.information.kde</span> <span class="kn">import</span> <span class="n">kde_entropy_uni</span>
+</code></pre></div>
+
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code><span class="n">H_x</span> <span class="o">=</span> <span class="n">kde_entropy_uni</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+<span class="o">%</span><span class="n">timeit</span> <span class="n">_</span> <span class="o">=</span> <span class="n">kde_entropy_uni</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">H_x</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>389 ms ± 1.42 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+2.0452385364514716
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+</div>
+</div>
+<div class="highlight"><pre><span></span><code><span class="n">hpdf</span><span class="p">,</span> <span class="n">hbins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="n">density</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">hpdf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">hpdf</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">hpdf</span> <span class="o">+=</span> <span class="mf">1e-10</span>
+<span class="n">H_x</span> <span class="o">=</span> <span class="o">-</span> <span class="p">(</span><span class="n">hpdf</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">hpdf</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">H_x</span><span class="p">)</span>
+</code></pre></div>
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>8.54157894566502
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="highlight"><pre><span></span><code>
+</code></pre></div>
+
+</div>
+
+</div>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href="../../demos/demo_innf/" title="Demo: Gaussianization" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Demo: Gaussianization
+              </div>
+            </div>
+          </a>
+        
+        
+          <a href="../demo_1_marginal_uniformization/" title="Demo 1 marginal uniformization" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Demo 1 marginal uniformization
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+          <div class="md-footer-copyright__highlight">
+            Copyright &copy; 2020 J. Emmanuel Johnson
+          </div>
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+  <div class="md-footer-social">
+    
+      
+      
+      <a href="https://github.com/jejjohnson" target="_blank" rel="noopener" title="github.com" class="md-footer-social__link">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+      </a>
+    
+      
+      
+      <a href="https://twitter.com/jejjohnson" target="_blank" rel="noopener" title="twitter.com" class="md-footer-social__link">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg>
+      </a>
+    
+      
+      
+      <a href="https://linkedin.com/in/jejjohnson" target="_blank" rel="noopener" title="linkedin.com" class="md-footer-social__link">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"/></svg>
+      </a>
+    
+      
+      
+      <a href="https://jejjohnson.netlify.app" target="_blank" rel="noopener" title="jejjohnson.netlify.app" class="md-footer-social__link">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M336.5 160C322 70.7 287.8 8 248 8s-74 62.7-88.5 152h177zM152 256c0 22.2 1.2 43.5 3.3 64h185.3c2.1-20.5 3.3-41.8 3.3-64s-1.2-43.5-3.3-64H155.3c-2.1 20.5-3.3 41.8-3.3 64zm324.7-96c-28.6-67.9-86.5-120.4-158-141.6 24.4 33.8 41.2 84.7 50 141.6h108zM177.2 18.4C105.8 39.6 47.8 92.1 19.3 160h108c8.7-56.9 25.5-107.8 49.9-141.6zM487.4 192H372.7c2.1 21 3.3 42.5 3.3 64s-1.2 43-3.3 64h114.6c5.5-20.5 8.6-41.8 8.6-64s-3.1-43.5-8.5-64zM120 256c0-21.5 1.2-43 3.3-64H8.6C3.2 212.5 0 233.8 0 256s3.2 43.5 8.6 64h114.6c-2-21-3.2-42.5-3.2-64zm39.5 96c14.5 89.3 48.7 152 88.5 152s74-62.7 88.5-152h-177zm159.3 141.6c71.4-21.2 129.4-73.7 158-141.6h-108c-8.8 56.9-25.6 107.8-50 141.6zM19.3 352c28.6 67.9 86.5 120.4 158 141.6-24.4-33.8-41.2-84.7-50-141.6h-108z"/></svg>
+      </a>
+    
+  </div>
+
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../../assets/javascripts/vendor.f81b9e8b.min.js"></script>
+      <script src="../../assets/javascripts/bundle.23546af0.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents"}</script>
+      
+      <script>
+        app = initialize({
+          base: "../..",
+          features: ["instant", "tabs"],
+          search: Object.assign({
+            worker: "../../assets/javascripts/worker/search.58d22e8e.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+        <script src="../../javascripts/extra.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+      
+    
+  </body>
+</html>

@@ -17,7 +17,9 @@ class DensityMixin(object):
     """Mixin for :func:`sample` that returns the """
 
     @abstractmethod
-    def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
+    def score_samples(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> float:
         """Return the mean log likelihood (or log(det(Jacobian))).
         Parameters
         ----------
@@ -35,7 +37,9 @@ class DensityMixin(object):
 
     @abstractmethod
     def sample(
-        self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None
+        self,
+        n_samples: int = 1,
+        random_state: Optional[Union[RandomState, int]] = None,
     ) -> np.ndarray:
         """Take samples from the base distribution.
         

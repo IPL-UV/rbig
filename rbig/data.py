@@ -3,6 +3,19 @@ from sklearn import datasets
 
 
 class ToyData:
+    """Generate demo datasets for RBIG
+    
+    Parameters
+    ----------
+    dataset : str, default='rbig'
+        datasets to be generated
+        Options - {'rbig', 'moons', 'blob'}
+    
+    n_samples : int, default=1_000
+    n_features : int
+    noise : float, default=0.05
+    """
+
     def __init__(
         self,
         dataset="rbig",

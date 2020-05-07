@@ -169,7 +169,9 @@ plt.show()
 
 fig, ax = plt.subplots(ncols=1)
 # Scatter Plot
-pts = ax.scatter(data[:, 0], data[:, 1], s=1, c=np.exp(X_logprob), cmap="Blues")
+pts = ax.scatter(
+    data[:, 0], data[:, 1], s=1, c=np.exp(X_logprob), cmap="Blues"
+)
 plt.colorbar(pts)
 ax.set_xlabel("X")
 ax.set_ylabel("Y")

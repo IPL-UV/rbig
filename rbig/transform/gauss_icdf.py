@@ -68,7 +68,9 @@ class InverseGaussCDF(BaseTransform, DensityMixin):
 
         return X
 
-    def log_abs_det_jacobian(self, X: np.ndarray, y: np.ndarray = None) -> np.ndarray:
+    def log_abs_det_jacobian(
+        self, X: np.ndarray, y: np.ndarray = None
+    ) -> np.ndarray:
 
         X = check_array(X.reshape(-1, 1), ensure_2d=False, copy=True)
 
@@ -79,7 +81,9 @@ class InverseGaussCDF(BaseTransform, DensityMixin):
         return X
 
     def sample(
-        self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None
+        self,
+        n_samples: int = 1,
+        random_state: Optional[Union[RandomState, int]] = None,
     ) -> np.ndarray:
         """Generate random samples from this.
         

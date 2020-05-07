@@ -27,7 +27,9 @@ def test_kde_cdf():
     # =============
 
     # estimate with scipy function
-    x_cdf = np.vectorize(lambda x: scipy_est.integrate_box_1d(-np.inf, x))(data)
+    x_cdf = np.vectorize(lambda x: scipy_est.integrate_box_1d(-np.inf, x))(
+        data
+    )
 
     # estimate with my function
     my_cdf = kde_cdf(data, data, scipy_est.factor)

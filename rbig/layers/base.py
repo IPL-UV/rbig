@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class BaseLayer(TransformerMixin):
+class BaseLayer(BaseEstimator, TransformerMixin):
     def __init__(
         self, mg_params: Optional[Dict] = {}, rot_params: Optional[Dict] = {}
     ) -> None:
@@ -15,7 +15,7 @@ class BaseLayer(TransformerMixin):
         return self
 
     def transform(
-        self, X: np.ndarray, y: Optional[np.ndarray] = None, return_jacobian=False
+        self, X: np.ndarray, y: Optional[np.ndarray] = None, return_jacobian=False,
     ) -> Tuple[np.ndarray, np.ndarray]:
         raise NotImplementedError
 

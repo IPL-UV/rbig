@@ -199,7 +199,9 @@ def make_finite(X):
         -infty and infty with min and max of floating values respectively.
     """
     X = check_floating(X)
-    return np.minimum(np.maximum(X, np.finfo(X.dtype).min), np.finfo(X.dtype).max)
+    return np.minimum(
+        np.maximum(X, np.finfo(X.dtype).min), np.finfo(X.dtype).max
+    )
 
 
 def make_positive(X):

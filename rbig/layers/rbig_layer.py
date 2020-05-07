@@ -7,6 +7,21 @@ from rbig.transform.base import BaseTransform
 
 
 class RBIGLayer(BaseLayer):
+    """RBIG Layer which holds the transformations defined by RBIG.
+    
+    This layer holds the marginal gaussianization and rotation transformations.
+    This is a convenience function to fit and transform the data and return the
+    log det jacobian
+    
+    Parameters
+    ----------
+    mg_transform : BaseTransform
+        the base class for the marginal gaussianization
+    
+    rot_transform : BaseTransform
+        the base class for the rotation
+    """
+
     def __init__(
         self, mg_transform: BaseTransform, rot_transform: BaseTransform,
     ) -> None:
@@ -23,14 +38,19 @@ class RBIGLayer(BaseLayer):
     #     return " ".join(rep_str)
 
     def transform(
-        self, X: np.ndarray, y: Optional[np.ndarray] = None, return_jacobian=False
+        self, X: np.ndarray, y: Optional[np.ndarray] = None, return_jacobian=True,
     ) -> Tuple[np.ndarray, np.ndarray]:
 
         # marginal transformation
-        Xmg = self.mg_transform.fit_transform(X)
-
+        try:
+            Xmg = self.mg_transform.transform(X)
+        except AttributeError:
+            Xmg = self.mg_transform.fit_transform(X)
         # rotation
-        Xtrans = self.rot_transform.fit_transform(Xmg)
+        try:
+            Xtrans = self.rot_transform.transform(Xmg)
+        except AttributeError:
+            Xtrans = self.rot_transform.fit_transform(Xmg)
 
         if not return_jacobian:
             return Xtrans
@@ -60,130 +80,3 @@ class RBIGLayer(BaseLayer):
         dX_rot = self.rot_transform.log_abs_det_jacobian(Xmg)
 
         return dX_mg + dX_rot
-
-
-# class RBIGKDEParams(NamedTuple):
-#     # marginal transform parameters
-#     kde_method: str = "exact"
-#     bw_estimator: str = "scott"
-#     support_extension: Union[int, float] = 10
-#     n_quantiles: int = 1_000
-#     # rotation parameters
-#     rotation: str = "pca"
-#     random_state: int = 123
-#     rot_kwargs: Dict = {}
-
-#     def fit_data(self, X: np.ndarray) -> RBIGBlock:
-
-#         # initialize RBIG Block
-#         gauss_block = RBIGBlock(
-#             mg_method="kde",
-#             mg_params={
-#                 "method": self.kde_method,
-#                 "bw_estimator": self.bw_estimator,
-#                 "support_extension": self.support_extension,
-#                 "n_quantiles": self.n_quantiles,
-#             },
-#             rot_params={
-#                 "rotation": self.rotation,
-#                 "random_state": self.random_state,
-#                 "kwargs": self.rot_kwargs,
-#             },
-#         )
-
-#         return gauss_block.fit(X)
-
-
-# class RBIGHistParams(NamedTuple):
-#     # marginal transform parameters
-#     nbins: int = 100
-#     alpha: float = 1e-6
-#     support_extension: Union[int, float] = 10
-#     # rotation parameters
-#     rotation: str = "pca"
-#     random_state: int = 123
-#     rot_kwargs: Dict = {}
-
-#     def fit_data(self, X: np.ndarray) -> RBIGBlock:
-
-#         # initialize RBIG Block
-#         gauss_block = RBIGBlock(
-#             mg_method="histogram",
-#             mg_params={
-#                 "nbins": self.nbins,
-#                 "alpha": self.alpha,
-#                 "support_extension": self.support_extension,
-#             },
-#             rot_params={
-#                 "rotation": self.rotation,
-#                 "random_state": self.random_state,
-#                 "kwargs": self.rot_kwargs,
-#             },
-#         )
-
-#         return gauss_block.fit(X)
-
-
-# class RBIGQuantileParams(NamedTuple):
-#     # marginal transform parameters
-#     n_quantiles: int = 1_000
-#     support_extension: Union[int, float] = 10
-#     subsample: int = 1e5
-#     random_state: int = 123
-#     # rotation parameters
-#     rotation: str = "pca"
-#     random_state: int = 123
-#     rot_kwargs: Dict = {}
-
-#     def fit_data(self, X: np.ndarray) -> RBIGBlock:
-
-#         # initialize RBIG Block
-#         gauss_block = RBIGBlock(
-#             mg_method="quantile",
-#             mg_params={
-#                 "n_quantiles": self.n_quantiles,
-#                 "subsample": self.subsample,
-#                 "random_state": self.random_state,
-#                 "support_extension": self.support_extension,
-#             },
-#             rot_params={
-#                 "rotation": self.rotation,
-#                 "random_state": self.random_state,
-#                 "kwargs": self.rot_kwargs,
-#             },
-#         )
-
-#         return gauss_block.fit(X)
-
-
-# class RBIGPowerParams(NamedTuple):
-#     # marginal transform parameters
-#     standardize: bool = True
-#     support_extension: Union[int, float] = 10
-#     copy: bool = True
-#     # rotation parameters
-#     rotation: str = "pca"
-#     random_state: int = 123
-#     rot_kwargs: Dict = {}
-
-#     def fit_data(self, X: np.ndarray) -> RBIGBlock:
-
-#         # initialize RBIG Block
-#         gauss_block = RBIGBlock(
-#             mg_method="power",
-#             mg_params={
-#                 "standardize": self.standardize,
-#                 "copy": self.copy,
-#                 "support_extension": self.support_extension,
-#             },
-#             rot_params={
-#                 "rotation": self.rotation,
-#                 "random_state": self.random_state,
-#                 "kwargs": self.rot_kwargs,
-#             },
-#         )
-
-#         return gauss_block.fit(X)
-
-
-# RBIGParams = Union[RBIGKDEParams, RBIGHistParams, RBIGQuantileParams, RBIGPowerParams]

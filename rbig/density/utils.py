@@ -1,5 +1,9 @@
 from scipy import special
 import numpy as np
+from typing import Optional
+
+import numpy as np
+from scipy import stats
 
 
 def kde_cdf(data: np.ndarray, X: np.ndarray, bw: float) -> np.ndarray:
@@ -73,3 +77,35 @@ def calculate_cdf(data: np.ndarray, X: np.ndarray, bw: float) -> np.ndarray:
 
     x_cdf = np.sum(special.ndtr(normalized_high) - special.ndtr(normalized_low))
     return x_cdf
+
+
+def negative_log_likelihood(
+    Z: np.ndarray, X: np.ndarray, X_slogdet: Optional[np.ndarray] = None
+) -> float:
+    """Calculates the negative log-likelihood of an invertible transformation.
+    
+    Parameters
+    ----------
+    Z : np.ndarray, (n_samples, n_features)
+        the transformed data
+    X : np.ndarray, (n_samples, n_features)
+        the original data
+        Not used, for compatibility only.
+    X_slogdet : np.ndarray, (n_features, n_features)
+        the log det jacobian of the transformed variable
+    
+    Returns
+    -------
+    nll : float
+        the negative log likelihood of Z given the transformation
+        X_slogdet
+    """
+
+    # calculate log probability in the latent space
+    Z_logprob = stats.norm().logpdf(Z)
+
+    # calculate the probability of the transform
+    X_logprob = Z_logprob.sum(axis=1) + X_slogdet.sum(axis=1)
+
+    # return the nll
+    return np.mean(X_logprob)

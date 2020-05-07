@@ -103,7 +103,11 @@ class ScipyHistogram(PDFEstimator):
         # MLE Estimator with Miller-Maddow Correction
         print(self.hist_counts_)
         if correction is True:
-            H += 0.5 * (np.sum(self.hist_counts_ > 0) - 1) / self.hist_counts_.sum()
+            H += (
+                0.5
+                * (np.sum(self.hist_counts_ > 0) - 1)
+                / self.hist_counts_.sum()
+            )
 
         return H
 
@@ -157,7 +161,9 @@ class QuantileHistogram(PDFEstimator):
         references = self.references_ * 100
 
         if self.subsample < X.shape[0]:
-            subsample_idx = rng.choice(X.shape[0], size=self.subsample, replace=False)
+            subsample_idx = rng.choice(
+                X.shape[0], size=self.subsample, replace=False
+            )
 
             X = X.take(subsample_idx, axis=0, mode="clip")
 
@@ -178,10 +184,14 @@ class QuantileHistogram(PDFEstimator):
 
     def cdf(self, X: np.ndarray) -> np.ndarray:
 
-        return np.interp(X.squeeze(), self.quantiles_, self.references_).reshape(-1, 1)
+        return np.interp(
+            X.squeeze(), self.quantiles_, self.references_
+        ).reshape(-1, 1)
 
     def ppf(self, X: np.ndarray) -> np.ndarray:
-        return np.interp(X.squeeze(), self.references_, self.quantiles_,).reshape(-1, 1)
+        return np.interp(
+            X.squeeze(), self.references_, self.quantiles_,
+        ).reshape(-1, 1)
 
     def entropy(self, correction: bool = True) -> float:
         raise NotImplementedError

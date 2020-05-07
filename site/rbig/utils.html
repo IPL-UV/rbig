@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.8.1" />
+<title>rbig.utils API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>rbig.utils</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import warnings
+from typing import Tuple, Union
+
+import numpy as np
+from sklearn.exceptions import DataConversionWarning
+from sklearn.utils import check_random_state
+from sklearn.utils.validation import column_or_1d
+
+
+def make_interior_log_prob(X: np.ndarray):
+
+    # remove numbers that are close to zero
+    X[X &lt;= -np.inf] = -np.finfo(X.dtype).eps
+
+    return X
+
+
+def get_domain_extension(
+    data: np.ndarray, extension: Union[float, int],
+) -&gt; Tuple[float, float]:
+
+    if isinstance(extension, float):
+        pass
+    elif isinstance(extension, int):
+        extension /= 100
+    else:
+        raise ValueError(f&#34;Unrecognized type extension: {type(extension)}&#34;)
+
+    domain = np.abs(data.max() - data.min())
+
+    domain_ext = extension * domain
+
+    lower_bound = data.min() - domain_ext
+    upper_bound = data.max() + domain_ext
+
+    return lower_bound, upper_bound
+
+
+def get_support_reference(
+    support: np.ndarray, extension: Union[float, int], n_quantiles: int = 1_000
+) -&gt; np.ndarray:
+
+    lb, ub = get_domain_extension(support, extension)
+
+    # get new support
+    new_support = np.linspace(lb, ub, n_quantiles, endpoint=True)
+
+    return new_support
+
+
+def interp_support():
+    return None
+
+
+def check_input_output_dims(
+    input: np.ndarray, dims: Tuple[int, int], method: str, transform: str
+) -&gt; None:
+    assert input.shape == (
+        dims[0],
+        dims[1],
+    ), f&#34;{method.capitalize()}: {transform.capitalize()} lost dims, {input.shape} =/= {dims}&#34;
+    return None
+
+
+class BoundaryWarning(DataConversionWarning):
+    &#34;&#34;&#34;Warning that data is on the boundary of the required set.
+    Warning when data is on the boundary of the domain or range and
+    is converted to data that lies inside the boundary. For example, if
+    the domain is (0,inf) rather than [0,inf), values of 0 will be made
+    a small epsilon above 0.
+    &#34;&#34;&#34;
+
+    pass
+
+
+def check_bounds(X=None, bounds=([-np.inf, np.inf]), extend=True):
+    &#34;&#34;&#34;Checks the bounds. Since we are going from an unbound domain to
+    a bounded domain (Random Dist to Uniform Dist) we are going to have
+    a problem with defining the boundaries. This function will either 
+    have set boundaries or extend the boundaries with with a percentage.
+    
+    Parameters
+    ----------
+    X : array-like, default=None
+    
+    bounds : int or array-like [low, high]
+    
+    extend : bool, default=True
+    
+    Returns
+    -------
+    bounds : array-like
+    
+    References
+    ---------
+    https://github.com/davidinouye/destructive-deep-learning/blob/master/ddl/univariate.py#L506
+    &#34;&#34;&#34;
+
+    default_support = np.array([-np.inf, np.inf])
+
+    # Case I - Extension
+    if np.isscalar(bounds):
+
+        if X is None:
+            # If no X, return default support (unbounded domain)
+            return default_support
+        else:
+            # extend the domain by x percent
+            percent_extension = bounds
+
+            # Get the min and max for the current domain
+            domain = np.array([np.min(X), np.max(X)])
+
+            # Get the mean value of the domain
+            center = np.mean(domain)
+
+            # Extend the domain on either sides
+            domain = (1 + percent_extension) * (domain - center) + center
+
+            return domain
+
+    # Case II - Directly compute
+    else:
+        domain = column_or_1d(bounds).copy()
+
+        if domain.shape[0] != 2:
+            raise ValueError(
+                &#34;Domain should either be a two element array-like&#34;
+                &#34; or a scalar indicating percentage extension of domain.&#34;
+            )
+
+        return domain
+
+
+def make_interior(X, bounds, eps=None):
+    &#34;&#34;&#34;Scale/Shift data to fit in the open interval given by bounds.
+    
+    Parameters
+    ----------
+    X : array-like, shape (n_samples, n_features)
+        Data matrix
+    
+    bounds : array-like, shape (2,)
+        Minimum and maximum of bounds.
+    
+    eps : float, optional
+        Epsilon for clipping, defaults to ``np.info(X.dtype).eps``
+        
+    Returns
+    -------
+    X : array, shape (n_samples, n_features)
+        Data matrix after possible modification
+    &#34;&#34;&#34;
+    X = check_floating(X)
+
+    if eps is None:
+        eps = np.finfo(X.dtype).eps
+
+    left = bounds[0] + np.abs(bounds[0] * eps)
+    right = bounds[1] - np.abs(bounds[1] * eps)
+    return np.minimum(np.maximum(X, left), right)
+
+
+def check_floating(X):
+    if not np.issubdtype(X.dtype, np.floating):
+        X = np.array(X, dtype=np.float)
+    return X
+
+
+def make_interior_probability(X, eps=None):
+    &#34;&#34;&#34;Convert data to probability values in the open interval between 0 and 1.
+    Parameters
+    ----------
+    X : array-like, shape (n_samples, n_features)
+        Data matrix.
+    eps : float, optional
+        Epsilon for clipping, defaults to ``np.info(X.dtype).eps``
+    Returns
+    -------
+    X : array, shape (n_samples, n_features)
+        Data matrix after possible modification.
+    &#34;&#34;&#34;
+    X = check_floating(X)
+    if eps is None:
+        eps = np.finfo(X.dtype).eps
+    return np.minimum(np.maximum(X, eps), 1 - eps)
+
+
+def make_finite(X):
+    &#34;&#34;&#34;Make the data matrix finite by replacing -infty and infty.
+    Parameters
+    ----------
+    X : array-like, shape (n_samples, n_features)
+        Data matrix.
+    Returns
+    -------
+    X : array, shape (n_samples, n_features)
+        Data matrix as numpy array after checking and possibly replacing
+        -infty and infty with min and max of floating values respectively.
+    &#34;&#34;&#34;
+    X = check_floating(X)
+    return np.minimum(
+        np.maximum(X, np.finfo(X.dtype).min), np.finfo(X.dtype).max
+    )
+
+
+def make_positive(X):
+    &#34;&#34;&#34;Make the data matrix positive by clipping to +epsilon if not positive.
+    Parameters
+    ----------
+    X : array-like, shape (n_samples, n_features)
+        Data matrix.
+    Returns
+    -------
+    X : array, shape (n_samples, n_features)
+        Data matrix as numpy array after checking and possibly replacing
+        non-positive numbers to +epsilon.
+    &#34;&#34;&#34;
+    X = check_floating(X)
+    return np.maximum(X, np.finfo(X.dtype).tiny)
+
+
+def bin_estimation(X, rule=&#34;scott&#34;):
+
+    n_samples = X.shape[0]
+
+    if rule == &#34;sqrt&#34;:
+        nbins = np.sqrt(n_samples)
+    elif rule == &#34;scott&#34;:
+        nbins = (3.49 * np.std(X)) / np.cbrt(n_samples)
+    elif rule == &#34;sturge&#34;:
+        nbins = 1 + np.log2(n_samples)
+    elif rule == &#34;rice&#34;:
+        nbins = 2 * np.cbrt(n_samples)
+    else:
+        raise ValueError(f&#34;Unrecognized rule: {rule}&#34;)
+
+    return int(np.ceil(nbins))
+
+
+def make_cdf_monotonic(cdf):
+    &#34;&#34;&#34;
+    Take a cdf and just sequentially readjust values to force monotonicity
+    There&#39;s probably a better way to do this but this was in the original
+    implementation. We just readjust values that are less than their predecessors
+    Parameters
+    ----------
+    cdf : ndarray
+      The values of the cdf in order (1d)
+    &#34;&#34;&#34;
+    # laparra&#39;s version
+    corrected_cdf = cdf.copy()
+    for i in range(1, len(corrected_cdf)):
+        if corrected_cdf[i] &lt;= corrected_cdf[i - 1]:
+            if abs(corrected_cdf[i - 1]) &gt; 1e-14:
+                corrected_cdf[i] = corrected_cdf[i - 1] + 1e-14
+            elif corrected_cdf[i - 1] == 0:
+                corrected_cdf[i] = 1e-80
+            else:
+                corrected_cdf[i] = corrected_cdf[i - 1] + 10 ** (
+                    np.log10(abs(corrected_cdf[i - 1]))
+                )
+    return corrected_cdf</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="rbig.utils.bin_estimation"><code class="name flex">
+<span>def <span class="ident">bin_estimation</span></span>(<span>X, rule='scott')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bin_estimation(X, rule=&#34;scott&#34;):
+
+    n_samples = X.shape[0]
+
+    if rule == &#34;sqrt&#34;:
+        nbins = np.sqrt(n_samples)
+    elif rule == &#34;scott&#34;:
+        nbins = (3.49 * np.std(X)) / np.cbrt(n_samples)
+    elif rule == &#34;sturge&#34;:
+        nbins = 1 + np.log2(n_samples)
+    elif rule == &#34;rice&#34;:
+        nbins = 2 * np.cbrt(n_samples)
+    else:
+        raise ValueError(f&#34;Unrecognized rule: {rule}&#34;)
+
+    return int(np.ceil(nbins))</code></pre>
+</details>
+</dd>
+<dt id="rbig.utils.check_bounds"><code class="name flex">
+<span>def <span class="ident">check_bounds</span></span>(<span>X=None, bounds=[-inf, inf], extend=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks the bounds. Since we are going from an unbound domain to
+a bounded domain (Random Dist to Uniform Dist) we are going to have
+a problem with defining the boundaries. This function will either
+have set boundaries or extend the boundaries with with a percentage.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>array-like</code>, default=<code>None</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>bounds</code></strong> :&ensp;<code>int</code> or <code>array-like [low, high]</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>extend</code></strong> :&ensp;<code>bool</code>, default=<code>True</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>bounds</code></strong> :&ensp;<code>array-like</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="references">References</h2>
+<p><a href="https://github.com/davidinouye/destructive-deep-learning/blob/master/ddl/univariate.py#L506">https://github.com/davidinouye/destructive-deep-learning/blob/master/ddl/univariate.py#L506</a></p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_bounds(X=None, bounds=([-np.inf, np.inf]), extend=True):
+    &#34;&#34;&#34;Checks the bounds. Since we are going from an unbound domain to
+    a bounded domain (Random Dist to Uniform Dist) we are going to have
+    a problem with defining the boundaries. This function will either 
+    have set boundaries or extend the boundaries with with a percentage.
+    
+    Parameters
+    ----------
+    X : array-like, default=None
+    
+    bounds : int or array-like [low, high]
+    
+    extend : bool, default=True
+    
+    Returns
+    -------
+    bounds : array-like
+    
+    References
+    ---------
+    https://github.com/davidinouye/destructive-deep-learning/blob/master/ddl/univariate.py#L506
+    &#34;&#34;&#34;
+
+    default_support = np.array([-np.inf, np.inf])
+
+    # Case I - Extension
+    if np.isscalar(bounds):
+
+        if X is None:
+            # If no X, return default support (unbounded domain)
+            return default_support
+        else:
+            # extend the domain by x percent
+            percent_extension = bounds
+
+            # Get the min and max for the current domain
+            domain = np.array([np.min(X), np.max(X)])
+
+            # Get the mean value of the domain
+            center = np.mean(domain)
+
+            # Extend the domain on either sides
+            domain = (1 + percent_extension) * (domain - center) + center
+
+            return domain
+
+    # Case II - Directly compute
+    else:
+        domain = column_or_1d(bounds).copy()
+
+        if domain.shape[0] != 2:
+            raise ValueError(
+                &#34;Domain should either be a two element array-like&#34;
+                &#34; or a scalar indicating percentage extension of domain.&#34;
+            )
+
+        return domain</code></pre>
+</details>
+</dd>
+<dt id="rbig.utils.check_floating"><code class="name flex">
+<span>def <span class="ident">check_floating</span></span>(<span>X)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_floating(X):
+    if not np.issubdtype(X.dtype, np.floating):
+        X = np.array(X, dtype=np.float)
+    return X</code></pre>
+</details>
+</dd>
+<dt id="rbig.utils.check_input_output_dims"><code class="name flex">
+<span>def <span class="ident">check_input_output_dims</span></span>(<span>input: numpy.ndarray, dims: Tuple[int, int], method: str, transform: str) -> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_input_output_dims(
+    input: np.ndarray, dims: Tuple[int, int], method: str, transform: str
+) -&gt; None:
+    assert input.shape == (
+        dims[0],
+        dims[1],
+    ), f&#34;{method.capitalize()}: {transform.capitalize()} lost dims, {input.shape} =/= {dims}&#34;
+    return None</code></pre>
+</details>
+</dd>
+<dt id="rbig.utils.get_domain_extension"><code class="name flex">
+<span>def <span class="ident">get_domain_extension</span></span>(<span>data: numpy.ndarray, extension: Union[float, int]) -> Tuple[float, float]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_domain_extension(
+    data: np.ndarray, extension: Union[float, int],
+) -&gt; Tuple[float, float]:
+
+    if isinstance(extension, float):
+        pass
+    elif isinstance(extension, int):
+        extension /= 100
+    else:
+        raise ValueError(f&#34;Unrecognized type extension: {type(extension)}&#34;)
+
+    domain = np.abs(data.max() - data.min())
+
+    domain_ext = extension * domain
+
+    lower_bound = data.min() - domain_ext
+    upper_bound = data.max() + domain_ext
+
+    return lower_bound, upper_bound</code></pre>
+</details>
+</dd>
+<dt id="rbig.utils.get_support_reference"><code class="name flex">
+<span>def <span class="ident">get_support_reference</span></span>(<span>support: numpy.ndarray, extension: Union[float, int], n_quantiles: int = 1000) -> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_support_reference(
+    support: np.ndarray, extension: Union[float, int], n_quantiles: int = 1_000
+) -&gt; np.ndarray:
+
+    lb, ub = get_domain_extension(support, extension)
+
+    # get new support
+    new_support = np.linspace(lb, ub, n_quantiles, endpoint=True)
+
+    return new_support</code></pre>
+</details>
+</dd>
+<dt id="rbig.utils.interp_support"><code class="name flex">
+<span>def <span class="ident">interp_support</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def interp_support():
+    return None</code></pre>
+</details>
+</dd>
+<dt id="rbig.utils.make_cdf_monotonic"><code class="name flex">
+<span>def <span class="ident">make_cdf_monotonic</span></span>(<span>cdf)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Take a cdf and just sequentially readjust values to force monotonicity
+There's probably a better way to do this but this was in the original
+implementation. We just readjust values that are less than their predecessors
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>cdf</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<p>The values of the cdf in order (1d)</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_cdf_monotonic(cdf):
+    &#34;&#34;&#34;
+    Take a cdf and just sequentially readjust values to force monotonicity
+    There&#39;s probably a better way to do this but this was in the original
+    implementation. We just readjust values that are less than their predecessors
+    Parameters
+    ----------
+    cdf : ndarray
+      The values of the cdf in order (1d)
+    &#34;&#34;&#34;
+    # laparra&#39;s version
+    corrected_cdf = cdf.copy()
+    for i in range(1, len(corrected_cdf)):
+        if corrected_cdf[i] &lt;= corrected_cdf[i - 1]:
+            if abs(corrected_cdf[i - 1]) &gt; 1e-14:
+                corrected_cdf[i] = corrected_cdf[i - 1] + 1e-14
+            elif corrected_cdf[i - 1] == 0:
+                corrected_cdf[i] = 1e-80
+            else:
+                corrected_cdf[i] = corrected_cdf[i - 1] + 10 ** (
+                    np.log10(abs(corrected_cdf[i - 1]))
+                )
+    return corrected_cdf</code></pre>
+</details>
+</dd>
+<dt id="rbig.utils.make_finite"><code class="name flex">
+<span>def <span class="ident">make_finite</span></span>(<span>X)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Make the data matrix finite by replacing -infty and infty.
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>array-like, shape (n_samples, n_features)</code></dt>
+<dd>Data matrix.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>array, shape (n_samples, n_features)</code></dt>
+<dd>Data matrix as numpy array after checking and possibly replacing
+-infty and infty with min and max of floating values respectively.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_finite(X):
+    &#34;&#34;&#34;Make the data matrix finite by replacing -infty and infty.
+    Parameters
+    ----------
+    X : array-like, shape (n_samples, n_features)
+        Data matrix.
+    Returns
+    -------
+    X : array, shape (n_samples, n_features)
+        Data matrix as numpy array after checking and possibly replacing
+        -infty and infty with min and max of floating values respectively.
+    &#34;&#34;&#34;
+    X = check_floating(X)
+    return np.minimum(
+        np.maximum(X, np.finfo(X.dtype).min), np.finfo(X.dtype).max
+    )</code></pre>
+</details>
+</dd>
+<dt id="rbig.utils.make_interior"><code class="name flex">
+<span>def <span class="ident">make_interior</span></span>(<span>X, bounds, eps=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scale/Shift data to fit in the open interval given by bounds.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>array-like, shape (n_samples, n_features)</code></dt>
+<dd>Data matrix</dd>
+<dt><strong><code>bounds</code></strong> :&ensp;<code>array-like, shape (2,)</code></dt>
+<dd>Minimum and maximum of bounds.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Epsilon for clipping, defaults to <code>np.info(X.dtype).eps</code></dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>array, shape (n_samples, n_features)</code></dt>
+<dd>Data matrix after possible modification</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_interior(X, bounds, eps=None):
+    &#34;&#34;&#34;Scale/Shift data to fit in the open interval given by bounds.
+    
+    Parameters
+    ----------
+    X : array-like, shape (n_samples, n_features)
+        Data matrix
+    
+    bounds : array-like, shape (2,)
+        Minimum and maximum of bounds.
+    
+    eps : float, optional
+        Epsilon for clipping, defaults to ``np.info(X.dtype).eps``
+        
+    Returns
+    -------
+    X : array, shape (n_samples, n_features)
+        Data matrix after possible modification
+    &#34;&#34;&#34;
+    X = check_floating(X)
+
+    if eps is None:
+        eps = np.finfo(X.dtype).eps
+
+    left = bounds[0] + np.abs(bounds[0] * eps)
+    right = bounds[1] - np.abs(bounds[1] * eps)
+    return np.minimum(np.maximum(X, left), right)</code></pre>
+</details>
+</dd>
+<dt id="rbig.utils.make_interior_log_prob"><code class="name flex">
+<span>def <span class="ident">make_interior_log_prob</span></span>(<span>X: numpy.ndarray)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_interior_log_prob(X: np.ndarray):
+
+    # remove numbers that are close to zero
+    X[X &lt;= -np.inf] = -np.finfo(X.dtype).eps
+
+    return X</code></pre>
+</details>
+</dd>
+<dt id="rbig.utils.make_interior_probability"><code class="name flex">
+<span>def <span class="ident">make_interior_probability</span></span>(<span>X, eps=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Convert data to probability values in the open interval between 0 and 1.
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>array-like, shape (n_samples, n_features)</code></dt>
+<dd>Data matrix.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Epsilon for clipping, defaults to <code>np.info(X.dtype).eps</code></dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>array, shape (n_samples, n_features)</code></dt>
+<dd>Data matrix after possible modification.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_interior_probability(X, eps=None):
+    &#34;&#34;&#34;Convert data to probability values in the open interval between 0 and 1.
+    Parameters
+    ----------
+    X : array-like, shape (n_samples, n_features)
+        Data matrix.
+    eps : float, optional
+        Epsilon for clipping, defaults to ``np.info(X.dtype).eps``
+    Returns
+    -------
+    X : array, shape (n_samples, n_features)
+        Data matrix after possible modification.
+    &#34;&#34;&#34;
+    X = check_floating(X)
+    if eps is None:
+        eps = np.finfo(X.dtype).eps
+    return np.minimum(np.maximum(X, eps), 1 - eps)</code></pre>
+</details>
+</dd>
+<dt id="rbig.utils.make_positive"><code class="name flex">
+<span>def <span class="ident">make_positive</span></span>(<span>X)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Make the data matrix positive by clipping to +epsilon if not positive.
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>array-like, shape (n_samples, n_features)</code></dt>
+<dd>Data matrix.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>array, shape (n_samples, n_features)</code></dt>
+<dd>Data matrix as numpy array after checking and possibly replacing
+non-positive numbers to +epsilon.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_positive(X):
+    &#34;&#34;&#34;Make the data matrix positive by clipping to +epsilon if not positive.
+    Parameters
+    ----------
+    X : array-like, shape (n_samples, n_features)
+        Data matrix.
+    Returns
+    -------
+    X : array, shape (n_samples, n_features)
+        Data matrix as numpy array after checking and possibly replacing
+        non-positive numbers to +epsilon.
+    &#34;&#34;&#34;
+    X = check_floating(X)
+    return np.maximum(X, np.finfo(X.dtype).tiny)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="rbig.utils.BoundaryWarning"><code class="flex name class">
+<span>class <span class="ident">BoundaryWarning</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Warning that data is on the boundary of the required set.
+Warning when data is on the boundary of the domain or range and
+is converted to data that lies inside the boundary. For example, if
+the domain is (0,inf) rather than [0,inf), values of 0 will be made
+a small epsilon above 0.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BoundaryWarning(DataConversionWarning):
+    &#34;&#34;&#34;Warning that data is on the boundary of the required set.
+    Warning when data is on the boundary of the domain or range and
+    is converted to data that lies inside the boundary. For example, if
+    the domain is (0,inf) rather than [0,inf), values of 0 will be made
+    a small epsilon above 0.
+    &#34;&#34;&#34;
+
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>sklearn.exceptions.DataConversionWarning</li>
+<li>builtins.UserWarning</li>
+<li>builtins.Warning</li>
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="rbig" href="index.html">rbig</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="rbig.utils.bin_estimation" href="#rbig.utils.bin_estimation">bin_estimation</a></code></li>
+<li><code><a title="rbig.utils.check_bounds" href="#rbig.utils.check_bounds">check_bounds</a></code></li>
+<li><code><a title="rbig.utils.check_floating" href="#rbig.utils.check_floating">check_floating</a></code></li>
+<li><code><a title="rbig.utils.check_input_output_dims" href="#rbig.utils.check_input_output_dims">check_input_output_dims</a></code></li>
+<li><code><a title="rbig.utils.get_domain_extension" href="#rbig.utils.get_domain_extension">get_domain_extension</a></code></li>
+<li><code><a title="rbig.utils.get_support_reference" href="#rbig.utils.get_support_reference">get_support_reference</a></code></li>
+<li><code><a title="rbig.utils.interp_support" href="#rbig.utils.interp_support">interp_support</a></code></li>
+<li><code><a title="rbig.utils.make_cdf_monotonic" href="#rbig.utils.make_cdf_monotonic">make_cdf_monotonic</a></code></li>
+<li><code><a title="rbig.utils.make_finite" href="#rbig.utils.make_finite">make_finite</a></code></li>
+<li><code><a title="rbig.utils.make_interior" href="#rbig.utils.make_interior">make_interior</a></code></li>
+<li><code><a title="rbig.utils.make_interior_log_prob" href="#rbig.utils.make_interior_log_prob">make_interior_log_prob</a></code></li>
+<li><code><a title="rbig.utils.make_interior_probability" href="#rbig.utils.make_interior_probability">make_interior_probability</a></code></li>
+<li><code><a title="rbig.utils.make_positive" href="#rbig.utils.make_positive">make_positive</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="rbig.utils.BoundaryWarning" href="#rbig.utils.BoundaryWarning">BoundaryWarning</a></code></h4>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>

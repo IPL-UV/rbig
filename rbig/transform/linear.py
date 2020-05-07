@@ -41,7 +41,10 @@ class OrthogonalTransform(BaseTransform):
     """
 
     def __init__(
-        self, rotation: str = "pca", random_state: int = 123, kwargs: dict = None
+        self,
+        rotation: str = "pca",
+        random_state: int = 123,
+        kwargs: dict = None,
     ):
         self.rotation = rotation
         self.random_state = random_state

@@ -4,25 +4,49 @@ import numpy as np
 from sklearn.base import BaseEstimator
 
 from rbig.transform.base import DensityMixin, BaseTransform
-from rbig.layers import RBIGParams
-from rbig.losses import RBIGLoss
+from rbig.layers import RBIGLayer
+from rbig.stopping import StoppingCriteria
 
 
 class BaseModel(BaseTransform, DensityMixin):
-    """A sequence of Gaussianization transforms.
+    """A base model defining the transformations
     
     Parameters
     ----------
+    flow : RBIGLayer
+        an rbig layer (marginal gaussianization + rotation)
+        see rbig.density.layers for details
+    
+    loss : RBIGLoss
+        an rbig loss function (info, maxlayers, etc)
+        see rbig.density.loss for details
     """
 
-    def __init__(self, flow: RBIGParams, loss: RBIGLoss,) -> None:
+    def __init__(self, flow: RBIGLayer, stopping_criteria: StoppingCriteria,) -> None:
         self.flow = flow
-        self.loss = loss
+        self.stopping_criteria = stopping_criteria
 
     def transform(
-        self, X: np.ndarray, y: Optional[np.ndarray] = None, return_jacobian=False
+        self, X: np.ndarray, y: Optional[np.ndarray] = None, return_jacobian=True,
     ) -> np.ndarray:
+        """Forward transformation
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, n_features)
+            data to be transformed from original domain to a "more 
+            Gaussian" domain.
+        
+        y: not used, only here for compatability
 
+        return_jacobian : bool, default=True
+            option to return the jacobian transformation with the forward 
+            transformation
+        
+        Returns
+        -------
+        NotImplementedError
+        """
         raise NotImplementedError
 
     def score_samples(

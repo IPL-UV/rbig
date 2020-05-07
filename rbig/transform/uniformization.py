@@ -107,7 +107,9 @@ class HistogramUniformization(BaseTransform, DensityMixin):
 
         return self.estimator_.ppf(X)
 
-    def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
+    def score_samples(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> float:
         """Returns the log likelihood. It
         calculates the mean of the log probability.
         """
@@ -139,7 +141,9 @@ class HistogramUniformization(BaseTransform, DensityMixin):
         return self.estimator_.logpdf(X)
 
     def sample(
-        self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None
+        self,
+        n_samples: int = 1,
+        random_state: Optional[Union[RandomState, int]] = None,
     ) -> np.ndarray:
         """Generate random samples from this.
         
@@ -237,7 +241,9 @@ class MarginalUniformization(BaseTransform, DensityMixin):
         for feature_idx in range(X.shape[1]):
 
             X[:, feature_idx] = (
-                self.transforms_[feature_idx].transform(X[:, feature_idx]).squeeze()
+                self.transforms_[feature_idx]
+                .transform(X[:, feature_idx])
+                .squeeze()
             )
 
         return X

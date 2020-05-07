@@ -4,9 +4,6 @@ import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array
 
-from .ensemble import Ensemble
-from .entropy import KNNEstimator
-
 
 import numpy as np
 from typing import Optional
@@ -35,11 +32,15 @@ def univariate_mutual_info(
 
 
 class MutualInformation(BaseEstimator):
-    def __init__(self, estimator: str = "knn", kwargs: Optional[dict] = None) -> None:
+    def __init__(
+        self, estimator: str = "knn", kwargs: Optional[dict] = None
+    ) -> None:
         self.estimator = estimator
         self.kwargs = kwargs
 
-    def fit(self, X: np.ndarray, Y: Optional[np.ndarray] = None) -> BaseEstimator:
+    def fit(
+        self, X: np.ndarray, Y: Optional[np.ndarray] = None
+    ) -> BaseEstimator:
         """
         
         Parameters
@@ -55,7 +56,9 @@ class MutualInformation(BaseEstimator):
                 else KNNEstimator()
             )
         elif self.estimator in ["rbig", "kde", "histogram"]:
-            raise NotImplementedError(f"{self.estimator} is not implemented yet.")
+            raise NotImplementedError(
+                f"{self.estimator} is not implemented yet."
+            )
 
         else:
             raise ValueError(f"Unrecognized estimator: {self.estimator}")
@@ -85,7 +88,9 @@ class MutualInformation(BaseEstimator):
 
         return H_x_marg - H_x
 
-    def _fit_mutual_info(self, X: np.ndarray, Y: Optional[np.ndarray] = None) -> None:
+    def _fit_mutual_info(
+        self, X: np.ndarray, Y: Optional[np.ndarray] = None
+    ) -> None:
 
         # MI for X
         model_x = self.model.fit(X)
@@ -113,11 +118,15 @@ class MutualInformation(BaseEstimator):
 
 
 class TotalCorrelation(BaseEstimator):
-    def __init__(self, estimator: str = "knn", kwargs: Optional[dict] = None) -> None:
+    def __init__(
+        self, estimator: str = "knn", kwargs: Optional[dict] = None
+    ) -> None:
         self.estimator = estimator
         self.kwargs = kwargs
 
-    def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> BaseEstimator:
+    def fit(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> BaseEstimator:
         """
         
         Parameters
@@ -134,7 +143,9 @@ class TotalCorrelation(BaseEstimator):
                 else KNNEstimator()
             )
         elif self.estimator in ["rbig", "kde", "histogram"]:
-            raise NotImplementedError(f"{self.estimator} is not implemented yet.")
+            raise NotImplementedError(
+                f"{self.estimator} is not implemented yet."
+            )
 
         else:
             raise ValueError(f"Unrecognized estimator: {self.estimator}")

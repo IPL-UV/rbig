@@ -6,7 +6,11 @@ from sklearn.utils import check_array
 
 
 def knn_entropy(
-    X: np.ndarray, k: int = 5, algorithm: str = "brute", n_jobs: int = 1, **kwargs: Dict
+    X: np.ndarray,
+    k: int = 5,
+    algorithm: str = "brute",
+    n_jobs: int = 1,
+    **kwargs: Dict,
 ) -> float:
     """Calculates the Entropy using the knn method.
 
@@ -95,4 +99,6 @@ def volume_unit_ball(n_features: int, norm: int = 2) -> float:
     else:
         raise ValueError(f"Unrecognized norm: {norm}")
 
-    return (np.pi ** (0.5 * n_features)) ** n_features / gamma(b / n_features + 1)
+    return (np.pi ** (0.5 * n_features)) ** n_features / gamma(
+        b / n_features + 1
+    )

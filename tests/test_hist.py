@@ -1,5 +1,6 @@
 import numpy as np
-from rbig.transform import MarginalHistogramTransform
+
+# from rbig.transform import MarginalHistogramTransform
 
 
 def test_histogram():

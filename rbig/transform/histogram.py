@@ -77,7 +77,9 @@ class HistogramUniformization(BaseTransform, DensityMixin):
 
         X = self._transform(X, inverse=False)
 
-        check_input_output_dims(X, (n_samples, self.n_features_), "Histogram", "Foward")
+        check_input_output_dims(
+            X, (n_samples, self.n_features_), "Histogram", "Foward"
+        )
         return X
 
     def inverse_transform(self, X: np.ndarray) -> np.ndarray:
@@ -148,13 +150,17 @@ class HistogramUniformization(BaseTransform, DensityMixin):
 
         return X
 
-    def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
+    def score_samples(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> float:
         """Returns the log likelihood. It
         calculates the mean of the log probability.
         """
         log_prob = self.log_abs_det_jacobian(X, y).sum(axis=1).reshape(-1, 1)
 
-        check_input_output_dims(log_prob, (X.shape[0], 1), "Histogram", "Log Prob")
+        check_input_output_dims(
+            log_prob, (X.shape[0], 1), "Histogram", "Log Prob"
+        )
 
         return log_prob
 
@@ -192,7 +198,9 @@ class HistogramUniformization(BaseTransform, DensityMixin):
             )
 
             # transform each column
-            iscore = self.marginal_transforms_[feature_idx].logpdf(X[:, feature_idx])
+            iscore = self.marginal_transforms_[feature_idx].logpdf(
+                X[:, feature_idx]
+            )
             log_scores.append(iscore)
 
         # print(f"hstack: {np.hstack(log_scores).shape}")
@@ -217,7 +225,9 @@ class HistogramUniformization(BaseTransform, DensityMixin):
         return clip_min, clip_max
 
     def sample(
-        self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None
+        self,
+        n_samples: int = 1,
+        random_state: Optional[Union[RandomState, int]] = None,
     ) -> np.ndarray:
         """Generate random samples from this.
         

@@ -43,7 +43,9 @@ def exact_kde_est_pdf(
     # fit KDE Model
     if fft is False:
         estimator = stats.gaussian_kde(X, bw_method=bw_method,)
-        estimator.fit(kernel="gau", bw_method=bw_method, fft=True, gridsize=nbins)
+        estimator.fit(
+            kernel="gau", bw_method=bw_method, fft=True, gridsize=nbins
+        )
 
         hpdf = estimator.pdf(hbins)
     else:
@@ -70,13 +72,15 @@ class KDEScipy(PDFEstimator):
         estimator = stats.gaussian_kde(X.squeeze(), bw_method=self.bw_method,)
 
         self.hbins_ = get_support_reference(
-            support=X, extension=self.support_extension, n_quantiles=self.n_quantiles
+            support=X,
+            extension=self.support_extension,
+            n_quantiles=self.n_quantiles,
         )
         self.hpdf_ = np.exp(estimator.logpdf(self.hbins_.squeeze()))
 
-        self.hcdf_ = np.vectorize(lambda x: estimator.integrate_box_1d(-np.inf, x))(
-            self.hbins_.squeeze()
-        )
+        self.hcdf_ = np.vectorize(
+            lambda x: estimator.integrate_box_1d(-np.inf, x)
+        )(self.hbins_.squeeze())
 
         return self
 
@@ -113,13 +117,18 @@ class KDEFFT(KDEScipy, PDFEstimator):
     def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
         # fit model
         self.hbins_ = get_support_reference(
-            support=X, extension=self.support_extension, n_quantiles=self.n_quantiles
+            support=X,
+            extension=self.support_extension,
+            n_quantiles=self.n_quantiles,
         )
 
         estimator = sm.nonparametric.KDEUnivariate(X.squeeze())
 
         estimator.fit(
-            kernel="gau", bw=self.bw_method, fft=True, gridsize=self.n_quantiles,
+            kernel="gau",
+            bw=self.bw_method,
+            fft=True,
+            gridsize=self.n_quantiles,
         )
 
         self.hpdf_ = estimator.evaluate(self.hbins_.squeeze())
@@ -161,7 +170,9 @@ class KDESklearn(KDEScipy, PDFEstimator):
 
         # get reference support
         self.hbins_ = get_support_reference(
-            support=X, extension=self.support_extension, n_quantiles=self.n_quantiles
+            support=X,
+            extension=self.support_extension,
+            n_quantiles=self.n_quantiles,
         )
         self.hpdf_ = np.exp(estimator.score_samples(self.hbins_[:, None]))
 

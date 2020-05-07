@@ -10,15 +10,31 @@ dependencies:
 # Plotting Packages
 - matplotlib
 - seaborn
-# Dev Packages
-- ipykernel
-- mypy
-- black
-- isort
-# Test Packages
-- pytest
+# GUI
+- conda-forge::nodejs               # for extensions in jupyterlab
+- conda-forge::tqdm       
 # Pip Packages
 - pip
 - pip:
     - statsmodels
     - python-picard
+    # GPY
+    - "git+https://github.com/SheffieldML/GPy.git#egg=GPy"
+    # Jupyter
+    - ipykernel
+    - ipywidgets
+    # Formatters
+    - black                   # no nonsense formatter
+    - pylint                  # linter
+    - isort                   # imports sorter
+    - flake8                  # linter
+    - mypy                    # type checker
+    - pytest                  # testing suite
+    - pyprojroot   # resolves paths in notebooks
+    # Extra
+    - netCDF4
+    # Documentation
+    - mkdocs-material 
+    - mknotebooks
+    - pymdown-extensions 
+    - pdoc3

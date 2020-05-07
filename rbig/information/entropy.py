@@ -42,11 +42,11 @@ def marginal_entropy(X: np.ndarray, method: str = "histogram", **kwargs) -> np.n
     # msg = "n_features is less than or equal to 2. Please use Univariate instead."
     # assert 1 < n_features, msg
 
-    H_entropy = np.empty(n_features)
-    for i, ifeature in enumerate(X.T):
-        H_entropy[i] = univariate_entropy(X.T[i][:, None], method, **kwargs)
+    H_entropy = list()
+    for ifeature in X.T:
+        H_entropy.append(univariate_entropy(ifeature[:, None], method, **kwargs))
 
-    return H_entropy
+    return np.array(H_entropy)
 
 
 def multivariate_entropy(X: np.ndarray, method: str = "knn", **kwargs) -> float:

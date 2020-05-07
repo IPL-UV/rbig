@@ -94,7 +94,9 @@ class QuantileTransformerOld(BaseTransform, DensityMixin):
 
             # create the quantiles reference for each feature
             if self.bin_est is None:
-                references = np.linspace(0, 1, self.n_quantiles_, endpoint=True)
+                references = np.linspace(
+                    0, 1, self.n_quantiles_, endpoint=True
+                )
             else:
                 references = np.histogram_bin_edges(
                     ifeature, bins=self.bin_est, range=(0, 1)
@@ -113,7 +115,9 @@ class QuantileTransformerOld(BaseTransform, DensityMixin):
 
                 # Extend the support
                 new_reference, new_quantiles = self.extend_support(
-                    self.references_[idx], self.quantiles_[idx], self.support_ext
+                    self.references_[idx],
+                    self.quantiles_[idx],
+                    self.support_ext,
                 )
 
                 self.quantiles_[idx] = new_quantiles
@@ -129,7 +133,11 @@ class QuantileTransformerOld(BaseTransform, DensityMixin):
 
         # extrapolate
         new_quantiles = interp1d(
-            references, quantiles, kind=self.interp, fill_value="extrapolate", axis=0
+            references,
+            quantiles,
+            kind=self.interp,
+            fill_value="extrapolate",
+            axis=0,
         )(new_reference)
 
         # scale new
@@ -201,7 +209,10 @@ class QuantileTransformerOld(BaseTransform, DensityMixin):
             # lower for descending). We take the mean of these two
             X_col[isfinite_mask] = 0.5 * (
                 interp1d(
-                    quantiles, references, kind=self.interp, fill_value="extrapolate"
+                    quantiles,
+                    references,
+                    kind=self.interp,
+                    fill_value="extrapolate",
                 )(X_col_finite)
                 - interp1d(
                     -quantiles[::-1],
