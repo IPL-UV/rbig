@@ -16,6 +16,7 @@ from rbig.utils import get_support_reference, get_domain_extension
 from scipy.interpolate import interp1d
 from rbig.density.utils import kde_cdf
 from rbig.density.empirical import estimate_empirical_cdf
+from KDEpy import FFTKDE
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -43,9 +44,7 @@ def exact_kde_est_pdf(
     # fit KDE Model
     if fft is False:
         estimator = stats.gaussian_kde(X, bw_method=bw_method,)
-        estimator.fit(
-            kernel="gau", bw_method=bw_method, fft=True, gridsize=nbins
-        )
+        estimator.fit(kernel="gau", bw_method=bw_method, fft=True, gridsize=nbins)
 
         hpdf = estimator.pdf(hbins)
     else:
@@ -72,20 +71,20 @@ class KDEScipy(PDFEstimator):
         estimator = stats.gaussian_kde(X.squeeze(), bw_method=self.bw_method,)
 
         self.hbins_ = get_support_reference(
-            support=X,
+            support=X.squeeze(),
             extension=self.support_extension,
             n_quantiles=self.n_quantiles,
         )
-        self.hpdf_ = np.exp(estimator.logpdf(self.hbins_.squeeze()))
 
-        self.hcdf_ = np.vectorize(
-            lambda x: estimator.integrate_box_1d(-np.inf, x)
-        )(self.hbins_.squeeze())
+        self.hcdf_ = np.vectorize(lambda x: estimator.integrate_box_1d(-np.inf, x))(
+            self.hbins_.squeeze()
+        )
+        self.hpdf_ = estimator.evaluate(self.hbins_.squeeze())
 
         return self
 
     def pdf(self, X: np.ndarray) -> np.ndarray:
-        return np.interp(X, self.hbins_, self.hpdf_)
+        return np.interp(X.squeeze(), self.hbins_, self.hpdf_)
 
     def logpdf(self, X: np.ndarray) -> np.ndarray:
 
@@ -117,7 +116,7 @@ class KDEFFT(KDEScipy, PDFEstimator):
     def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
         # fit model
         self.hbins_ = get_support_reference(
-            support=X,
+            support=X.squeeze(),
             extension=self.support_extension,
             n_quantiles=self.n_quantiles,
         )
@@ -125,16 +124,62 @@ class KDEFFT(KDEScipy, PDFEstimator):
         estimator = sm.nonparametric.KDEUnivariate(X.squeeze())
 
         estimator.fit(
-            kernel="gau",
-            bw=self.bw_method,
-            fft=True,
-            gridsize=self.n_quantiles,
+            kernel="gau", bw=self.bw_method, fft=True, gridsize=self.n_quantiles,
         )
 
+        # evaluate cdf from KDE estimator
         self.hpdf_ = estimator.evaluate(self.hbins_.squeeze())
 
-        self.hcdf_ = estimate_empirical_cdf(X, self.hbins_)
+        # estimate the empirical CDF function from data
+        self.hcdf_ = estimate_empirical_cdf(X.squeeze(), self.hbins_)
+
         # self.hcdf_ = kde_cdf(X, self.hbins_, bw=estimator.bw)
+
+        return self
+
+
+class KDEEpanechnikov(KDEScipy, PDFEstimator):
+
+    """
+    Parameters
+    ----------
+    kernel : str, default='epa'
+        Many kernels available. For this toolbox, I recommend the
+        epa kernel for fast PDF evaluation.
+
+    bw_method : str, default='ISJ',
+    """
+
+    def __init__(
+        self,
+        kernel: "epa",
+        bw_method: Union[float, str] = "ISJ",
+        n_quantiles: int = 1_000,
+        support_extension: Union[int, float] = 10,
+        norm: int = 2,
+    ) -> None:
+        self.kernel = kernel
+        self.bw_method = bw_method
+        self.n_quantiles = n_quantiles
+        self.support_extension = support_extension
+        self.norm = norm
+
+    def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
+        # fit model
+        # estimate the empirical CDF function from data
+        self.hbins_ = get_support_reference(
+            support=X.squeeze(),
+            extension=self.support_extension,
+            n_quantiles=self.n_quantiles,
+        )
+        estimator = FFTKDE(kernel=self.kernel, bw=self.bw_method, norm=self.norm)
+
+        estimator.fit(X.squeeze())
+
+        # evaluate cdf from KDE estimator
+        self.hpdf_ = estimator.evaluate(self.hbins_.squeeze())
+
+        self.hcdf_ = estimate_empirical_cdf(X.squeeze(), self.hbins_)
 
         return self
 
@@ -170,18 +215,11 @@ class KDESklearn(KDEScipy, PDFEstimator):
 
         # get reference support
         self.hbins_ = get_support_reference(
-            support=X,
-            extension=self.support_extension,
-            n_quantiles=self.n_quantiles,
+            support=X, extension=self.support_extension, n_quantiles=self.n_quantiles,
         )
         self.hpdf_ = np.exp(estimator.score_samples(self.hbins_[:, None]))
 
         # get bin widths
-        hbin_widths = self.hbins_[1:] - self.hbins_[:-1]
-
-        # get cdf
-        hcdf_ = np.cumsum(self.hpdf_[1:] * hbin_widths)
-
-        self.hcdf_ = np.hstack([0.0, hcdf_])
+        self.hcdf_ = estimate_empirical_cdf(X.squeeze(), self.hbins_)
 
         return self

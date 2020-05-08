@@ -4,7 +4,7 @@ import numpy as np
 from numpy.random import RandomState
 from scipy import stats
 from rbig.density.histogram import ScipyHistogram, QuantileHistogram
-from rbig.density.kde import KDEFFT, KDEScipy, KDESklearn
+from rbig.density.kde import KDEFFT, KDEScipy, KDESklearn, KDEEpanechnikov
 
 # Base classes
 from sklearn.utils import check_array, check_random_state
@@ -83,7 +83,7 @@ class HistogramUniformization(BaseTransform, DensityMixin):
         X : np.ndarray
             transformed data
         """
-        X = check_array(X.reshape(-1, 1), ensure_2d=True, copy=True)
+        X = check_array(X, ensure_2d=False, copy=True)
 
         return self.estimator_.cdf(X)
 
@@ -103,13 +103,11 @@ class HistogramUniformization(BaseTransform, DensityMixin):
         X : np.ndarray, (n_samples, 1)
             Transformed data
         """
-        X = check_array(X.reshape(-1, 1), ensure_2d=True, copy=True)
+        X = check_array(X, ensure_2d=False, copy=True)
 
         return self.estimator_.ppf(X)
 
-    def score_samples(
-        self, X: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> float:
+    def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
         """Returns the log likelihood. It
         calculates the mean of the log probability.
         """
@@ -136,7 +134,7 @@ class HistogramUniformization(BaseTransform, DensityMixin):
         X_jacobian : (n_samples, n_features),
             the mean of the log probability
         """
-        X = check_array(X.reshape(-1, 1), ensure_2d=True, copy=True)
+        X = check_array(X, ensure_2d=False, copy=True)
 
         return self.estimator_.logpdf(X)
 
@@ -179,6 +177,7 @@ class KDEUniformization(HistogramUniformization):
         algorithm: str = "kd_tree",
         kernel: str = "gaussian",
         metric: str = "euclidean",
+        norm: int = 2,
         kwargs: Dict = {},
     ) -> None:
         self.bw_method = bw_method
@@ -188,6 +187,7 @@ class KDEUniformization(HistogramUniformization):
         self.algorithm = algorithm
         self.metric = metric
         self.kernel = kernel
+        self.norm = norm
         self.kwargs = kwargs
 
     def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
@@ -212,6 +212,14 @@ class KDEUniformization(HistogramUniformization):
                 bw_method=self.bw_method,
                 n_quantiles=self.n_quantiles,
                 support_extension=self.support_extension,
+            ).fit(X)
+        elif self.method in ["epa"]:
+            self.estimator_ = KDEEpanechnikov(
+                kernel=self.kernel,
+                bw_method=self.bw_method,
+                n_quantiles=self.n_quantiles,
+                support_extension=self.support_extension,
+                norm=self.norm,
             ).fit(X)
         else:
             raise ValueError(f"Unrecognized method: {self.method}")
@@ -241,9 +249,7 @@ class MarginalUniformization(BaseTransform, DensityMixin):
         for feature_idx in range(X.shape[1]):
 
             X[:, feature_idx] = (
-                self.transforms_[feature_idx]
-                .transform(X[:, feature_idx])
-                .squeeze()
+                self.transforms_[feature_idx].transform(X[:, feature_idx]).squeeze()
             )
 
         return X

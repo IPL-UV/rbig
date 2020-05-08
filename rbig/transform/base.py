@@ -7,9 +7,7 @@ from rbig.density.base import PDFEstimator
 
 
 class BaseTransform(BaseEstimator, TransformerMixin):
-    def log_abs_det_jacobian(
-        self, X: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> float:
+    def log_abs_det_jacobian(self, X: np.ndarray) -> float:
         raise NotImplementedError
 
 
@@ -19,7 +17,7 @@ class DensityMixin(object):
     @abstractmethod
     def score_samples(
         self, X: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> float:
+    ) -> np.ndarray:
         """Return the mean log likelihood (or log(det(Jacobian))).
         Parameters
         ----------

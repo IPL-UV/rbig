@@ -84,17 +84,17 @@ class ScipyHistogram(PDFEstimator):
         X_prob = self.estimator_.pdf(X.squeeze())
 
         X_prob = make_interior_probability(X_prob, eps=self.prob_tol)
-        return X_prob.reshape(-1, 1)
+        return X_prob
 
     def logpdf(self, X: np.ndarray) -> np.ndarray:
 
-        return np.log(self.pdf(X.squeeze())).reshape(-1, 1)
+        return np.log(self.pdf(X.squeeze()))
 
     def cdf(self, X: np.ndarray) -> np.ndarray:
-        return self.estimator_.cdf(X.squeeze()).reshape(-1, 1)
+        return self.estimator_.cdf(X.squeeze())
 
     def ppf(self, X: np.ndarray) -> np.ndarray:
-        return self.estimator_.ppf(X.squeeze()).reshape(-1, 1)
+        return self.estimator_.ppf(X.squeeze())
 
     def entropy(self, correction: bool = True) -> float:
         # calculate entropy
@@ -103,11 +103,7 @@ class ScipyHistogram(PDFEstimator):
         # MLE Estimator with Miller-Maddow Correction
         print(self.hist_counts_)
         if correction is True:
-            H += (
-                0.5
-                * (np.sum(self.hist_counts_ > 0) - 1)
-                / self.hist_counts_.sum()
-            )
+            H += 0.5 * (np.sum(self.hist_counts_ > 0) - 1) / self.hist_counts_.sum()
 
         return H
 
@@ -161,9 +157,7 @@ class QuantileHistogram(PDFEstimator):
         references = self.references_ * 100
 
         if self.subsample < X.shape[0]:
-            subsample_idx = rng.choice(
-                X.shape[0], size=self.subsample, replace=False
-            )
+            subsample_idx = rng.choice(X.shape[0], size=self.subsample, replace=False)
 
             X = X.take(subsample_idx, axis=0, mode="clip")
 
@@ -180,18 +174,14 @@ class QuantileHistogram(PDFEstimator):
 
     def logpdf(self, X: np.ndarray) -> np.ndarray:
 
-        return np.log(self.pdf(X))
+        return np.log(self.pdf(X.squeeze()))
 
     def cdf(self, X: np.ndarray) -> np.ndarray:
 
-        return np.interp(
-            X.squeeze(), self.quantiles_, self.references_
-        ).reshape(-1, 1)
+        return np.interp(X.squeeze(), self.quantiles_, self.references_)
 
     def ppf(self, X: np.ndarray) -> np.ndarray:
-        return np.interp(
-            X.squeeze(), self.references_, self.quantiles_,
-        ).reshape(-1, 1)
+        return np.interp(X.squeeze(), self.references_, self.quantiles_,)
 
     def entropy(self, correction: bool = True) -> float:
         raise NotImplementedError
