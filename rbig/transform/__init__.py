@@ -7,12 +7,6 @@ from rbig.transform.uniformization import (
 )
 from rbig.transform.gaussianization import Gaussianization, MarginalGaussianization
 
-# from rbig.transform.quantile import QuantileTransformer
-
-# from rbig.transform.histogram import MarginalHistogramTransform
-# from rbig.transform.linear import OrthogonalTransform
-
-
 __all__ = [
     "InverseGaussCDF",
     "HistogramUniformization",

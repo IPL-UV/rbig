@@ -10,6 +10,7 @@ class StoppingCriteria:
         self.n_layers = n_layers
         self.tol_layers = tol_layers
         self.losses_ = list()
+        self.name_ = None
 
     def calculate_loss(
         self, Xtrans: np.ndarray, X: np.ndarray, dX: Optional[np.ndarray] = None,

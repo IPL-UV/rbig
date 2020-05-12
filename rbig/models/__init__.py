@@ -1,3 +1,4 @@
-from .gaussianization import GaussianizationModel
+from .flows import GaussianizationModel
+from ._rbig import RBIG
 
-__all__ = ["GaussianizationModel"]
+__all__ = ["GaussianizationModel", "RBIG"]

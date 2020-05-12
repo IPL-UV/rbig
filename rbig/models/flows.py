@@ -8,11 +8,11 @@ from rbig.stopping import StoppingCriteria
 from rbig.models.base import BaseModel
 from sklearn.base import clone
 from copy import deepcopy
+from rbig.stopping.information import InfoLoss
 
 
 class GaussianizationModel(BaseModel):
     """A Gaussianization model.
-
     Takes an RBIGLayer and an RBIGLoss (really )
     
     Parameters
@@ -20,7 +20,6 @@ class GaussianizationModel(BaseModel):
     flow : RBIGLayer
         an rbig layer (marginal gaussianization + rotation)
         see rbig.density.layers for details
-    
     loss : StoppingCriteria
         an rbig stopping criteria which records the loss values
         at each iteration.
@@ -28,13 +27,10 @@ class GaussianizationModel(BaseModel):
     
     Attributes
     ----------
-
     flows_ : List[RBIGLayer]
         a list of all of the layers needed to Gaussianize the data.
-    
     n_features_ : int
         dimensionality of the input data to be transformed
-    
     losses_ : List[float]
         lost values for each layer
 
@@ -59,9 +55,15 @@ class GaussianizationModel(BaseModel):
     >>> Z, X_slogdzet = rbig_model.fit_transform(data, return_jacobian=True)
     """
 
-    def __init__(self, flow: RBIGLayer, stopping_criteria: StoppingCriteria,) -> None:
+    def __init__(
+        self,
+        flow: RBIGLayer,
+        stopping_criteria: StoppingCriteria,
+        verbose: bool = False,
+    ) -> None:
         self.flow = flow
         self.stopping_criteria = stopping_criteria
+        self.verbose = verbose
 
     def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
         """Fit Gaussianization model to data adhering to the stopping criteria
@@ -76,7 +78,7 @@ class GaussianizationModel(BaseModel):
         # initialize transforms
         self.flows_ = list()
         self.n_features_ = X.shape[1]
-
+        X_original = X.copy()
         X_logdetjacobian = np.zeros(shape=X.shape)
         n_layers = 0
         add_layers = True
@@ -92,7 +94,7 @@ class GaussianizationModel(BaseModel):
             Xtrans, dX = iflow.transform(X, y=None, return_jacobian=True)
 
             # regularize the jacobian
-            dX[dX > 0.0] = 0.0
+            # dX[dX > 0.0] = 0.0
 
             X_logdetjacobian += dX
 
@@ -110,12 +112,19 @@ class GaussianizationModel(BaseModel):
 
             X = np.copy(Xtrans)
 
-        # save number of layers
+            # save number of layers
+            if self.verbose:
+                print(
+                    f"Layer: {n_layers}, Loss: {self.losses_[-1]}, nll: {self.score(X_original)}"
+                )
+
         self.n_layers_ = len(self.losses_)
 
         # reduce the number of layers based on # loss values
         if self.n_layers_ < len(self.flows_):
             self.flows_ = self.flows_[: self.n_layers_]
+            self.losses_ = self.losses_[: self.n_layers_]
+            self.n_layers = len(self.flows_)
 
         return self
 
@@ -167,13 +176,29 @@ class GaussianizationModel(BaseModel):
         # transform
 
         Z, dX = self.transform(X)
-        prior_logprob = stats.norm().logpdf(Z).sum(axis=1)
+        prior_logprob = stats.norm().logpdf(Z)
 
         # get rid of extreme values
         dX[dX > 0.0] = 0.0
-        return prior_logprob + dX.sum(axis=1)
+        return (prior_logprob + dX).sum(axis=1)
 
     def sample(self, n_samples: int = 1) -> np.ndarray:
 
         Z = stats.norm().rvs((n_samples, self.n_features_))
         return self.inverse_transform(Z)
+
+    def total_correlation(self):
+        if (
+            hasattr(self.stopping_criteria, "name_")
+            and self.stopping_criteria.name_ == "info_loss"
+        ):
+
+            return np.array(self.losses_).sum()
+        else:
+
+            raise ValueError(
+                "Information criteria isnt used. This isn't total correlation."
+                f" {hasattr(self.stopping_criteria, 'name')}"
+                f" {self.stopping_criteria.name_}"
+                f" {issubclass(type(self.stopping_criteria), InfoLoss)}"
+            )

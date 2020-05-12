@@ -59,6 +59,7 @@ class MaxLayers(StoppingCriteria):
 
         # add loss values
         self.losses_.append(loss_val)
+        # print(self.losses_[-1])
 
         return loss_val
 

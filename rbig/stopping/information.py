@@ -54,6 +54,7 @@ class InfoLoss(StoppingCriteria):
         self.method = method
         self.p_value = p_value
         self.kwargs = kwargs
+        self.name_ = "info_loss"
         self.losses_ = list()
 
     def calculate_loss(
@@ -93,11 +94,16 @@ class InfoLoss(StoppingCriteria):
         else:
             # get the abs sum of the last n layers
             tol = np.sum(self.losses_[-self.tol_layers :])
+            # print("Toleranrce:", tol)
 
             # calculate the changes
             if tol == 0:
                 # no changes, don't use the last n layers
-                self.losses_ = self.losses_[: self.tol_layers]
+                # n_layers = len(self.losses_)
+                n = self.tol_layers
+                # print(self.tol_layers, len(self.losses_))
+                self.losses_ = self.losses_[:-n]
+                # print(len(self.losses_))
                 return False
             else:
                 # continue

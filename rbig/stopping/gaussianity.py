@@ -5,7 +5,9 @@ from scipy.interpolate import interp1d
 from sklearn.utils import check_array
 
 from rbig.information.entropy import marginal_entropy
+
 from rbig.stopping import StoppingCriteria
+from rbig.stopping.likelihood import negative_log_likelihood
 
 
 class NegEntropyLoss(StoppingCriteria):
@@ -34,6 +36,7 @@ class NegEntropyLoss(StoppingCriteria):
         """Calculates the loss based on the difference in negentropy"""
 
         delta_neg = diff_negentropy(Xtrans, X, X_slogdet)
+        delta_neg = negative_log_likelihood(Xtrans, X, X_slogdet)
         # add loss values
         self.losses_.append(delta_neg)
 
@@ -84,4 +87,4 @@ def diff_negentropy(Xtrans, X, X_slogdet) -> float:
     )
 
     # return change in marginal entropy
-    return delta_neg
+    return np.abs(delta_neg)
