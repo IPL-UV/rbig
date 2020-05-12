@@ -8,6 +8,8 @@ from rbig.utils import get_domain_extension
 from sklearn.preprocessing import QuantileTransformer
 from sklearn.utils import check_random_state
 import logging
+from rbig.density.empirical import estimate_empirical_cdf
+from rbig.utils import get_support_reference
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -42,6 +44,40 @@ def hist_est_pdf(
 
 
 class ScipyHistogram(PDFEstimator):
+    """Univariate histogram density estimator.
+    A light wrapper around the scipy `stats.rv_histogram` function
+    which calculates the empirical distribution. After this has
+    been fitted, this method will have the standard density
+    functions like pdf, logpdf, cdf, ppf. All of these are
+    necessary for the transformations.
+
+    Parameters
+    ----------
+    bins : Union[int, str], default='auto'
+        the number of bins to estimated the histogram function.
+        see `np.histogram` for more options.
+    alpha : float, default=1e-5
+        the amount of regularization to add to the estimated PDFs
+        so that there are no zero probabilities.
+    prob_tol : float, default=1e-7
+        this controls how much we clip any data in the outside bounds
+    support_extension : int, default=10
+        the amount to extend the support of the fitted data X. Affects
+        the PDF,CDF, and PPF functions. Extending the support will allow
+        more data to be interpolated.
+    kwargs : Dict[str,Any], default={}
+        any extra kwargs to be passed into the `np.histogram` estimator.
+    
+    Attributes
+    ----------
+    estimator_ : PDFEstimator
+        a fitted histogram estimator with a PDFEstimator base class.
+        This method will have pdf, logpdf, cdf and ppf functions.
+    hist_counts : List[int], 
+        the histogram counts. Used for the entropy estimation with the
+        correction
+    """
+
     def __init__(
         self,
         bins: Union[int, str] = "auto",
@@ -57,7 +93,18 @@ class ScipyHistogram(PDFEstimator):
         self.kwargs = kwargs
 
     def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
-
+        """Used to fit the empirical scipy dist to data.
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            the data to be fitted
+        y : np.ndarray, (n_samples)
+            not used, for compatibility only
+        Returns
+        -------
+        self : instance of self
+        """
         X = check_array(X.reshape(-1, 1), ensure_2d=True, copy=True)
 
         # get support bounds
@@ -80,28 +127,92 @@ class ScipyHistogram(PDFEstimator):
         return self
 
     def pdf(self, X: np.ndarray) -> np.ndarray:
-
+        """Probability density function for new data.
+        Estimates the PDF for inputs.
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            data to be estimated
+        
+        Returns
+        -------
+        Xpdf : np.ndarray, (n_samples)
+            pdf of input data
+        """
         X_prob = self.estimator_.pdf(X.squeeze())
 
-        X_prob = make_interior_probability(X_prob, eps=self.prob_tol)
+        # X_prob = make_interior_probability(X_prob, eps=self.prob_tol)
         return X_prob
 
     def logpdf(self, X: np.ndarray) -> np.ndarray:
-
-        return np.log(self.pdf(X.squeeze()))
+        """Probability log density function for new data.
+        Estimates the Log PDF for inputs.
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            data to be estimated
+        
+        Returns
+        -------
+        Xlpdf : np.ndarray, (n_samples)
+            log pdf of input data
+        """
+        return self.estimator_.logpdf(X.squeeze())
 
     def cdf(self, X: np.ndarray) -> np.ndarray:
+        """Probability cumulative density function for new data.
+        Estimates the CDF for inputs.
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            data to be estimated
+        
+        Returns
+        -------
+        Xcdf : np.ndarray, (n_samples)
+            cdf of input data
+        """
         return self.estimator_.cdf(X.squeeze())
 
     def ppf(self, X: np.ndarray) -> np.ndarray:
+        """Probability quantile function for new data.
+        Estimates the PPF for inputs.
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            data to be estimated
+        
+        Returns
+        -------
+        Xppf : np.ndarray, (n_samples)
+            ppf of input data
+        """
         return self.estimator_.ppf(X.squeeze())
 
     def entropy(self, correction: bool = True) -> float:
+        """Entropy estimation for data
+        Estimates the entropy given the fitted empirical
+        distribution.
+        
+        Parameters
+        ----------
+        correction : bool, default=True
+            does the Miller-Maddow correction
+        
+        Returns
+        -------
+        h_entropy : float
+            entropy of the empirical distribution
+        """
         # calculate entropy
         H = self.estimator_.entropy()
 
         # MLE Estimator with Miller-Maddow Correction
-        print(self.hist_counts_)
+        # print(self.hist_counts_)
         if correction is True:
             H += 0.5 * (np.sum(self.hist_counts_ > 0) - 1) / self.hist_counts_.sum()
 
@@ -138,6 +249,7 @@ class QuantileHistogram(PDFEstimator):
         hist = np.histogram(
             X.squeeze(), bins=self.bins, range=support_bounds, **self.kwargs
         )
+        self.hist_counts = hist[0]
 
         # needed for the entropy calculation
         self.hpdf_ = np.asarray(hist[0], dtype=np.float64)
@@ -161,7 +273,7 @@ class QuantileHistogram(PDFEstimator):
 
             X = X.take(subsample_idx, axis=0, mode="clip")
 
-        X = np.hstack([support_bounds[0], X.squeeze(), support_bounds[1]])
+        # X = np.hstack([support_bounds[0], X.squeeze(), support_bounds[1]])
         self.quantiles_ = np.nanpercentile(X, references)
 
         self.quantiles_ = np.maximum.accumulate(self.quantiles_)

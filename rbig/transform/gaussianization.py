@@ -7,6 +7,7 @@ from sklearn.utils import check_array, check_random_state
 from sklearn.preprocessing import QuantileTransformer, PowerTransformer
 
 from rbig.transform.base import DensityMixin, BaseTransform
+from rbig.transform.marginal import MarginalTransformation
 
 # from rbig.density import Histogram
 from rbig.transform.gauss_icdf import InverseGaussCDF
@@ -28,7 +29,6 @@ class Gaussianization(BaseTransform, DensityMixin):
     uni_transformer : BaseTransform
         any base transformation that transforms data to a 
         uniform distribution.
-    
     """
 
     def __init__(self, uni_transformer) -> None:
@@ -36,12 +36,10 @@ class Gaussianization(BaseTransform, DensityMixin):
 
     def fit(self, X: np.ndarray) -> None:
         """Fits the uniform transformation to the data
-        
         Parameters
         ----------
         X : np.ndarray, (n_samples, n_features)
             the input data to be transformed
-        
         Returns
         -------
         self : instance of self
@@ -56,12 +54,10 @@ class Gaussianization(BaseTransform, DensityMixin):
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """Forward transformation of X.
-        
         Parameters
         ----------
         X : np.ndarray, (n_samples, n_features)
             the data to be transformed to the gaussian domain
-        
         Returns
         -------
         Xtrans : np.ndarray, (n_samples, n_features)
@@ -81,15 +77,12 @@ class Gaussianization(BaseTransform, DensityMixin):
 
     def inverse_transform(self, X: np.ndarray) -> np.ndarray:
         """Performs the inverse transformation to original domain
-        
         This transforms univariate Gaussian data to the original
         domain of the fitted transformation.
-
         Parameters
         ----------
         X : np.ndarray, (n_samples, n_features)
             Gaussian data
-        
         Returns
         -------
         X : np.ndarray, (n_samples, n_features)
@@ -109,7 +102,6 @@ class Gaussianization(BaseTransform, DensityMixin):
 
     def log_abs_det_jacobian(self, X: np.ndarray) -> np.ndarray:
         """Calculates the log-det-jacobian of the transformation
-        
         Parameters
         ----------
         X : np.ndarray, (n_samples, n_features)
@@ -135,546 +127,95 @@ class Gaussianization(BaseTransform, DensityMixin):
         # return combined log det-jacobian
         return u_log_prob - g_log_prob
 
-
-class MarginalGaussianization(BaseTransform, DensityMixin):
-    def __init__(self, uni_transformer) -> None:
-        self.uni_transformer = uni_transformer
-
-    def fit(self, X: np.ndarray) -> None:
-        X = check_array(X, ensure_2d=True, copy=True)
-
-        transforms = []
-
-        for feature_idx in range(X.shape[1]):
-            transformer = clone(self.uni_transformer)
-            transforms.append(transformer.fit(X[:, feature_idx]))
-
-        self.transforms_ = transforms
-
-        return self
-
-    def transform(self, X: np.ndarray) -> np.ndarray:
-        X = check_array(X, ensure_2d=True, copy=True)
-
-        for feature_idx in range(X.shape[1]):
-
-            X[:, feature_idx] = (
-                self.transforms_[feature_idx].transform(X[:, feature_idx]).squeeze()
-            )
-
-        return X
-
-    def inverse_transform(self, X: np.ndarray) -> np.ndarray:
-        X = check_array(X, ensure_2d=True, copy=True)
-
-        for feature_idx in range(X.shape[1]):
-
-            X[:, feature_idx] = (
-                self.transforms_[feature_idx]
-                .inverse_transform(X[:, feature_idx])
-                .squeeze()
-            )
-
-        return X
-
-    def log_abs_det_jacobian(
+    def score_samples(
         self, X: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> float:
-        X = check_array(X, ensure_2d=True, copy=True)
-        for feature_idx in range(X.shape[1]):
+    ) -> np.ndarray:
+        """Calculates the log likelihood of the data.
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, n_features)
+            input data to calculate log-likelihood
+        y : np.ndarray
+            not used, for compatability only
+        
+        Returns
+        -------
+        ll : np.ndarray, (n_samples)
+            log-likelhood of the data"""
+        # transform data
+        X_lprob = stats.norm().logpdf(self.transform(X)).squeeze()
 
-            X[:, feature_idx] = (
-                self.transforms_[feature_idx]
-                .log_abs_det_jacobian(X[:, feature_idx])
-                .squeeze()
-            )
+        # independent feature transformation (sum the feature)
+        X_ldj = self.log_abs_det_jacobian(X)
+
+        return X_lprob + X_ldj
+
+
+class MarginalGaussianization(MarginalTransformation):
+    """Marginal Gaussianization transformation for any univariate transformer.
+    This class wraps any univariate transformer to do a marginal Gaussianziation
+    transformation. Includes a transform, inverse_transform and a
+    log_det_jacobian method. It performs a feature-wise transformation on
+    all fitted data. Includes a sampling method to con
+    Parameters
+    ----------
+    Transformer : BaseTransform
+        any base transform method
+    Attributes
+    ----------
+    transforms_ : List[BaseTransform]
+        a list of base transformers
+    """
+
+    def __init__(self, transformer: BaseTransform) -> None:
+        super().__init__(Gaussianization(transformer))
+
+    def score_samples(
+        self, X: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        """Calculates the log likelihood of the data.
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, n_features)
+            input data to calculate log-likelihood
+        y : np.ndarray
+            not used, for compatability only
+        
+        Returns
+        -------
+        ll : np.ndarray, (n_samples)
+            log-likelhood of the data"""
+        # independent feature transformation (sum the feature)
+
+        X_lprob = stats.norm().logpdf(self.transform(X)).squeeze()
+
+        X_ldj = self.log_abs_det_jacobian(X)
+
+        return (X_lprob + X_ldj).sum(-1)
+
+    def sample(
+        self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = 123,
+    ) -> np.ndarray:
+        """Generate random samples from a uniform distribution.
+        
+        Parameters
+        ----------
+        n_samples : int, default=1
+            The number of samples to generate. 
+        
+        random_state : int, RandomState,None, Optional, default=None
+            The int to be used as a seed to generate the random 
+            uniform samples.
+        
+        Returns
+        -------
+        X : np.ndarray, (n_samples, )
+        """
+        #
+        rng = check_random_state(random_state)
+        gauss_samples = rng.randn(n_samples, self.n_features_)
+
+        X = self.inverse_transform(gauss_samples)
         return X
-
-
-# class QuantileGaussianization(QuantileTransformer, DensityMixin):
-#     def __init__(
-#         self,
-#         n_quantiles: int = 1_000,
-#         support_extension: Union[float, int] = 10,
-#         subsample: int = 1e5,
-#         random_state: Optional[int] = None,
-#     ) -> None:
-#         super().__init__(
-#             n_quantiles=n_quantiles,
-#             output_distribution="normal",
-#             subsample=subsample,
-#             random_state=random_state,
-#             copy=True,
-#         )
-#         self.support_extension = support_extension
-
-#     def _dense_fit(self, X, random_state):
-#         """Compute percentiles for dense matrices.
-#         Parameters
-#         ----------
-#         X : ndarray, shape (n_samples, n_features)
-#             The data used to scale along the features axis.
-#         """
-#         if self.ignore_implicit_zeros:
-#             warnings.warn(
-#                 "'ignore_implicit_zeros' takes effect only with"
-#                 " sparse matrix. This parameter has no effect."
-#             )
-
-#         n_samples, n_features = X.shape
-#         references = self.references_ * 100
-
-#         self.quantiles_ = []
-#         for col in X.T:
-#             # extend the domain for the feature
-#             new_support = get_support_reference(
-#                 support=col, extension=self.support_extension
-#             )
-
-#             if self.subsample < n_samples:
-#                 subsample_idx = random_state.choice(
-#                     n_samples, size=self.subsample, replace=False
-#                 )
-#                 col = col.take(subsample_idx, mode="clip")
-
-#             # interp
-#             # col_new = np.interp(col,)
-
-#             quantiles = np.nanpercentile(col, references)
-#             quantiles = np.interp(new_support, quantiles, references)
-
-#             self.quantiles_.append(quantiles)
-#         self.quantiles_ = np.transpose(self.quantiles_)
-#         # Due to floating-point precision error in `np.nanpercentile`,
-#         # make sure that quantiles are monotonically increasing.
-#         # Upstream issue in numpy:
-#         # https://github.com/numpy/numpy/issues/14685
-#         self.quantiles_ = np.maximum.accumulate(self.quantiles_)
-
-#     def log_abs_det_jacobian(
-#         self, X: np.ndarray, y: Optional[np.ndarray] = None
-#     ) -> float:
-#         """Returns the log likelihood. It
-#         calculates the mean of the log probability.
-
-#         Parameters
-#         ----------
-#         X : np.ndarray, (n_samples, 1)
-#          incoming samples
-
-#         Returns
-#         -------
-#         X_jacobian : (n_samples, n_features),
-#             the mean of the log probability
-#         """
-#         X = check_array(X, ensure_2d=True, copy=True)
-
-#         n_samples = X.shape[0]
-
-#         # forward transformation
-
-#         # log pdf of a
-#         ldj = -stats.norm().logpdf(self.transform(X))
-
-#         return ldj
-
-#     # def logpdf()
-#     def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
-#         """Returns the log likelihood. It
-#         calculates the mean of the log probability.
-#         """
-#         X = check_array(X, ensure_2d=True, copy=False)
-
-#         # forward transformation
-#         x_logprob = -stats.norm().logpdf(self.transform(X))
-
-#         return x_logprob.sum(axis=-1)
-
-#     def sample(
-#         self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None
-#     ) -> np.ndarray:
-#         """Generate random samples from this.
-
-#         Parameters
-#         ----------
-#         n_samples : int, default=1
-#             The number of samples to generate.
-
-#         random_state : int, RandomState,None, Optional, default=None
-#             The int to be used as a seed to generate the random
-#             uniform samples.
-
-#         Returns
-#         -------
-#         X : np.ndarray, (n_samples, )
-#         """
-#         #
-#         rng = check_random_state(random_state)
-
-#         X_gauss = rng.randn(n_samples, self.quantiles_.shape[1])
-
-#         X = self.inverse_transform(X_gauss)
-#         return X
-
-
-# class PowerGaussianization(PowerTransformer, DensityMixin):
-#     def __init__(
-#         self,
-#         standardize: bool = True,
-#         support_extension: Union[float, int] = 10,
-#         copy: bool = True,
-#     ) -> None:
-#         super().__init__(
-#             method="yeo-johnson", standardize=standardize, copy=copy,
-#         )
-#         self.support_extension = support_extension
-
-#     def log_abs_det_jacobian(
-#         self, X: np.ndarray, y: Optional[np.ndarray] = None
-#     ) -> float:
-#         """Returns the log likelihood. It
-#         calculates the mean of the log probability.
-
-#         Parameters
-#         ----------
-#         X : np.ndarray, (n_samples, 1)
-#          incoming samples
-
-#         Returns
-#         -------
-#         X_jacobian : (n_samples, n_features),
-#             the mean of the log probability
-#         """
-#         X = check_array(X, ensure_2d=True, copy=True)
-
-#         n_samples = X.shape[0]
-
-#         # forward transformation
-#         X = self.transform(X)
-
-#         # log pdf of a
-#         ldj = stats.norm().logpdf(X)
-
-#         return ldj
-
-#     def score_samples(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> float:
-#         """Returns the log likelihood. It
-#         calculates the mean of the log probability.
-#         """
-
-#         # forward transformation
-#         log_prob = self.log_abs_det_jacobian(X, y).sum(axis=1)
-
-#         return log_prob
-
-#     def sample(
-#         self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None
-#     ) -> np.ndarray:
-#         """Generate random samples from this.
-
-#         Parameters
-#         ----------
-#         n_samples : int, default=1
-#             The number of samples to generate.
-
-#         random_state : int, RandomState,None, Optional, default=None
-#             The int to be used as a seed to generate the random
-#             uniform samples.
-
-#         Returns
-#         -------
-#         X : np.ndarray, (n_samples, )
-#         """
-#         #
-#         rng = check_random_state(random_state)
-
-#         X_gauss = rng.randn(n_samples, self.quantiles_.shape[1])
-
-#         X = self.inverse_transform(X_gauss)
-#         return X
-
-
-# class HistogramGaussianization(BaseTransform, DensityMixin):
-#     """This performs a univariate transformation on a datasets.
-
-#     Assuming that the data is independent across features, this
-#     applies a transformation on each feature independently. The inverse
-#     transformation is the marginal cdf applied to each of the features
-#     independently and the inverse transformation is the marginal inverse
-#     cdf applied to the features independently.
-#     """
-
-#     def __init__(
-#         self,
-#         nbins: Optional[Union[int, str]] = "auto",
-#         alpha: float = 1e-5,
-#         support_extension: Union[int, float] = 10,
-#         kwargs: Dict = {},
-#     ) -> None:
-#         self.nbins = nbins
-#         self.alpha = alpha
-#         self.support_extension = support_extension
-#         self.kwargs = kwargs
-
-#     def fit(self, X, y=None):
-
-#         # Uniformization
-#         self.marg_uniformer_ = ScipyHistogramUniformization(
-#             nbins=self.nbins,
-#             alpha=self.alpha,
-#             support_extension=self.support_extension,
-#             kwargs=self.kwargs,
-#         )
-#         self.marg_uniformer_.fit(X)
-
-#         return self
-
-#     def transform(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
-
-#         # check inputs
-#         X = check_array(X, ensure_2d=True, copy=False)
-
-#         # 1. Marginal Uniformization
-#         X = self.marg_uniformer_.transform(X)
-
-#         # 2. Marginal Gaussianization
-#         X = InverseGaussCDF().transform(X)
-
-#         return X
-
-#     def log_abs_det_jacobian(
-#         self, X: np.ndarray, y: Optional[np.ndarray] = None
-#     ) -> np.ndarray:
-
-#         # marginal uniformization
-#         # print("X: ", X.min(), X.max())
-#         Xu_der = self.marg_uniformer_.log_abs_det_jacobian(X)
-#         # print("Xu Jacobian:", Xu_der.min(), Xu_der.max())
-#         X = self.marg_uniformer_.transform(X)
-#         # print("X_u:", X.min(), X.max())
-
-#         # inverse CDF gaussian
-#         # X = InverseGaussCDF().transform(X)
-#         # print("Xg:", X.min(), X.max())
-
-#         Xg_der = InverseGaussCDF().log_abs_det_jacobian(X)
-#         # print("Xg jacobian:", Xg_der.min(), Xg_der.max())
-#         # print(f"#Nans: {np.count_nonzero(~np.isnan(Xg_der))} / {Xg_der.shape[0]}")
-
-#         return Xu_der + Xg_der
-
-#     def inverse_transform(
-#         self, X: np.ndarray, y: Optional[np.ndarray] = None
-#     ) -> np.ndarray:
-
-#         # check inputs
-#         X = check_array(X, ensure_2d=True, copy=False)
-
-#         # 1. Inverse Gaussianization
-#         X = InverseGaussCDF().inverse_transform(X)
-
-#         # 2. Inverse Uniformization
-#         X = self.marg_uniformer_.inverse_transform(X)
-
-#         return X
-
-#     def score_samples(
-#         self, X: np.ndarray, y: Optional[np.ndarray] = None
-#     ) -> np.ndarray:
-#         """Returns the log determinant abs jacobian of the inputs.
-
-#         Parameters
-#         ----------
-#         X : np.ndarray
-#             Inputs to be transformed
-
-#         y: Not used, only for compatibility
-
-#         """
-
-#         # Marginal Gaussianization Transformation
-#         # check inputs
-#         X = check_array(X, ensure_2d=True, copy=False)
-
-#         x_logprob = stats.norm().logpdf(self.transform(X))
-
-#         return (x_logprob + self.log_abs_det_jacobian(X)).sum(axis=1)
-
-#     def sample(
-#         self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None
-#     ) -> np.ndarray:
-#         """Generate random samples from this.
-
-#         Parameters
-#         ----------
-#         n_samples : int, default=1
-#             The number of samples to generate.
-
-#         random_state : int, RandomState,None, Optional, default=None
-#             The int to be used as a seed to generate the random
-#             uniform samples.
-
-#         Returns
-#         -------
-#         X : np.ndarray, (n_samples, )
-#         """
-#         #
-#         rng = check_random_state(random_state)
-
-#         U = rng.rand(n_samples, self.n_features_)
-
-#         X = self.inverse_transform(U)
-#         return X
-
-
-# class KDEGaussianization(BaseTransform, DensityMixin):
-#     """This performs a univariate transformation on a datasets.
-
-#     Assuming that the data is independent across features, this
-#     applies a transformation on each feature independently. The inverse
-#     transformation is the marginal cdf applied to each of the features
-#     independently and the inverse transformation is the marginal inverse
-#     cdf applied to the features independently.
-#     """
-
-#     def __init__(
-#         self,
-#         method: str = "exact",
-#         bw_estimator: str = "scott",
-#         algorithm: str = "kd_tree",
-#         kernel: str = "gaussian",
-#         metric: str = "euclidean",
-#         n_quantiles: int = 1_000,
-#         support_extension: Union[int, float] = 10,
-#         kwargs: Optional[Dict] = {},
-#     ) -> None:
-#         self.method = method
-#         self.n_quantiles = n_quantiles
-#         self.support_extension = support_extension
-#         self.bw_estimator = bw_estimator
-#         self.algorithm = algorithm
-#         self.kernel = kernel
-#         self.metric = metric
-#         self.kwargs = kwargs
-
-#     def fit(self, X, y=None):
-
-#         # Uniformization
-#         if self.method == "exact":
-#             self.marg_uniformer_ = ScipyKDEUniformization(
-#                 n_quantiles=self.n_quantiles,
-#                 support_extension=self.support_extension,
-#                 bw_estimator=self.bw_estimator,
-#             )
-#         elif self.method == "knn":
-#             self.marg_uniformer_ = SklearnKDEUniformization(
-#                 n_quantiles=self.n_quantiles,
-#                 support_extension=self.support_extension,
-#                 algorithm=self.algorithm,
-#                 kernel=self.kernel,
-#                 metric=self.metric,
-#                 kwargs=self.kwargs,
-#             )
-#         else:
-#             raise ValueError(f"Unrecognized method: {self.method}")
-
-#         self.marg_uniformer_.fit(X)
-
-#         return self
-
-#     def transform(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
-
-#         # check inputs
-#         X = check_array(X, ensure_2d=True, copy=False)
-
-#         # 1. Marginal Uniformization
-#         X = self.marg_uniformer_.transform(X)
-
-#         # 2. Marginal Gaussianization
-#         X = InverseGaussCDF().transform(X)
-
-#         return X
-
-#     def log_abs_det_jacobian(
-#         self, X: np.ndarray, y: Optional[np.ndarray] = None
-#     ) -> np.ndarray:
-
-#         # marginal uniformization
-#         # print("X: ", X.min(), X.max())
-#         Xu_der = self.marg_uniformer_.log_abs_det_jacobian(X)
-#         # print("Xu Jacobian:", Xu_der.min(), Xu_der.max())
-#         X = self.marg_uniformer_.transform(X)
-#         # print("X_u:", X.min(), X.max())
-
-#         # inverse CDF gaussian
-#         # X = InverseGaussCDF().transform(X)
-#         # print("Xg:", X.min(), X.max())
-
-#         Xg_der = InverseGaussCDF().log_abs_det_jacobian(X)
-#         # print("Xg jacobian:", Xg_der.min(), Xg_der.max())
-#         # print(f"#Nans: {np.count_nonzero(~np.isnan(Xg_der))} / {Xg_der.shape[0]}")
-
-#         return Xu_der + Xg_der
-
-#     def inverse_transform(
-#         self, X: np.ndarray, y: Optional[np.ndarray] = None
-#     ) -> np.ndarray:
-
-#         # check inputs
-#         X = check_array(X, ensure_2d=True, copy=False)
-
-#         # 1. Inverse Gaussianization
-#         X = InverseGaussCDF().inverse_transform(X)
-
-#         # 2. Inverse Uniformization
-#         X = self.marg_uniformer_.inverse_transform(X)
-
-#         return X
-
-#     def score_samples(
-#         self, X: np.ndarray, y: Optional[np.ndarray] = None
-#     ) -> np.ndarray:
-#         """Returns the log determinant abs jacobian of the inputs.
-
-#         Parameters
-#         ----------
-#         X : np.ndarray
-#             Inputs to be transformed
-
-#         y: Not used, only for compatibility
-
-#         """
-
-#         # Marginal Gaussianization Transformation
-#         # check inputs
-#         X = check_array(X, ensure_2d=True, copy=False)
-
-#         x_logprob = stats.norm().logpdf(self.transform(X))
-
-#         return (x_logprob + self.log_abs_det_jacobian(X)).sum(axis=1)
-
-#     def sample(
-#         self, n_samples: int = 1, random_state: Optional[Union[RandomState, int]] = None
-#     ) -> np.ndarray:
-#         """Generate random samples from this.
-
-#         Parameters
-#         ----------
-#         n_samples : int, default=1
-#             The number of samples to generate.
-
-#         random_state : int, RandomState,None, Optional, default=None
-#             The int to be used as a seed to generate the random
-#             uniform samples.
-
-#         Returns
-#         -------
-#         X : np.ndarray, (n_samples, )
-#         """
-#         #
-#         rng = check_random_state(random_state)
-
-#         U = rng.rand(n_samples, self.n_features_)
-
-#         X = self.inverse_transform(U)
-#         return X

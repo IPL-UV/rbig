@@ -55,18 +55,59 @@ def exact_kde_est_pdf(
 
 
 class KDEScipy(PDFEstimator):
+    """KDE pdf estimator using the exact scipy implementation 
+    This implementation using the Gaussian kernel and we compute
+    the PDF estimation exactly using integration. To get PDF estimations
+    for the future, we can either compute it exactly or use interpolation
+    (much faster). The empirical function is found using the ECDF estimator.
+    
+    Parameters
+    ----------
+    bw_method : str, default='scott'
+        bandwidth for the kernel estimation. almost all methods have
+        scott so that's the default. 
+    n_quantiles : Optional[int], default=None
+        the number of quantiles (support) to use for the PDF/CDF/PPF functions.
+    support_extension : int, default=10
+        the amount to extend the support of the fitted data X. Affects
+        the PDF,CDF, and PPF functions. Extending the support will allow
+        more data to be interpolated.
+    interp : bool, default=True
+        decides whether to interpolate the pdf estimation or compute it
+        exactly
+    
+    Attributes
+    ----------
+    hbins_ : np.ndarray, (n_quantiles)
+        the support for the PDF, CDF and PPF
+    hpdf_ : np.ndarray, (n_quantiles)
+        the pdf estimates for the PDF function
+    hcdf_ : np.ndarray, (n_quantiles)
+        the quantiles for the CDF/PPF function
+    """
+
     def __init__(
         self,
         bw_method: str = "scott",
         n_quantiles: int = 1_000,
         support_extension: Union[int, float] = 10,
+        interp: bool = True,
     ) -> None:
         self.bw_method = bw_method
         self.n_quantiles = n_quantiles
         self.support_extension = support_extension
+        self.interp = interp
 
     def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
-
+        """Fits the PDF estimation to the data
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            the data to be fitted
+        y : np.ndarray, 
+            not used. For compatibility only
+        """
         # fit model
         estimator = stats.gaussian_kde(X.squeeze(), bw_method=self.bw_method,)
 
@@ -79,21 +120,70 @@ class KDEScipy(PDFEstimator):
         self.hcdf_ = np.vectorize(lambda x: estimator.integrate_box_1d(-np.inf, x))(
             self.hbins_.squeeze()
         )
-        self.hpdf_ = estimator.evaluate(self.hbins_.squeeze())
+        if self.interp:
+            self.hpdf_ = estimator.evaluate(self.hbins_.squeeze())
+        else:
+            self.estimator_ = estimator
 
         return self
 
     def pdf(self, X: np.ndarray) -> np.ndarray:
-        return np.interp(X.squeeze(), self.hbins_, self.hpdf_)
+        """Estimates the PDF from new data
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            input data
+        
+        Returns
+        -------
+        X_pdf : np.ndarray, (n_samples)
+            pdf of the inputs X
+        """
+        if self.interp:
+            return np.interp(X.squeeze(), self.hbins_, self.hpdf_)
+        else:
+            return self.estimator_.evaluate(X.squeeze())
 
     def logpdf(self, X: np.ndarray) -> np.ndarray:
-
+        """Estimates the log PDF from new data
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            input data
+        
+        Returns
+        -------
+        X_lpdf : np.ndarray, (n_samples)
+            log pdf of the inputs X
+        """
         return np.log(self.pdf(X))
 
     def cdf(self, X: np.ndarray) -> np.ndarray:
+        """Estimates the CDF from new data
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            input data
+        
+        Returns
+        -------
+        X_cdf : np.ndarray, (n_samples)
+            cdf of the inputs X
+        """
         return np.interp(X, self.hbins_, self.hcdf_)
 
     def ppf(self, X: np.ndarray) -> np.ndarray:
+        """Estimates the PPF from new data
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            input data
+        
+        Returns
+        -------
+        X_ppf : np.ndarray, (n_samples)
+            pdf of the inputs X
+        """
         return np.interp(X, self.hcdf_, self.hbins_)
 
     def entropy(self, base: int = 2) -> float:
@@ -103,17 +193,60 @@ class KDEScipy(PDFEstimator):
 
 
 class KDEFFT(KDEScipy, PDFEstimator):
+    """KDE pdf estimator using the FFT from the statsmodels package
+    This implementation using the FFT for the Gaussian kernel from the
+    statsmodels package. The PDF estimation exactly using integration.
+    To get PDF estimations for the future, we can either compute it exactly
+    or use interpolation (much faster). The empirical function is found
+    using the ECDF estimator.
+    
+    Parameters
+    ----------
+    bw_method : str, default='scott'
+        bandwidth for the kernel estimation. almost all methods have
+        scott so that's the default. 
+    n_quantiles : Optional[int], default=None
+        the number of quantiles (support) to use for the PDF/CDF/PPF functions.
+    support_extension : int, default=10
+        the amount to extend the support of the fitted data X. Affects
+        the PDF,CDF, and PPF functions. Extending the support will allow
+        more data to be interpolated.
+    interp : bool, default=True
+        decides whether to interpolate the pdf estimation or compute it
+        exactly
+    
+    Attributes
+    ----------
+    hbins_ : np.ndarray, (n_quantiles)
+        the support for the PDF, CDF and PPF
+    hpdf_ : np.ndarray, (n_quantiles)
+        the pdf estimates for the PDF function
+    hcdf_ : np.ndarray, (n_quantiles)
+        the quantiles for the CDF/PPF function
+    """
+
     def __init__(
         self,
         bw_method: Union[float, str] = "normal_reference",
         n_quantiles: int = 1_000,
         support_extension: Union[int, float] = 10,
+        interp: bool = True,
     ) -> None:
         self.bw_method = bw_method
         self.n_quantiles = n_quantiles
         self.support_extension = support_extension
+        self.interp = interp
 
     def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
+        """Fits the PDF estimation to the data
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            the data to be fitted
+        y : np.ndarray,
+            not used. For compatibility only
+        """
         # fit model
         self.hbins_ = get_support_reference(
             support=X.squeeze(),
@@ -128,7 +261,11 @@ class KDEFFT(KDEScipy, PDFEstimator):
         )
 
         # evaluate cdf from KDE estimator
-        self.hpdf_ = estimator.evaluate(self.hbins_.squeeze())
+        if self.interp:
+            self.hpdf_ = estimator.evaluate(self.hbins_.squeeze())
+        else:
+            self.estimator_ = estimator
+        #
 
         # estimate the empirical CDF function from data
         self.hcdf_ = estimate_empirical_cdf(X.squeeze(), self.hbins_)
@@ -136,6 +273,23 @@ class KDEFFT(KDEScipy, PDFEstimator):
         # self.hcdf_ = kde_cdf(X, self.hbins_, bw=estimator.bw)
 
         return self
+
+    def pdf(self, X: np.ndarray) -> np.ndarray:
+        """Estimates the PDF from new data
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            input data
+        
+        Returns
+        -------
+        X_pdf : np.ndarray, (n_samples)
+            pdf of the inputs X
+        """
+        if self.interp:
+            return np.interp(X.squeeze(), self.hbins_, self.hpdf_)
+        else:
+            return self.estimator_.evaluate(X.squeeze())
 
 
 class KDEEpanechnikov(KDEScipy, PDFEstimator):
@@ -163,20 +317,29 @@ class KDEEpanechnikov(KDEScipy, PDFEstimator):
         self.n_quantiles = n_quantiles
         self.support_extension = support_extension
         self.norm = norm
+        self.interp = True
 
     def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
-        # fit model
+        """Fits the PDF estimation to the data
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            the data to be fitted
+        y : np.ndarray, 
+            not used. For compatibility only
+        """
         # estimate the empirical CDF function from data
         self.hbins_ = get_support_reference(
             support=X.squeeze(),
             extension=self.support_extension,
             n_quantiles=self.n_quantiles,
         )
+
         estimator = FFTKDE(kernel=self.kernel, bw=self.bw_method, norm=self.norm)
 
         estimator.fit(X.squeeze())
 
-        # evaluate cdf from KDE estimator
         self.hpdf_ = estimator.evaluate(self.hbins_.squeeze())
 
         self.hcdf_ = estimate_empirical_cdf(X.squeeze(), self.hbins_)
@@ -200,9 +363,18 @@ class KDESklearn(KDEScipy, PDFEstimator):
         self.kernel = kernel
         self.metric = metric
         self.kwargs = kwargs
+        self.interp = True
 
     def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
-
+        """Fits the PDF estimation to the data
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, 1)
+            the data to be fitted
+        y : np.ndarray, 
+            not used. For compatibility only
+        """
         X = check_array(X.reshape(-1, 1), ensure_2d=True, copy=True)
 
         # fit model

@@ -2,7 +2,7 @@ import numpy as np
 from scipy import stats
 
 
-def gauss_entropy_uni(X: np.ndarray) -> None:
+def gauss_entropy_uni(X: np.ndarray) -> float:
 
     loc = X.mean(axis=0)
     scale = np.cov(X.T)
@@ -13,7 +13,7 @@ def gauss_entropy_uni(X: np.ndarray) -> None:
     return norm_dist.entropy()[0]
 
 
-def gauss_entropy_multi(X: np.ndarray) -> None:
+def gauss_entropy_multi(X: np.ndarray) -> float:
 
     mean = X.mean(axis=0)
     cov = np.cov(X.T)

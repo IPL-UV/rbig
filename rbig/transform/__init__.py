@@ -1,7 +1,11 @@
 from rbig.transform.gauss_icdf import InverseGaussCDF
 from rbig.transform.linear import OrthogonalTransform
-from rbig.transform.gaussianization import MarginalGaussianization
-from rbig.transform.histogram import HistogramUniformization
+from rbig.transform.marginal import MarginalTransformation
+from rbig.transform.uniformization import (
+    HistogramUniformization,
+    MarginalUniformization,
+)
+from rbig.transform.gaussianization import Gaussianization, MarginalGaussianization
 
 # from rbig.transform.quantile import QuantileTransformer
 
@@ -14,5 +18,8 @@ __all__ = [
     "HistogramUniformization",
     "OrthogonalTransform",
     "QuantileGaussianization",
+    "MarginalTransformation",
+    "Gaussianization",
+    "MarginalUniformization",
     "MarginalGaussianization",
 ]

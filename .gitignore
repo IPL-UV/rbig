@@ -15,3 +15,5 @@ code_through/
 # Ignore .vscode
 \.vscode/
 \.pytest_cache/
+*\.eggs
+*\rbig.egg-info

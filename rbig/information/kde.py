@@ -15,6 +15,6 @@ def kde_entropy_uni(X: np.ndarray, **kwargs) -> float:
     # initialize KDE
     kde_density = sm.nonparametric.KDEUnivariate(X)
 
-    kde_density.fit(**kwargs)
+    kde_density.fit(gridsize=50, **kwargs)
 
     return kde_density.entropy
