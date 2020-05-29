@@ -106,7 +106,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         pdf_resolution=1000,
         pdf_extension=None,
         random_state=None,
-        verbose=None,
+        verbose=0,
         tolerance=None,
         zero_tolerance=60,
         entropy_correction=True,
@@ -184,16 +184,13 @@ class RBIG(BaseEstimator, TransformerMixin):
         logging.debug("Running: Looping through the layers...")
         for layer in range(self.n_layers):
 
-            if self.verbose is not None:
+            if self.verbose > 0:
                 print("Completed {} iterations of RBIG.".format(layer + 1))
 
             # ------------------
             # Gaussian(-ization)
             # ------------------
             layer_params = list()
-
-            if self.verbose is not None:
-                print("Completed {} iterations of RBIG.".format(layer + 1))
 
             for idim in range(n_dimensions):
 
