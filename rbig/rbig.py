@@ -111,7 +111,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         zero_tolerance=60,
         entropy_correction=True,
         rotation_kwargs=None,
-        base='gauss'
+        base="gauss",
     ):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
@@ -525,9 +525,10 @@ class RBIG(BaseEstimator, TransformerMixin):
 
             for start_idx, end_idx in generate_batches(n_samples, chunksize):
 
-                jacobians[start_idx:end_idx, :, :], data_temp[
-                    start_idx:end_idx, :
-                ] = self.jacobian(
+                (
+                    jacobians[start_idx:end_idx, :, :],
+                    data_temp[start_idx:end_idx, :],
+                ) = self.jacobian(
                     data_aux[start_idx:end_idx, :], return_X_transform=True
                 )
 
@@ -609,12 +610,12 @@ class RBIG(BaseEstimator, TransformerMixin):
         data_uniform, params = self.univariate_make_uniform(
             uni_data.T, extension, precision
         )
-        if self.base == 'gauss':
+        if self.base == "gauss":
             return norm.ppf(data_uniform).T, params
-        elif self.base == 'uniform':
+        elif self.base == "uniform":
             return uniform.ppf(data_uniform).T, params
         else:
-            raise ValueError(f'Unrecognized base dist: {self.base}.')
+            raise ValueError(f"Unrecognized base dist: {self.base}.")
 
     def univariate_make_uniform(self, uni_data, extension, precision):
         """
@@ -689,13 +690,13 @@ class RBIG(BaseEstimator, TransformerMixin):
         Inverts the marginal normalization
         See the companion, univariate_make_normal.py, for more details
         """
-        if self.base == 'gauss':
+        if self.base == "gauss":
             uni_uniform_data = norm.cdf(uni_gaussian_data)
-        elif self.base == 'uniform':
+        elif self.base == "uniform":
             uni_uniform_data = uniform.cdf(uni_gaussian_data)
         else:
             raise ValueError(f"Unrecognized base dist.: {base}.")
-            
+
         uni_data = self.univariate_invert_uniformization(uni_uniform_data, trans_params)
         return uni_data
 
@@ -786,10 +787,9 @@ class RBIGMI(object):
         pdf_resolution=1000,
         pdf_extension=None,
         random_state=None,
-        verbose=None,
+        verbose=0,
         tolerance=None,
         zero_tolerance=100,
-        increment=1.5,
     ):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
@@ -799,7 +799,6 @@ class RBIGMI(object):
         self.verbose = verbose
         self.tolerance = tolerance
         self.zero_tolerance = zero_tolerance
-        self.increment = 1.5
 
     def fit(self, X, Y):
         """Inputs for the RBIGMI algorithm.
@@ -814,75 +813,58 @@ class RBIGMI(object):
         do not have to be the same.
         
         """
-        
-        # Loop Until Convergence
-        fitted = None
-        try:
-            while fitted is None:
-                
-                if self.verbose:
-                    print(f"PDF Extension: {self.pdf_extension}%")
-                    
-                try:
-                    # Initialize RBIG class I
-                    self.rbig_model_X = RBIG(
-                        n_layers=self.n_layers,
-                        rotation_type=self.rotation_type,
-                        pdf_resolution=self.pdf_resolution,
-                        pdf_extension=self.pdf_extension,
-                        verbose=None,
-                        random_state=self.random_state,
-                        zero_tolerance=self.zero_tolerance,
-                        tolerance=self.tolerance,
-                    )
 
-                    # fit and transform model to the data
-                    X_transformed = self.rbig_model_X.fit_transform(X)
+        # Initialize RBIG class I
+        self.rbig_model_X = RBIG(
+            n_layers=self.n_layers,
+            rotation_type=self.rotation_type,
+            pdf_resolution=self.pdf_resolution,
+            pdf_extension=self.pdf_extension,
+            verbose=self.verbose,
+            random_state=self.random_state,
+            zero_tolerance=self.zero_tolerance,
+            tolerance=self.tolerance,
+        )
 
-                    # Initialize RBIG class II
-                    self.rbig_model_Y = RBIG(
-                        n_layers=self.n_layers,
-                        rotation_type=self.rotation_type,
-                        pdf_resolution=self.pdf_resolution,
-                        pdf_extension=self.pdf_extension,
-                        verbose=None,
-                        random_state=self.random_state,
-                        zero_tolerance=self.zero_tolerance,
-                        tolerance=self.tolerance,
-                    )
+        # fit and transform model to the data
+        X_transformed = self.rbig_model_X.fit_transform(X)
 
-                    # fit model to the data
-                    Y_transformed = self.rbig_model_Y.fit_transform(Y)
+        # Initialize RBIG class II
+        self.rbig_model_Y = RBIG(
+            n_layers=self.n_layers,
+            rotation_type=self.rotation_type,
+            pdf_resolution=self.pdf_resolution,
+            pdf_extension=self.pdf_extension,
+            verbose=self.verbose,
+            random_state=self.random_state,
+            zero_tolerance=self.zero_tolerance,
+            tolerance=self.tolerance,
+        )
 
-                    # Stack Data
-                    if self.verbose:
-                        print(
-                            X_transformed.shape, Y_transformed.shape
-                        )
-                        
-                    XY_transformed = np.hstack([X_transformed, Y_transformed])
+        # fit model to the data
+        Y_transformed = self.rbig_model_Y.fit_transform(Y)
 
-                    # Initialize RBIG class I & II
-                    self.rbig_model_XY = RBIG(
-                        n_layers=self.n_layers,
-                        rotation_type=self.rotation_type,
-                        random_state=self.random_state,
-                        zero_tolerance=self.zero_tolerance,
-                        tolerance=self.tolerance,
-                        pdf_resolution=self.pdf_resolution,
-                        pdf_extension=self.pdf_extension,
-                        verbose=None
-                    )
+        # Stack Data
+        if self.verbose:
+            print(X_transformed.shape, Y_transformed.shape)
 
-                    # Fit RBIG model to combined dataset
-                    self.rbig_model_XY.fit(XY_transformed)
-                    fitted = True
-                except:
-                    self.pdf_extension = self.increment * self.pdf_extension
-        
-        except KeyboardInterrupt:
-            print('Interrupted!')
-            
+        XY_transformed = np.hstack([X_transformed, Y_transformed])
+
+        # Initialize RBIG class I & II
+        self.rbig_model_XY = RBIG(
+            n_layers=self.n_layers,
+            rotation_type=self.rotation_type,
+            random_state=self.random_state,
+            zero_tolerance=self.zero_tolerance,
+            tolerance=self.tolerance,
+            pdf_resolution=self.pdf_resolution,
+            pdf_extension=self.pdf_extension,
+            verbose=self.verbose,
+        )
+
+        # Fit RBIG model to combined dataset
+        self.rbig_model_XY.fit(XY_transformed)
+
         return self
 
     def mutual_information(self):
@@ -1046,8 +1028,8 @@ class RBIGKLD(object):
                 except:
                     self.pdf_extension = self.increment * self.pdf_extension
         except KeyboardInterrupt:
-            print('Interrupted!')
-        
+            print("Interrupted!")
+
         self.mv_g = mv_g
         if self.verbose == 2:
             print(f"mv_g: {mv_g}")
