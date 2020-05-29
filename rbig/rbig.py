@@ -957,7 +957,7 @@ class RBIGKLD(object):
         pdf_resolution=None,
         pdf_extension=10,
         random_state=None,
-        verbose=None,
+        verbose=0,
         tolerance=None,
         zero_tolerance=100,
         increment=1.5,
