@@ -641,7 +641,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         # not sure exactly what we're doing here, but at a high level we're
         # constructing bins for the histogram
         bin_edges = np.linspace(
-            np.min(uni_data), np.max(uni_data), np.sqrt(n_samps) + 1
+            np.min(uni_data), np.max(uni_data), int(np.sqrt(np.float64(n_samps)) + 1)
         )
         bin_centers = np.mean(np.vstack((bin_edges[0:-1], bin_edges[1:])), axis=0)
 
@@ -668,7 +668,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         )
 
         extended_cdf = np.hstack((0.0, 1.0 / n_samps, cdf, 1.0))
-        new_support = np.linspace(new_bin_edges[0], new_bin_edges[-1], precision)
+        new_support = np.linspace(new_bin_edges[0], new_bin_edges[-1], int(precision))
         learned_cdf = interp1d(new_bin_edges, extended_cdf)
         uniform_cdf = make_cdf_monotonic(learned_cdf(new_support))
         # ^ linear interpolation
@@ -813,7 +813,6 @@ class RBIGMI(object):
         do not have to be the same.
         
         """
-
         # Initialize RBIG class I
         self.rbig_model_X = RBIG(
             n_layers=self.n_layers,
@@ -1120,10 +1119,10 @@ def entropy_marginal(data, bin_est="standard", correction=True):
 
 def bin_estimation(n_samples, rule="standard"):
 
-    if rule is "sturge":
+    if rule == "sturge":
         n_bins = int(np.ceil(1 + 3.322 * np.log10(n_samples)))
 
-    elif rule is "standard":
+    elif rule == "standard":
         n_bins = int(np.ceil(np.sqrt(n_samples)))
 
     else:
