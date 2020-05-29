@@ -51,7 +51,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         The fraction by which to extend the support of the Gaussian-ized marginal
         pdf compared to the empirical marginal PDF.
 
-    verbose : int, optional
+    verbose : int, default=0
         If specified, report the RBIG iteration number every
         progress_report_interval iterations.
 
@@ -370,7 +370,7 @@ class RBIG(BaseEstimator, TransformerMixin):
 
         for layer in range(self.n_layers - 1, -1, -1):
 
-            if self.verbose is not None:
+            if self.verbose > 0:
                 print("Completed {} inverse iterations of RBIG.".format(layer + 1))
 
             X_input_domain = np.dot(X_input_domain, self.rotation_matrix[layer].T)
@@ -844,7 +844,7 @@ class RBIGMI(object):
         Y_transformed = self.rbig_model_Y.fit_transform(Y)
 
         # Stack Data
-        if self.verbose:
+        if self.verbose > 1:
             print(X_transformed.shape, Y_transformed.shape)
 
         XY_transformed = np.hstack([X_transformed, Y_transformed])
@@ -987,7 +987,7 @@ class RBIGKLD(object):
         try:
             while mv_g is None:
 
-                if self.verbose:
+                if self.verbose > 1:
                     print(f"PDF Extension: {self.pdf_extension}%")
 
                 try:
