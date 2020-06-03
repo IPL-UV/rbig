@@ -8,7 +8,6 @@
   - [Jacobian](#jacobian)
 - [Resources](#resources)
     - [Best Tutorials](#best-tutorials)
-    - [Slides](#slides)
 - [Survey of Literature](#survey-of-literature)
   - [Neural Density Estimators](#neural-density-estimators)
   - [Deep Density Destructors](#deep-density-destructors)
@@ -155,9 +154,6 @@ This is the area of the most research within the community. There are many diffe
 * [Flow Models](https://docs.google.com/presentation/d/1WqEy-b8x-PhvXB_IeA6EoOfSTuhfgUYDVXlYP8Jh_n0/edit#slide=id.g7d4f9f0446_0_43) - [Deep Unsupervised Learning Class](https://sites.google.com/view/berkeley-cs294-158-sp20/home), Spring 2010 
 * [Normalizing Flows: A Tutorial](https://docs.google.com/presentation/d/1wHJz9Awhlp-PWLZGWJKzF66gzvqdSrhknb-iLFJ1Owo/edit#slide=id.p) - Eric Jang
 
-#### Slides
-
-* [Tutorial: Deep Generative Models - Foundations, Applications and Open Problems](https://docs.google.com/presentation/d/e/2PACX-1vSwRVxRHDarUx2mwXrsrlrtdTVTyEiFkWjJ9TvJ5ad6gbB3PDZSgD9yHAUiB6DcO1zP7LXBpxzc0SzC/pub?start=true&loop=true&delayms=10000#slide=id.g24b95418b8_0_703) - Danilo J. Rezende - CCN 2018 Philadelphia
 
 
 ---

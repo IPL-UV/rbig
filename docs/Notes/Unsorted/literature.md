@@ -2,7 +2,6 @@
 
 - [Theory](#theory)
   - [Gaussianization](#gaussianization)
-  - [Things to Think about](#things-to-think-about)
   - [Journal Articles](#journal-articles)
   - [RBIG](#rbig)
     - [Generalized Divisive Normalization](#generalized-divisive-normalization)
@@ -27,10 +26,6 @@
 * Multivariate Gaussianization in Earth and Climate Sciences - Johnson et. al. - Climate Informatics 2019 - [repo](https://github.com/IPL-UV/2019_ci_rbig)
 * Climate Model Intercomparison with Multivariate Information Theoretic Measures - Johnson et. al. - AGU 2019 - [slides](https://docs.google.com/presentation/d/18KfmAbaJI49EycNule8vvfR1dd0W6VDwrGCXjzZe5oE/edit?usp=sharing)
 * Information theory measures and RBIG for Spatial-Temporal Data analysis - Johnson et. al. - In progress
-
-### Things to Think about
-
-* A Note on the Evaluation of Generative Models - Theis et. al. - ICLR 2016 - [PDF](https://arxiv.org/pdf/1511.01844.pdf)
 
 
 ### Journal Articles

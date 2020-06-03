@@ -14,8 +14,13 @@ We can write some equations to illustrate exactly what we mean by these two term
 
 More concretely, let's define the following pair of equations:
 
-$$z \sim \mathcal{P}_\mathcal{Z}$$
-$$\hat x = \mathcal G_\theta (z)$$
+$$
+z \sim \mathcal{P}_\mathcal{Z}
+$$
+
+$$
+\hat x = \mathcal G_\theta (z)
+$$
 
 This is called the generative step; how well do we fit our parameters such that $x \approx \hat x$. We can define the alternative step below:
 
