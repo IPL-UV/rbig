@@ -77,7 +77,10 @@ def information_reduction(
 
 def get_reduction_tolerance(n_samples: int) -> float:
     """A tolerance indicator for the information reduction"""
+    # xxx = np.logspace(2, 8, 7)
+    # yyy = [0.1571, 0.0468, 0.0145, 0.0046, 0.0014, 0.0001, 0.00001]
+    # tol = interp1d(xxx, yyy)(n_samples)
     xxx = np.logspace(2, 8, 7)
     yyy = [0.1571, 0.0468, 0.0145, 0.0046, 0.0014, 0.0001, 0.00001]
-    tol = interp1d(xxx, yyy)(n_samples)
-    return tol
+    tol_dimensions = np.interp(n_samples, xxx, yyy)
+    return tol_dimensions

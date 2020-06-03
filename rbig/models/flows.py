@@ -110,13 +110,13 @@ class GaussianizationModel(BaseModel):
             # append flows to flow list
             self.flows_.append(iflow)
 
+            score = -np.mean(stats.norm().logpdf(X).sum(-1) + X_logdetjacobian.sum(-1))
+
             X = np.copy(Xtrans)
 
             # save number of layers
             if self.verbose:
-                print(
-                    f"Layer: {n_layers}, Loss: {self.losses_[-1]}, nll: {self.score(X_original)}"
-                )
+                print(f"Layer: {n_layers}, Loss: {self.losses_[-1]}, NLL: {score:.4f}")
 
         self.n_layers_ = len(self.losses_)
 

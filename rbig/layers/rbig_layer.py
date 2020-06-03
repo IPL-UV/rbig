@@ -5,6 +5,16 @@ import numpy as np
 from rbig.layers.base import BaseLayer
 from rbig.transform.base import BaseTransform
 
+import logging, sys
+
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    format="%(asctime)s: %(levelname)s: %(message)s",
+)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
 
 class RBIGLayer(BaseLayer):
     """RBIG Layer which holds the transformations defined by RBIG.
@@ -27,6 +37,7 @@ class RBIGLayer(BaseLayer):
     ) -> None:
         self.mg_transform = mg_transform
         self.rot_transform = rot_transform
+        self.is_fitted = False
 
     # def __repr__(self):
 
@@ -42,15 +53,23 @@ class RBIGLayer(BaseLayer):
     ) -> Tuple[np.ndarray, np.ndarray]:
 
         # marginal transformation
-        try:
+
+        if self.is_fitted is True:
+            logging.debug(f"Already fitted. Transforning!")
             Xmg = self.mg_transform.transform(X)
-        except AttributeError:
-            Xmg = self.mg_transform.fit_transform(X)
-        # rotation
-        try:
             Xtrans = self.rot_transform.transform(Xmg)
-        except AttributeError:
+        else:
+            logging.debug(f"Fitting.  Transforning!")
+            Xmg = self.mg_transform.fit_transform(X)
             Xtrans = self.rot_transform.fit_transform(Xmg)
+            self.is_fitted = True
+
+        # # rotation
+        # try:
+        #     logging.debug(f"Trying Forward Transform (ROT)")
+
+        # except AttributeError:
+        #     Xtrans = self.rot_transform.fit_transform(Xmg)
 
         if not return_jacobian:
             return Xtrans

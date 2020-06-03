@@ -97,7 +97,7 @@ class InfoLoss(StoppingCriteria):
             # print("Toleranrce:", tol)
 
             # calculate the changes
-            if tol == 0:
+            if tol < 0.001:
                 # no changes, don't use the last n layers
                 # n_layers = len(self.losses_)
                 n = self.tol_layers

@@ -4,12 +4,11 @@ from scipy import stats
 from rbig.density.base import PDFEstimator
 from rbig.utils import make_interior_log_prob, make_interior_probability
 from sklearn.utils import check_array
-from rbig.utils import get_domain_extension
 from sklearn.preprocessing import QuantileTransformer
 from sklearn.utils import check_random_state
 import logging
 from rbig.density.empirical import estimate_empirical_cdf
-from rbig.utils import get_support_reference
+from rbig.utils import get_support_reference, get_domain_extension
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)

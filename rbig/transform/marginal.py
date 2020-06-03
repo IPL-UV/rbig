@@ -4,6 +4,16 @@ from sklearn.utils import check_array, check_random_state
 from sklearn.base import clone
 from rbig.transform.base import DensityMixin, BaseTransform
 
+import logging, sys
+
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    format="%(asctime)s: %(levelname)s: %(message)s",
+)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
 
 class MarginalTransformation(BaseTransform, DensityMixin):
     """Marginal transformation for any univariate transformer.
@@ -49,7 +59,7 @@ class MarginalTransformation(BaseTransform, DensityMixin):
         transforms = []
 
         for feature_idx in range(X.shape[1]):
-
+            logging.debug(f"Transforming Feature")
             transformer = clone(self.transformer)
             transforms.append(transformer.fit(X[:, feature_idx]))
 
@@ -69,9 +79,8 @@ class MarginalTransformation(BaseTransform, DensityMixin):
             2D transformed data
         """
         X = check_array(X, ensure_2d=True, copy=True)
-
         for feature_idx in range(X.shape[1]):
-
+            logging.debug(f"Transforming Feature")
             X[:, feature_idx] = (
                 self.transforms_[feature_idx].transform(X[:, feature_idx]).squeeze()
             )

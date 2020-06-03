@@ -1,7 +1,24 @@
-from sklearn.base import BaseEstimator, TransformerMixin
+from rbig.models import GaussianizationModel
+from rbig.stopping import InfoLoss
+from typing import Optional
+from rbig.stopping import StoppingCriteria
+from rbig.layers import RBIGLayer
+import numpy as np
+from copy import deepcopy
+
+import sys
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    format="%(asctime)s: %(levelname)s: %(message)s",
+)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
-class RBIG(BaseEstimator, TransformerMixin):
+class RBIG(GaussianizationModel):
     """ Rotation-Based Iterative Gaussianization (RBIG).
     This algorithm transforms any multidimensional data to a Gaussian.
     It also provides a sampling mechanism whereby you can provide
@@ -64,5 +81,89 @@ class RBIG(BaseEstimator, TransformerMixin):
         https://github.com/spencerkent/pyRBIG
     """
 
-    def __init__(self) -> None:
-        pass
+    def __init__(
+        self,
+        flow: RBIGLayer,
+        stopping_criteria: StoppingCriteria,
+        verbose: bool = False,
+    ) -> None:
+        super().__init__(flow, stopping_criteria, verbose)
+
+    def total_correlation(self):
+        if (
+            hasattr(self.stopping_criteria, "name_")
+            and self.stopping_criteria.name_ == "info_loss"
+        ):
+
+            return np.array(self.losses_).sum()
+        else:
+
+            raise ValueError(
+                "Information criteria isnt used. This isn't total correlation."
+                f" {hasattr(self.stopping_criteria, 'name')}"
+                f" {self.stopping_criteria.name_}"
+                f" {issubclass(type(self.stopping_criteria), InfoLoss)}"
+            )
+
+    def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> None:
+        """Fit Gaussianization model to data adhering to the stopping criteria
+        
+        Parameters
+        ----------
+        X : np.ndarray, (n_samples, n_features)
+            the data to be transformed to the Gaussian domain
+        
+        y : not used, for compatability only
+        """
+        # initialize transforms
+        self.flows_ = list()
+        self.n_features_ = X.shape[1]
+        X_original = X.copy()
+        n_layers = 0
+        add_layers = True
+        # print('Star')
+        logging.info(f"Starting...")
+
+        while add_layers:
+            # increase the the layer iterator
+
+            n_layers += 1
+            logging.info(f"Iteration: {n_layers}")
+
+            # initialize rbig block
+            logging.debug(f"Copy Flow Model...")
+            iflow = deepcopy(self.flow)
+
+            # transform data
+            logging.debug(f"Fit Transform...")
+            Xtrans = iflow.transform(X, y=None, return_jacobian=False)
+
+            # calculate loss (Xt, X, dX)
+            logging.debug(f"Calculate Loss")
+            _ = self.stopping_criteria.calculate_loss(Xtrans, X, None)
+
+            # check stopping criteria
+            logging.debug(f"Checking stopping criteria...")
+            add_layers = self.stopping_criteria.check_tolerance(n_layers)
+
+            # save losses to class
+            self.losses_ = self.stopping_criteria.losses_
+
+            # append flows to flow list
+            logging.debug(f"Appending Flow.")
+            self.flows_.append(iflow)
+            logging.debug(f"Xtrans=X")
+            X = Xtrans
+
+            # save number of layers
+            logging.debug(f"Layer: {n_layers}, Loss: {self.losses_[-1]}")
+
+        self.n_layers_ = len(self.losses_)
+
+        # reduce the number of layers based on # loss values
+        if self.n_layers_ < len(self.flows_):
+            self.flows_ = self.flows_[: self.n_layers_]
+            self.losses_ = self.losses_[: self.n_layers_]
+            self.n_layers = len(self.flows_)
+
+        return self

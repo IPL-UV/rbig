@@ -33,6 +33,7 @@ dependencies:
     - pyprojroot   # resolves paths in notebooks
     # Extra
     - netCDF4
+    - KDEpy
     # Documentation
     - mkdocs-material 
     - mknotebooks
