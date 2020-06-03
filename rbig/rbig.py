@@ -51,7 +51,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         The fraction by which to extend the support of the Gaussian-ized marginal
         pdf compared to the empirical marginal PDF.
 
-    verbose : int, optional
+    verbose : int, default=0
         If specified, report the RBIG iteration number every
         progress_report_interval iterations.
 
@@ -106,7 +106,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         pdf_resolution=1000,
         pdf_extension=None,
         random_state=None,
-        verbose=None,
+        verbose=0,
         tolerance=None,
         zero_tolerance=60,
         entropy_correction=True,
@@ -184,16 +184,13 @@ class RBIG(BaseEstimator, TransformerMixin):
         logging.debug("Running: Looping through the layers...")
         for layer in range(self.n_layers):
 
-            if self.verbose is not None:
+            if self.verbose > 0:
                 print("Completed {} iterations of RBIG.".format(layer + 1))
 
             # ------------------
             # Gaussian(-ization)
             # ------------------
             layer_params = list()
-
-            if self.verbose is not None:
-                print("Completed {} iterations of RBIG.".format(layer + 1))
 
             for idim in range(n_dimensions):
 
@@ -370,7 +367,7 @@ class RBIG(BaseEstimator, TransformerMixin):
 
         for layer in range(self.n_layers - 1, -1, -1):
 
-            if self.verbose is not None:
+            if self.verbose > 0:
                 print("Completed {} inverse iterations of RBIG.".format(layer + 1))
 
             X_input_domain = np.dot(X_input_domain, self.rotation_matrix[layer].T)
@@ -787,10 +784,9 @@ class RBIGMI(object):
         pdf_resolution=1000,
         pdf_extension=None,
         random_state=None,
-        verbose=None,
+        verbose=0,
         tolerance=None,
         zero_tolerance=100,
-        increment=1.5,
     ):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
@@ -800,7 +796,6 @@ class RBIGMI(object):
         self.verbose = verbose
         self.tolerance = tolerance
         self.zero_tolerance = zero_tolerance
-        self.increment = 1.5
 
     def fit(self, X, Y):
         """Inputs for the RBIGMI algorithm.
@@ -815,72 +810,56 @@ class RBIGMI(object):
         do not have to be the same.
         
         """
+        # Initialize RBIG class I
+        self.rbig_model_X = RBIG(
+            n_layers=self.n_layers,
+            rotation_type=self.rotation_type,
+            pdf_resolution=self.pdf_resolution,
+            pdf_extension=self.pdf_extension,
+            verbose=self.verbose,
+            random_state=self.random_state,
+            zero_tolerance=self.zero_tolerance,
+            tolerance=self.tolerance,
+        )
 
-        # Loop Until Convergence
-        fitted = None
-        try:
-            while fitted is None:
+        # fit and transform model to the data
+        X_transformed = self.rbig_model_X.fit_transform(X)
 
-                if self.verbose:
-                    print(f"PDF Extension: {self.pdf_extension}%")
+        # Initialize RBIG class II
+        self.rbig_model_Y = RBIG(
+            n_layers=self.n_layers,
+            rotation_type=self.rotation_type,
+            pdf_resolution=self.pdf_resolution,
+            pdf_extension=self.pdf_extension,
+            verbose=self.verbose,
+            random_state=self.random_state,
+            zero_tolerance=self.zero_tolerance,
+            tolerance=self.tolerance,
+        )
 
-                try:
-                    # Initialize RBIG class I
-                    self.rbig_model_X = RBIG(
-                        n_layers=self.n_layers,
-                        rotation_type=self.rotation_type,
-                        pdf_resolution=self.pdf_resolution,
-                        pdf_extension=self.pdf_extension,
-                        verbose=None,
-                        random_state=self.random_state,
-                        zero_tolerance=self.zero_tolerance,
-                        tolerance=self.tolerance,
-                    )
+        # fit model to the data
+        Y_transformed = self.rbig_model_Y.fit_transform(Y)
 
-                    # fit and transform model to the data
-                    X_transformed = self.rbig_model_X.fit_transform(X)
+        # Stack Data
+        if self.verbose > 1:
+            print(X_transformed.shape, Y_transformed.shape)
 
-                    # Initialize RBIG class II
-                    self.rbig_model_Y = RBIG(
-                        n_layers=self.n_layers,
-                        rotation_type=self.rotation_type,
-                        pdf_resolution=self.pdf_resolution,
-                        pdf_extension=self.pdf_extension,
-                        verbose=None,
-                        random_state=self.random_state,
-                        zero_tolerance=self.zero_tolerance,
-                        tolerance=self.tolerance,
-                    )
+        XY_transformed = np.hstack([X_transformed, Y_transformed])
 
-                    # fit model to the data
-                    Y_transformed = self.rbig_model_Y.fit_transform(Y)
+        # Initialize RBIG class I & II
+        self.rbig_model_XY = RBIG(
+            n_layers=self.n_layers,
+            rotation_type=self.rotation_type,
+            random_state=self.random_state,
+            zero_tolerance=self.zero_tolerance,
+            tolerance=self.tolerance,
+            pdf_resolution=self.pdf_resolution,
+            pdf_extension=self.pdf_extension,
+            verbose=self.verbose,
+        )
 
-                    # Stack Data
-                    if self.verbose:
-                        print(X_transformed.shape, Y_transformed.shape)
-
-                    XY_transformed = np.hstack([X_transformed, Y_transformed])
-
-                    # Initialize RBIG class I & II
-                    self.rbig_model_XY = RBIG(
-                        n_layers=self.n_layers,
-                        rotation_type=self.rotation_type,
-                        random_state=self.random_state,
-                        zero_tolerance=self.zero_tolerance,
-                        tolerance=self.tolerance,
-                        pdf_resolution=self.pdf_resolution,
-                        pdf_extension=self.pdf_extension,
-                        verbose=None,
-                    )
-
-                    # Fit RBIG model to combined dataset
-                    self.rbig_model_XY.fit(XY_transformed)
-                    fitted = True
-                except:
-                    self.pdf_extension = self.increment * self.pdf_extension
-
-        except KeyboardInterrupt:
-            print("Interrupted!")
+        # Fit RBIG model to combined dataset
+        self.rbig_model_XY.fit(XY_transformed)
 
         return self
 
@@ -978,7 +957,7 @@ class RBIGKLD(object):
         pdf_resolution=None,
         pdf_extension=10,
         random_state=None,
-        verbose=None,
+        verbose=0,
         tolerance=None,
         zero_tolerance=100,
         increment=1.5,
@@ -1005,7 +984,7 @@ class RBIGKLD(object):
         try:
             while mv_g is None:
 
-                if self.verbose:
+                if self.verbose > 1:
                     print(f"PDF Extension: {self.pdf_extension}%")
 
                 try:
