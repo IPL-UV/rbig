@@ -1,9 +1,15 @@
 name: rbig
 channels:
 - defaults
-- conda-forge
 dependencies:
-- scipy
-- scikit-learn
-- numpy
-- matplotlib
+- scipy>1.5
+- scikit-learn>0.23
+- numpy>1.19
+- matplotlib>3.3
+- statsmodels>0.12
+- pip>20.2
+- pip:
+    - mkdocs-material==5.5.12
+    - mkdocs-material-extensions==1.0
+    - mknotebooks==0.4.1
+    - pymdown-extensions==8.0
