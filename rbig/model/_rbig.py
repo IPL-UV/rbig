@@ -101,13 +101,13 @@ class RBIG(BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        n_layers: int = 1000,
+        n_layers: int = 1_000,
         rotation_type: str = "PCA",
         method: str = "custom",
-        pdf_resolution: int = 1000,
+        pdf_resolution: int = 1_000,
         pdf_extension: int = 10,
         random_state: Optional[int] = None,
-        verbose: Optional[int] = None,
+        verbose: int = 0,
         tolerance: int = None,
         zero_tolerance: int = 60,
         entropy_correction: bool = True,
