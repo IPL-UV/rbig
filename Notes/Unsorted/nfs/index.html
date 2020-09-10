@@ -1,0 +1,1295 @@
+
+
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="RBIG">
+      
+      
+        <link rel="canonical" href="https://ipl-uv.github.io/rbig/Notes/Unsorted/nfs/">
+      
+      
+        <meta name="author" content="J. Emmanuel Johnson">
+      
+      <link rel="shortcut icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-5.5.12">
+    
+    
+      
+        <title>Normalizing Flows - RBIG</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.4dd2dd8d.min.css">
+      
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.6a5ad368.min.css">
+      
+      
+        
+        
+        <meta name="theme-color" content="#000000">
+      
+    
+    
+    
+      
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=source+code+pro:300,400,400i,700%7Csource+code+pro&display=fallback">
+        <style>body,input{font-family:"source code pro",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"source code pro",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+      <link rel="stylesheet" href="../../../css/ansi-colours.css">
+    
+      <link rel="stylesheet" href="../../../css/jupyter-cells.css">
+    
+      <link rel="stylesheet" href="../../../css/pandas-dataframe.css">
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="black" data-md-color-accent="gray">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#normalizing-flows" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href="https://ipl-uv.github.io/rbig" title="RBIG" class="md-header-nav__button md-logo" aria-label="RBIG">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 003-3 3 3 0 00-3-3 3 3 0 00-3 3 3 3 0 003 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            RBIG
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              Normalizing Flows
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/ipl-uv/rbig/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ipl-uv/rbig
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+        
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://ipl-uv.github.io/rbig" title="RBIG" class="md-nav__button md-logo" aria-label="RBIG">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 003-3 3 3 0 00-3-3 3 3 0 00-3 3 3 3 0 003 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    RBIG
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/ipl-uv/rbig/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ipl-uv/rbig
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../../.." title="Rotation-Based Iterative Gaussianization" class="md-nav__link">
+      Rotation-Based Iterative Gaussianization
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-2" type="checkbox" id="nav-2" checked>
+    
+    <label class="md-nav__link" for="nav-2">
+      Notes
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Notes" data-md-level="1">
+      <label class="md-nav__title" for="nav-2">
+        <span class="md-nav__icon md-icon"></span>
+        Notes
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../" title="Index" class="md-nav__link">
+      Index
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-2-2" type="checkbox" id="nav-2-2" checked>
+    
+    <label class="md-nav__link" for="nav-2-2">
+      Unsorted
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Unsorted" data-md-level="2">
+      <label class="md-nav__title" for="nav-2-2">
+        <span class="md-nav__icon md-icon"></span>
+        Unsorted
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../dds/" title="Density Destructors" class="md-nav__link">
+      Density Destructors
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../exponential/" title="Exponential Family of Distributions" class="md-nav__link">
+      Exponential Family of Distributions
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../gaussian/" title="Gaussian Distribution" class="md-nav__link">
+      Gaussian Distribution
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../gaussianization/" title="Gaussianization" class="md-nav__link">
+      Gaussianization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../itm/" title="Information Theory Measures" class="md-nav__link">
+      Information Theory Measures
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../kde/" title="Kernel Density Estimation" class="md-nav__link">
+      Kernel Density Estimation
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../literature/" title="Literature Review" class="md-nav__link">
+      Literature Review
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../mg/" title="Marginal Gaussianization" class="md-nav__link">
+      Marginal Gaussianization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../mixtures/" title="Mixture Models" class="md-nav__link">
+      Mixture Models
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../mu/" title="Uniformization" class="md-nav__link">
+      Uniformization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Normalizing Flows
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" title="Normalizing Flows" class="md-nav__link md-nav__link--active">
+      Normalizing Flows
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#main-idea" class="md-nav__link">
+    Main Idea
+  </a>
+  
+    <nav class="md-nav" aria-label="Main Idea">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#loss-function" class="md-nav__link">
+    Loss Function
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sampling" class="md-nav__link">
+    Sampling
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choice-of-transformations" class="md-nav__link">
+    Choice of Transformations
+  </a>
+  
+    <nav class="md-nav" aria-label="Choice of Transformations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prior-distribution" class="md-nav__link">
+    Prior Distribution
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jacobian" class="md-nav__link">
+    Jacobian
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    Resources
+  </a>
+  
+    <nav class="md-nav" aria-label="Resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#best-tutorials" class="md-nav__link">
+    Best Tutorials
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#survey-of-literature" class="md-nav__link">
+    Survey of Literature
+  </a>
+  
+    <nav class="md-nav" aria-label="Survey of Literature">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#neural-density-estimators" class="md-nav__link">
+    Neural Density Estimators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deep-density-destructors" class="md-nav__link">
+    Deep Density Destructors
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-tutorials" class="md-nav__link">
+    Code Tutorials
+  </a>
+  
+    <nav class="md-nav" aria-label="Code Tutorials">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tutorials" class="md-nav__link">
+    Tutorials
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#algorithms" class="md-nav__link">
+    Algorithms
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rbig-upgrades" class="md-nav__link">
+    RBIG Upgrades
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cutting-edge" class="md-nav__link">
+    Cutting Edge
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github-implementations" class="md-nav__link">
+    Github Implementations
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../pdf_est/" title="PDF Estimation" class="md-nav__link">
+      PDF Estimation
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../rbig/" title="Rotation-Based Iterative Gaussianization (RBIG)" class="md-nav__link">
+      Rotation-Based Iterative Gaussianization (RBIG)
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../refactor/" title="Refactoring RBIG (RBIG 1.1)" class="md-nav__link">
+      Refactoring RBIG (RBIG 1.1)
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../rotation/" title="Rotation" class="md-nav__link">
+      Rotation
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../uniform/" title="Uniform Distribution" class="md-nav__link">
+      Uniform Distribution
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
+    
+    <label class="md-nav__link" for="nav-3">
+      Demos
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Demos" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        <span class="md-nav__icon md-icon"></span>
+        Demos
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../../demos/demo_innf/" title="Demo: Gaussianization" class="md-nav__link">
+      Demo: Gaussianization
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
+    
+    <label class="md-nav__link" for="nav-4">
+      Notebooks
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Notebooks" data-md-level="1">
+      <label class="md-nav__title" for="nav-4">
+        <span class="md-nav__icon md-icon"></span>
+        Notebooks
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../../notebooks/information_theory/" title="Information Theory Measures w/ RBIG" class="md-nav__link">
+      Information Theory Measures w/ RBIG
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../../notebooks/innf_demo/" title="Innf demo" class="md-nav__link">
+      Innf demo
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../../notebooks/rbig_demo/" title="RBIG Demo" class="md-nav__link">
+      RBIG Demo
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../../notebooks/rbig_walkthrough/" title="RBIG Walk-Through (Naive)" class="md-nav__link">
+      RBIG Walk-Through (Naive)
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../../notebooks/test/" title="RBIG Demo" class="md-nav__link">
+      RBIG Demo
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#main-idea" class="md-nav__link">
+    Main Idea
+  </a>
+  
+    <nav class="md-nav" aria-label="Main Idea">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#loss-function" class="md-nav__link">
+    Loss Function
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sampling" class="md-nav__link">
+    Sampling
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choice-of-transformations" class="md-nav__link">
+    Choice of Transformations
+  </a>
+  
+    <nav class="md-nav" aria-label="Choice of Transformations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prior-distribution" class="md-nav__link">
+    Prior Distribution
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jacobian" class="md-nav__link">
+    Jacobian
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    Resources
+  </a>
+  
+    <nav class="md-nav" aria-label="Resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#best-tutorials" class="md-nav__link">
+    Best Tutorials
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#survey-of-literature" class="md-nav__link">
+    Survey of Literature
+  </a>
+  
+    <nav class="md-nav" aria-label="Survey of Literature">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#neural-density-estimators" class="md-nav__link">
+    Neural Density Estimators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deep-density-destructors" class="md-nav__link">
+    Deep Density Destructors
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-tutorials" class="md-nav__link">
+    Code Tutorials
+  </a>
+  
+    <nav class="md-nav" aria-label="Code Tutorials">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tutorials" class="md-nav__link">
+    Tutorials
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#algorithms" class="md-nav__link">
+    Algorithms
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rbig-upgrades" class="md-nav__link">
+    RBIG Upgrades
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cutting-edge" class="md-nav__link">
+    Cutting Edge
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github-implementations" class="md-nav__link">
+    Github Implementations
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/ipl-uv/rbig/edit/master/docs/Notes/Unsorted/nfs.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                  
+                
+                
+                <h1 id="normalizing-flows">Normalizing Flows<a class="headerlink" href="#normalizing-flows" title="Permanent link">&para;</a></h1>
+<ul>
+<li><a href="#main-idea">Main Idea</a></li>
+<li><a href="#loss-function">Loss Function</a></li>
+<li><a href="#sampling">Sampling</a></li>
+<li><a href="#choice-of-transformations">Choice of Transformations</a></li>
+<li><a href="#prior-distribution">Prior Distribution</a></li>
+<li><a href="#jacobian">Jacobian</a></li>
+<li><a href="#resources">Resources</a><ul>
+<li><a href="#best-tutorials">Best Tutorials</a></li>
+</ul>
+</li>
+<li><a href="#survey-of-literature">Survey of Literature</a></li>
+<li><a href="#neural-density-estimators">Neural Density Estimators</a></li>
+<li><a href="#deep-density-destructors">Deep Density Destructors</a></li>
+<li><a href="#code-tutorials">Code Tutorials</a></li>
+<li><a href="#tutorials">Tutorials</a></li>
+<li><a href="#algorithms">Algorithms</a></li>
+<li><a href="#rbig-upgrades">RBIG Upgrades</a></li>
+<li><a href="#cutting-edge">Cutting Edge</a></li>
+<li><a href="#github-implementations">Github Implementations</a></li>
+</ul>
+<h2 id="main-idea">Main Idea<a class="headerlink" href="#main-idea" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><em>Distribution flows through a sequence of invertible transformations</em> - Rezende &amp; Mohamed (2015)</p>
+</blockquote>
+<p>We want to fit a density model <span><span class="MathJax_Preview">p_\theta(x)</span><script type="math/tex">p_\theta(x)</script></span> with continuous data <span><span class="MathJax_Preview">x \in \mathbb{R}^N</span><script type="math/tex">x \in \mathbb{R}^N</script></span>. Ideally, we want this model to:</p>
+<ul>
+<li><strong>Modeling</strong>: Find the underlying distribution for the training data.</li>
+<li><strong>Probability</strong>: For a new <span><span class="MathJax_Preview">x' \sim \mathcal{X}</span><script type="math/tex">x' \sim \mathcal{X}</script></span>, we want to be able to evaluate <span><span class="MathJax_Preview">p_\theta(x')</span><script type="math/tex">p_\theta(x')</script></span></li>
+<li><strong>Sampling</strong>: We also want to be able to generate samples from <span><span class="MathJax_Preview">p_\theta(x')</span><script type="math/tex">p_\theta(x')</script></span>.</li>
+<li><strong>Latent Representation</strong>: Ideally we want this representation to be meaningful.</li>
+</ul>
+<p>Let's assume that we can find some probability distribution for <span><span class="MathJax_Preview">\mathcal{X}</span><script type="math/tex">\mathcal{X}</script></span> but it's very difficult to do. So, instead of <span><span class="MathJax_Preview">p_\theta(x)</span><script type="math/tex">p_\theta(x)</script></span>, we want to find some parameterized function <span><span class="MathJax_Preview">f_\theta(x)</span><script type="math/tex">f_\theta(x)</script></span> that we can learn.</p>
+<div>
+<div class="MathJax_Preview">x = f_\theta(x)</div>
+<script type="math/tex; mode=display">x = f_\theta(x)</script>
+</div>
+<p>We'll define this as <span><span class="MathJax_Preview">z=f_\theta(x)</span><script type="math/tex">z=f_\theta(x)</script></span>. So we also want <span><span class="MathJax_Preview">z</span><script type="math/tex">z</script></span> to have certain properties. </p>
+<ol>
+<li>We want this <span><span class="MathJax_Preview">z</span><script type="math/tex">z</script></span> to be defined by a probabilistic function and have a valid distribution <span><span class="MathJax_Preview">z \sim p_\mathcal{Z}(z)</span><script type="math/tex">z \sim p_\mathcal{Z}(z)</script></span></li>
+<li>We also would prefer this distribution to be simply. We typically pick a normal distribution, <span><span class="MathJax_Preview">z \sim \mathcal{N}(0,1)</span><script type="math/tex">z \sim \mathcal{N}(0,1)</script></span></li>
+</ol>
+<p>We begin with in initial distribution and then we apply a sequence of <span><span class="MathJax_Preview">L</span><script type="math/tex">L</script></span> invertible transformations in hopes that we obtain something that is more expressive. This originally came from the context of Variational AutoEncoders (VAE) where the posterior was approximated by a neural network. The authors wanted to </p>
+<div>
+<div class="MathJax_Preview">
+\begin{aligned}
+\mathbf{z}_L = f_L \circ f_{L-1} \circ \ldots \circ f_2 \circ f_1 (\mathbf{z}_0)
+\end{aligned}
+</div>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\mathbf{z}_L = f_L \circ f_{L-1} \circ \ldots \circ f_2 \circ f_1 (\mathbf{z}_0)
+\end{aligned}
+</script>
+</div>
+<h3 id="loss-function">Loss Function<a class="headerlink" href="#loss-function" title="Permanent link">&para;</a></h3>
+<p>We can do a simple maximum-likelihood of our distribution <span><span class="MathJax_Preview">p_\theta(x)</span><script type="math/tex">p_\theta(x)</script></span>. </p>
+<div>
+<div class="MathJax_Preview">\underset{\theta}{\text{max}} \sum_i \log p_\theta(x^{(i)})</div>
+<script type="math/tex; mode=display">\underset{\theta}{\text{max}} \sum_i \log p_\theta(x^{(i)})</script>
+</div>
+<p>However, this expression needs to be transformed in terms of the invertible functions <span><span class="MathJax_Preview">f_\theta(x)</span><script type="math/tex">f_\theta(x)</script></span>. This is where we exploit the rule for the change of variables. From here, we can come up with an expression for the likelihood by simply calculating the maximum likelihood of the initial distribution <span><span class="MathJax_Preview">\mathbf{z}_0</span><script type="math/tex">\mathbf{z}_0</script></span> given the transformations <span><span class="MathJax_Preview">f_L</span><script type="math/tex">f_L</script></span>. </p>
+<div>
+<div class="MathJax_Preview">
+\begin{aligned}
+p_\theta(x) = p_\mathcal{Z}(f_\theta(x)) \left| \frac{\partial f_\theta(x)}{\partial x} \right|
+\end{aligned}
+</div>
+<script type="math/tex; mode=display">
+\begin{aligned}
+p_\theta(x) = p_\mathcal{Z}(f_\theta(x)) \left| \frac{\partial f_\theta(x)}{\partial x} \right|
+\end{aligned}
+</script>
+</div>
+<p>So now, we can do the same maximization function but with our change of variables formulation:</p>
+<div>
+<div class="MathJax_Preview">
+\begin{aligned}
+\underset{\theta}{\text{max}} \sum_i \log p_\theta(x^{(i)}) &amp;= 
+\underset{\theta}{\text{max}} \sum_i \log p_\mathcal{Z}\left(f_\theta(x^{(i)})\right) +
+\log \left| \frac{\partial f_\theta (x^{(i)})}{\partial x} \right|
+\end{aligned}
+</div>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\underset{\theta}{\text{max}} \sum_i \log p_\theta(x^{(i)}) &= 
+\underset{\theta}{\text{max}} \sum_i \log p_\mathcal{Z}\left(f_\theta(x^{(i)})\right) +
+\log \left| \frac{\partial f_\theta (x^{(i)})}{\partial x} \right|
+\end{aligned}
+</script>
+</div>
+<p>And we can optimize this using stochastic gradient descent (SGD) which means we can use all of the autogradient and deep learning libraries available to make this procedure relatively painless.</p>
+<h3 id="sampling">Sampling<a class="headerlink" href="#sampling" title="Permanent link">&para;</a></h3>
+<p>If we want to sample from our base distribution <span><span class="MathJax_Preview">z</span><script type="math/tex">z</script></span>, then we just need to use the inverse of our function. </p>
+<div>
+<div class="MathJax_Preview">x = f_\theta^{-1}(z)</div>
+<script type="math/tex; mode=display">x = f_\theta^{-1}(z)</script>
+</div>
+<p>where <span><span class="MathJax_Preview">z \sim p_\mathcal{Z}(z)</span><script type="math/tex">z \sim p_\mathcal{Z}(z)</script></span>. Remember, our <span><span class="MathJax_Preview">f_\theta(\cdot)</span><script type="math/tex">f_\theta(\cdot)</script></span> is invertible and differentiable so this should be no problem.</p>
+<hr />
+<div>
+<div class="MathJax_Preview">
+\begin{aligned}
+q(z') = q(z) \left| \frac{\partial f}{\partial z} \right|^{-1}
+\end{aligned}
+</div>
+<script type="math/tex; mode=display">
+\begin{aligned}
+q(z') = q(z) \left| \frac{\partial f}{\partial z} \right|^{-1}
+\end{aligned}
+</script>
+</div>
+<p>or the same but only in terms of the original distribution <span><span class="MathJax_Preview">\mathcal{X}</span><script type="math/tex">\mathcal{X}</script></span></p>
+<p>We can make this transformation a bit easier to handle empirically by calculating the Log-Transformation of this expression. This removes the inverse and introduces a summation of each of the transformations individually which gives us many computational advantages.</p>
+<div>
+<div class="MathJax_Preview">
+\begin{aligned}
+\log q_L (\mathbf{z}_L) = \log q_0 (\mathbf{z}_0) - \sum_{l=1}^L \log \left| \frac{\partial f_l}{\partial \mathbf{z}_l} \right|
+\end{aligned}
+</div>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\log q_L (\mathbf{z}_L) = \log q_0 (\mathbf{z}_0) - \sum_{l=1}^L \log \left| \frac{\partial f_l}{\partial \mathbf{z}_l} \right|
+\end{aligned}
+</script>
+</div>
+<p>So now, our original expression with <span><span class="MathJax_Preview">p_\theta(x)</span><script type="math/tex">p_\theta(x)</script></span> can be written in terms of <span><span class="MathJax_Preview">z</span><script type="math/tex">z</script></span>.</p>
+<p>TODO: Diagram with plots of the Normalizing Flow distributions which show the direction for the idea.</p>
+<p>In order to train this, we need to take expectations of the transformations.</p>
+<div>
+<div class="MathJax_Preview">
+\begin{aligned}
+\mathcal{L}(\theta) &amp;= 
+\mathbb{E}_{q_0(\mathbf{z}_0)} \left[ \log p(\mathbf{x,z}_L)\right] -
+\mathbb{E}_{q_0(\mathbf{z}_0)} \left[ \log q_0(\mathbf{z}_0) \right] -
+\mathbb{E}_{q_0(\mathbf{z}_0)} 
+\left[ \sum_{l=1}^L \log \text{det}\left| \frac{\partial f_l}{\partial \mathbf{z}_k} \right| \right]
+\end{aligned}
+</div>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\mathcal{L}(\theta) &= 
+\mathbb{E}_{q_0(\mathbf{z}_0)} \left[ \log p(\mathbf{x,z}_L)\right] -
+\mathbb{E}_{q_0(\mathbf{z}_0)} \left[ \log q_0(\mathbf{z}_0) \right] -
+\mathbb{E}_{q_0(\mathbf{z}_0)} 
+\left[ \sum_{l=1}^L \log \text{det}\left| \frac{\partial f_l}{\partial \mathbf{z}_k} \right| \right]
+\end{aligned}
+</script>
+</div>
+<h2 id="choice-of-transformations">Choice of Transformations<a class="headerlink" href="#choice-of-transformations" title="Permanent link">&para;</a></h2>
+<p>The main thing that many of the communities have been looking into is how one chooses the aspects of the normalizing flow: the prior distribution and the Jacobian. </p>
+<h3 id="prior-distribution">Prior Distribution<a class="headerlink" href="#prior-distribution" title="Permanent link">&para;</a></h3>
+<p>This is very consistent across the literature: most people use a fully-factorized Gaussian distribution. Very simple.</p>
+<h3 id="jacobian">Jacobian<a class="headerlink" href="#jacobian" title="Permanent link">&para;</a></h3>
+<p>This is the area of the most research within the community. There are many different complicated frameworks but almost all of them can be put into different categories for how the Jacobian is constructed.</p>
+<h2 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h2>
+<h4 id="best-tutorials">Best Tutorials<a class="headerlink" href="#best-tutorials" title="Permanent link">&para;</a></h4>
+<ul>
+<li><a href="https://lilianweng.github.io/lil-log/2018/10/13/flow-based-deep-generative-models.html">Flow-Based Deep Generative Models</a> - Lilian Weng<blockquote>
+<p>An excellent blog post for Normalizing Flows. Probably the most thorough introduction available.</p>
+</blockquote>
+</li>
+<li><a href="https://docs.google.com/presentation/d/1WqEy-b8x-PhvXB_IeA6EoOfSTuhfgUYDVXlYP8Jh_n0/edit#slide=id.g7d4f9f0446_0_43">Flow Models</a> - <a href="https://sites.google.com/view/berkeley-cs294-158-sp20/home">Deep Unsupervised Learning Class</a>, Spring 2010 </li>
+<li><a href="https://docs.google.com/presentation/d/1wHJz9Awhlp-PWLZGWJKzF66gzvqdSrhknb-iLFJ1Owo/edit#slide=id.p">Normalizing Flows: A Tutorial</a> - Eric Jang</li>
+</ul>
+<hr />
+<h2 id="survey-of-literature">Survey of Literature<a class="headerlink" href="#survey-of-literature" title="Permanent link">&para;</a></h2>
+<hr />
+<h3 id="neural-density-estimators">Neural Density Estimators<a class="headerlink" href="#neural-density-estimators" title="Permanent link">&para;</a></h3>
+<h3 id="deep-density-destructors">Deep Density Destructors<a class="headerlink" href="#deep-density-destructors" title="Permanent link">&para;</a></h3>
+<h2 id="code-tutorials">Code Tutorials<a class="headerlink" href="#code-tutorials" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Building Prob Dist with TF Probability Bijector API - <a href="https://tiao.io/post/building-probability-distributions-with-tensorflow-probability-bijector-api/">Blog</a></li>
+<li>https://www.ritchievink.com/blog/2019/10/11/sculpting-distributions-with-normalizing-flows/</li>
+</ul>
+<h3 id="tutorials">Tutorials<a class="headerlink" href="#tutorials" title="Permanent link">&para;</a></h3>
+<ul>
+<li>RealNVP - <a href="https://github.com/bayesgroup/deepbayes-2019/blob/master/seminars/day3/nf/nf-solution.ipynb">code I</a></li>
+<li><a href="https://arxiv.org/pdf/1908.09257.pdf">Normalizing Flows: Intro and Ideas</a> - Kobyev et. al. (2019)</li>
+</ul>
+<h3 id="algorithms">Algorithms<a class="headerlink" href="#algorithms" title="Permanent link">&para;</a></h3>
+<p>*</p>
+<h3 id="rbig-upgrades">RBIG Upgrades<a class="headerlink" href="#rbig-upgrades" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Modularization</li>
+<li><a href="https://github.com/lucastheis/mixtures">Lucastheis</a></li>
+<li><a href="https://github.com/davidinouye/destructive-deep-learning/tree/master">Destructive-Deep-Learning</a></li>
+<li>TensorFlow</li>
+<li><a href="https://github.com/tensorflow/probability/blob/master/tensorflow_probability/python/bijectors/normal_cdf.py">NormalCDF</a></li>
+<li><a href="https://www.tensorflow.org/probability/api_docs/python/tfp/math/interp_regular_1d_grid">interp_regular_1d_grid</a></li>
+<li><a href="https://nbviewer.jupyter.org/github/adhiraiyan/DeepLearningWithTF2.0/blob/master/notebooks/03.00-Probability-and-Information-Theory.ipynb">IT w. TF</a></li>
+</ul>
+<h3 id="cutting-edge">Cutting Edge<a class="headerlink" href="#cutting-edge" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Neural Spline Flows - <a href="https://github.com/bayesiains/nsf">Github</a></li>
+<li><strong>Complete</strong> | PyTorch</li>
+<li>PointFlow: 3D Point Cloud Generations with Continuous Normalizing Flows - <a href="https://www.guandaoyang.com/PointFlow/">Project</a></li>
+<li>PyTorch</li>
+<li><a href="https://arxiv.org/abs/1802.04908">Conditional Density Estimation with Bayesian Normalising Flows</a> | <a href="https://github.com/blt2114/CDE_with_BNF">Code</a></li>
+</ul>
+<h3 id="github-implementations">Github Implementations<a class="headerlink" href="#github-implementations" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://github.com/siboehm/NormalizingFlowNetwork">Bayesian and ML Implementation of the Normalizing Flow Network (NFN)</a>| <a href="https://arxiv.org/abs/1907.08982">Paper</a></li>
+<li><a href="https://github.com/ktisha/normalizing-flows">NFs</a>| <a href="https://github.com/ktisha/normalizing-flows/blob/master/presentation/presentation.pdf">Prezi</a></li>
+<li><a href="https://github.com/colobas/normalizing-flows">Normalizing Flows Building Blocks</a></li>
+<li><a href="https://github.com/tonyduan/normalizing-flows">Neural Spline Flow, RealNVP, Autoregressive Flow, 1x1Conv in PyTorch</a></li>
+<li><a href="https://github.com/breadbread1984/FlowBasedGenerativeModel">Clean Refactor of Eric Jang w. TF Bijectors</a></li>
+<li><a href="https://github.com/rom1mouret/anoflows">Density Estimation and Anomaly Detection with Normalizing Flows</a></li>
+</ul>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href="../mu/" title="Uniformization" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Uniformization
+              </div>
+            </div>
+          </a>
+        
+        
+          <a href="../pdf_est/" title="PDF Estimation" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                PDF Estimation
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+          <div class="md-footer-copyright__highlight">
+            Copyright &copy; 2020 Image Signal Processing Lab - Unversity of Valencia
+          </div>
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+  <div class="md-footer-social">
+    
+      
+      
+        
+        
+      
+      <a href="https://github.com/ipl-uv" target="_blank" rel="noopener" title="github.com" class="md-footer-social__link">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+      </a>
+    
+      
+      
+        
+        
+      
+      <a href="https://twitter.com/isp_uv_es" target="_blank" rel="noopener" title="twitter.com" class="md-footer-social__link">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg>
+      </a>
+    
+      
+      
+        
+        
+      
+      <a href="https://isp.uv.es" target="_blank" rel="noopener" title="isp.uv.es" class="md-footer-social__link">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M336.5 160C322 70.7 287.8 8 248 8s-74 62.7-88.5 152h177zM152 256c0 22.2 1.2 43.5 3.3 64h185.3c2.1-20.5 3.3-41.8 3.3-64s-1.2-43.5-3.3-64H155.3c-2.1 20.5-3.3 41.8-3.3 64zm324.7-96c-28.6-67.9-86.5-120.4-158-141.6 24.4 33.8 41.2 84.7 50 141.6h108zM177.2 18.4C105.8 39.6 47.8 92.1 19.3 160h108c8.7-56.9 25.5-107.8 49.9-141.6zM487.4 192H372.7c2.1 21 3.3 42.5 3.3 64s-1.2 43-3.3 64h114.6c5.5-20.5 8.6-41.8 8.6-64s-3.1-43.5-8.5-64zM120 256c0-21.5 1.2-43 3.3-64H8.6C3.2 212.5 0 233.8 0 256s3.2 43.5 8.6 64h114.6c-2-21-3.2-42.5-3.2-64zm39.5 96c14.5 89.3 48.7 152 88.5 152s74-62.7 88.5-152h-177zm159.3 141.6c71.4-21.2 129.4-73.7 158-141.6h-108c-8.8 56.9-25.6 107.8-50 141.6zM19.3 352c28.6 67.9 86.5 120.4 158 141.6-24.4-33.8-41.2-84.7-50-141.6h-108z"/></svg>
+      </a>
+    
+  </div>
+
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../../../assets/javascripts/vendor.3636a4ec.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.e9fe3281.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents"}</script>
+      
+      <script>
+        app = initialize({
+          base: "../../..",
+          features: [],
+          search: Object.assign({
+            worker: "../../../assets/javascripts/worker/search.5eca75d3.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+        <script src="../../../javascripts/extra.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+      
+    
+  </body>
+</html>
