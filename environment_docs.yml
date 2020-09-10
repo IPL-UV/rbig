@@ -1,0 +1,11 @@
+name: rbig_docs
+channels:
+- defaults
+- conda-forge
+dependencies:
+- pip
+- pip:
+    - mkdocs-material==5.5.12
+    - mkdocs-material-extensions==1.0
+    - mknotebooks==0.4.1
+    - pymdown-extensions==8.0
