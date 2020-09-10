@@ -15,6 +15,20 @@ PORT = 3002
 help:	## Display this help
 		@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
+
+# JUPYTER NOTEBOOKS
+notebooks_to_docs: ## Move notebooks to docs notebooks directory
+		@printf "\033[1;34mCreating notebook directory...\033[0m\n"
+		mkdir -p docs/notebooks
+		@printf "\033[1;34mRemoving old notebooks...\033[0m\n"
+		rm -rf docs/notebooks/*
+		@printf "\033[1;34mCopying Notebooks to directory...\033[0m\n"
+		rsync -zarv notebooks/ docs/notebooks/ --include="*.ipynb" --exclude="*.csv" --exclude=".ipynb_checkpoints/" 
+		@printf "\033[1;34mDone!\033[0m\n"
+jlab_html:
+		mkdir -p docs/notebooks
+		jupyter nbconvert notebooks/*.ipynb --to markdown --output-dir docs/notebooks/ --TagRemovePreprocessor.remove_cell_tags='{"remove_cell"}' --TagRemovePreprocessor.remove_input_tags='{"remove_input"}'
+
 # DOCS
 docs-build: ## Build site documentation with mkdocs
 		@printf "\033[1;34mCreating full documentation with mkdocs...\033[0m\n"

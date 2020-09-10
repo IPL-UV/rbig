@@ -24,8 +24,12 @@ $$
 
 This is called the generative step; how well do we fit our parameters such that $x \approx \hat x$. We can define the alternative step below:
 
-$$x \sim \mathcal{P}_\mathcal{X}$$
-$$\hat z = \mathcal f_\theta (x)$$
+$$
+\begin{aligned}
+x &\sim \mathcal{P}_\mathcal{X} \\
+\hat z &= \mathcal f_\theta (x)
+\end{aligned}
+$$
 
 This is called the inference step: how well do we fit the parameters of our transformation $f_\theta$ s.t. $z \approx \hat z$. So there are immediately some things to notice about this. Depending on the method you use in the deep learning community, the functions $\mathcal G_\theta$ and $f_\theta$ can be defined differently. Typically we are looking at the class of algorithms where we want $f_\theta = \mathcal G_\theta^{-1}$. In this ideal scenario, we only need to learn one transformation instead of two. With this requirement, we can actually compute the likelihood values exactly. The likelihood of the value $x$ given the transformation $\mathcal G_\theta$ is given as:
 

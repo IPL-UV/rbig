@@ -1,12 +1,12 @@
 # Project information
-site_name: Research Journal
-site_description: My Personal Research Journal
+site_name: RBIG
+site_description: RBIG
 site_author: J. Emmanuel Johnson
-site_url: https://jejjohnson.github.io/research_journal
+site_url: https://ipl-uv.github.io/rbig
 
 # Repository
-repo_name: jejjohnson/research_journal
-repo_url: https://github.com/jejjohnson/research_journal
+repo_name: ipl-uv/rbig
+repo_url: https://github.com/ipl-uv/rbig
 
 # Configuration
 theme:
@@ -27,7 +27,7 @@ plugins:
       timeout: 600
 
 # Copyright
-copyright: Copyright &copy; 2020 J. Emmanuel Johnson
+copyright: Copyright &copy; 2020 Image Signal Processing Lab - Unversity of Valencia
 
 markdown_extensions:
   - markdown.extensions.admonition
@@ -78,13 +78,13 @@ extra:
     # - type: 'envelope'
     #   link: 'http://www.shortwhale.com/ericmjl'
     - icon: fontawesome/brands/github
-      link: 'https://github.com/jejjohnson'
+      link: 'https://github.com/ipl-uv'
     - icon: fontawesome/brands/twitter
-      link: 'https://twitter.com/jejjohnson'
-    - icon: fontawesome/brands/linkedin
-      link: 'https://linkedin.com/in/jejjohnson'
+      link: 'https://twitter.com/isp_uv_es'
+    # - icon: fontawesome/brands/linkedin
+    #   link: 'https://linkedin.com/in/jejjohnson'
     - icon: fontawesome/solid/globe
-      link: 'https://jejjohnson.netlify.com'
+      link: 'https://isp.uv.es'
   
 
 # # Project information
