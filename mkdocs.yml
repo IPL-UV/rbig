@@ -28,6 +28,8 @@ plugins:
 
 nav:
   - Home: "index.md"
+  - Introduction: "intro.md"
+  - Literature: "literature.md"
   - Notebooks:
       - RBIG Demo: "notebooks/rbig_demo.ipynb"
       - RBIG Walk-Through: "notebooks/innf_demo.ipynb"

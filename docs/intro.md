@@ -1,19 +1,14 @@
+---
+title: Intro
+description: Introduction to the RBIG Algorithm
+authors:
+    - J. Emmanuel Johnson
+    - Valero Laparra
+path: docs/
+source: intro.md
+---
 # Rotation-Based Iterative Gaussianization (RBIG)
 
-
-- [Motivation](#motivation)
-- [Algorithm](#algorithm)
-  - [Marginal (Univariate) Gaussianization](#marginal-univariate-gaussianization)
-    - [Marginal Uniformization](#marginal-uniformization)
-    - [Gaussianization of a Uniform Variable](#gaussianization-of-a-uniform-variable)
-  - [Linear Transformation](#linear-transformation)
-- [Information Theory Measures](#information-theory-measures)
-  - [Information](#information)
-  - [Entropy](#entropy)
-  - [Mutual Information](#mutual-information)
-  - [KL-Divergence](#kl-divergence)
-
----
 
 ## Motivation
 
@@ -122,79 +117,3 @@ Where we have the following spaces:
 * $\mathcal G$ - The Gaussian space.
 
 
----
-
-## Information Theory Measures
-
-<figure>
-<center>
-<img src="pics/rbig_it/Fig_1.png" width="500">
-</center>
-<center>
-<figurecaption>
-<b>Caption</b>: Information Theory measures in a nutshell.
-</figurecaption>
-</center>
-</figure>
-
-
-
-
-### Information
-
-
-
-### Entropy
-
-
-### Mutual Information
-
-<figure>
-<center>
-<img src="pics/rbig_it/mi.png" alt="MI using RBIG" style="width:60%">
-</center>
-<center>
-<figurecaption>
-<b>Caption</b>: Schematic for finding the Mutual Information using using RBIG.
-</figurecaption>
-</center>
-</figure>
-
-
-$$
-\begin{aligned}
-I(\mathbf{x,y}) 
-&=
-T\left( \left[ 
-    \mathcal{G}_\theta (\mathbf{X}), \mathcal{G}_\phi (\mathbf{Y})
-    \right] \right)
-\end{aligned}
-$$
-
----
-
-### KL-Divergence
-
-<figure>
-<center>
-<img src="pics/rbig_it/kld.png" width="500">
-</center>
-<center>
-<figurecaption>
-<b>Caption</b>: Schematic for finding the KL-Divergence using using RBIG.
-</figurecaption>
-</center>
-</figure>
-
-Let $\mathcal{G}_\theta (\mathbf{X})$ be the Gaussianization of the variable $\mathbf{X}$ which is parameterized by $\theta$.
-
-$$
-\begin{aligned}
-D_\text{KL}\left[ \mathbf{X||Y} \right]
-&=
-D_\text{KL}\left[ \mathbf{X ||\mathcal{G}_\theta(Y)} \right]
-\\
-&=
-J\left[  \mathcal{G}_\theta (\mathbf{\hat{y}}) \right]
-\end{aligned}
-$$

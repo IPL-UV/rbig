@@ -1,13 +1,14 @@
+---
+title: Literature
+description: A Literature Review for the History of Gaussianization
+authors:
+    - J. Emmanuel Johnson
+    - Valero Laparra
+path: docs/
+source: literature.md
+---
 # Literature Review
 
-- [Theory](#theory)
-  - [Gaussianization](#gaussianization)
-  - [Things to Think about](#things-to-think-about)
-  - [Journal Articles](#journal-articles)
-  - [RBIG](#rbig)
-    - [Generalized Divisive Normalization](#generalized-divisive-normalization)
-
----
 
 ## Theory
 
