@@ -20,11 +20,9 @@ theme:
     code: source code pro
 
 plugins:
-  - search
-  - mknotebooks:
-      execute: false
-      write_markdown: true
-      timeout: 600
+- search
+- mkdocs-jupyter
+- mkdocstrings
 
 nav:
   - Home: "index.md"

@@ -1,16 +1,6 @@
-from typing import Union, Tuple, Optional
+from typing import Optional, Tuple, Union
+
 import numpy as np
-from statsmodels.distributions.empirical_distribution import ECDF
-
-
-def estimate_empirical_cdf(X: np.ndarray, X_new: Optional[np.ndarray] = None):
-
-    # initialize ecdf
-    ecdf_f = ECDF(X)
-    if X_new is None:
-        return ecdf_f(X)
-    else:
-        return ecdf_f(X_new)
 
 
 def get_support_reference(
@@ -142,31 +132,46 @@ def make_interior(X, bounds, eps=None):
     return X
 
 
-def bin_estimation(X, rule="scott"):
+def generate_batches(n_samples, batch_size):
+    """A generator to split an array of 0 to n_samples
+    into an array of batch_size each.
 
-    n_samples = X.shape[0]
+    Parameters
+    ----------
+    n_samples : int
+        the number of samples
 
-    if rule == "sqrt":
-        nbins = np.sqrt(n_samples)
-    elif rule == "scott":
-        nbins = (3.49 * np.std(X)) / np.cbrt(n_samples)
-    elif rule == "sturge":
-        nbins = 1 + np.log2(n_samples)
-    elif rule == "rice":
-        nbins = 2 * np.cbrt(n_samples)
-    else:
-        raise ValueError(f"Unrecognized rule: {rule}")
-
-    return int(np.ceil(nbins))
+    batch_size : int,
+        the size of each batch
 
 
-def get_support_reference(
-    support: np.ndarray, extension: Union[float, int], n_quantiles: int = 1_000
-) -> np.ndarray:
+    Returns
+    -------
+    start_index, end_index : int, int
+        the start and end indices for the batch
 
-    lb, ub = get_domain_extension(support, extension)
+    Source:
+        https://github.com/scikit-learn/scikit-learn/blob/master
+        /sklearn/utils/__init__.py#L374
+    """
+    start_index = 0
 
-    # get new support
-    new_support = np.linspace(lb, ub, n_quantiles, endpoint=True)
+    # calculate number of batches
+    n_batches = int(n_samples // batch_size)
 
-    return new_support
+    for _ in range(n_batches):
+
+        # calculate the end coordinate
+        end_index = start_index + batch_size
+
+        # yield the start and end coordinate for batch
+        yield start_index, end_index
+
+        # start index becomes new end index
+        start_index = end_index
+
+    # special case at the end of the segment
+    if start_index < n_samples:
+
+        # yield the remaining indices
+        yield start_index, n_samples

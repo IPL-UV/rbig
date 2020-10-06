@@ -1,4 +1,5 @@
 import numpy as np
+
 from rbig.information.entropy import entropy_marginal
 
 

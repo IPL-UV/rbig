@@ -1,13 +1,12 @@
-import numpy as np
-from typing import Dict, Tuple, Union
-from scipy.interpolate import interp1d
-from rbig.utils import (
-    get_domain_extension,
-    get_support_reference,
-    estimate_empirical_cdf,
-)
-import statsmodels.api as sm
 import functools
+from typing import Dict, Tuple, Union
+
+import numpy as np
+import statsmodels.api as sm
+from scipy.interpolate import interp1d
+
+from rbig.utils import (estimate_empirical_cdf, get_domain_extension,
+                        get_support_reference)
 
 
 def kde_fft_uniformization(
@@ -108,4 +107,3 @@ def scotts_factor(X: np.ndarray) -> float:
     n_samples, n_features = X.shape
 
     return np.power(n_samples, -1 / (n_features + 4.0))
-
