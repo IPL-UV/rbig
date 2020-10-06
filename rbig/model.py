@@ -152,7 +152,7 @@ class RBIG(BaseEstimator, TransformerMixin):
             Returns the instance itself.
         """
 
-        data = check_array(data, ensure_2d=True)
+        data = check_array(data, ensure_2d=True, copy=True)
 
         if self.pdf_extension is None:
             self.pdf_extension = 10
@@ -308,10 +308,13 @@ class RBIG(BaseEstimator, TransformerMixin):
             for idim in range(n_dimensions):
 
                 # marginal uniformization
+                # data_layer[:, idim] = univariate_make_normal(
+                #     data_layer[:, idim], self.gauss_params[layer][idim]
+                # )
                 data_layer[:, idim] = interp1d(
                     self.gauss_params[layer][idim]["uniform_cdf_support"],
                     self.gauss_params[layer][idim]["uniform_cdf"],
-                    fill_value="extrapolate",
+                    # fill_value="extrapolate",
                 )(data_layer[:, idim])
 
                 # marginal gaussianization
@@ -324,7 +327,7 @@ class RBIG(BaseEstimator, TransformerMixin):
 
         return X_transformed
 
-    def inverse_transform(self, X):
+    def inverse_transform(self, X: np.ndarray, y: np.ndarray = None) -> np.ndarray:
         """Complete transformation of X in the  given the learned Gaussianization parameters.
 
         Parameters
@@ -340,7 +343,7 @@ class RBIG(BaseEstimator, TransformerMixin):
 
         """
         n_dimensions = np.shape(X)[1]
-        X_input_domain = np.copy(X)
+        X_input_domain = check_array(X, ensure_2d=True, copy=True)
 
         for layer in range(self.n_layers - 1, -1, -1):
 

@@ -1,14 +1,16 @@
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, Union
 
 import numpy as np
 from scipy import stats
 from scipy.interpolate import interp1d
 from statsmodels.distributions.empirical_distribution import ECDF
-from rbig.utils import make_cdf_monotonic
+from rbig.utils import get_domain_extension
+
+# from rbig.utils import make_cdf_monotonic
 
 
 def univariate_make_normal(
-    uni_data: np.ndarray, extension, precision
+    uni_data: np.ndarray, extension: float, precision: int
 ) -> Tuple[np.ndarray, Dict]:
     """
     Takes univariate data and transforms it to have approximately normal dist
@@ -36,7 +38,7 @@ def univariate_make_normal(
 
 
 def univariate_make_uniform(
-    uni_data: np.ndarray, extension, precision
+    uni_data: np.ndarray, extension: float, precision: int
 ) -> Tuple[np.ndarray, Dict]:
     """
     Takes univariate data and transforms it to have approximately uniform dist
@@ -55,13 +57,13 @@ def univariate_make_uniform(
     transform_params : dictionary
     parameters of the transform. We save these so we can invert them later
     """
-    n_samps = len(uni_data)
+    n_samps = uni_data.shape[0]
     support_extension = (extension / 100) * abs(np.max(uni_data) - np.min(uni_data))
 
     # not sure exactly what we're doing here, but at a high level we're
     # constructing bins for the histogram
     bin_edges = np.linspace(
-        np.min(uni_data), np.max(uni_data), int(np.sqrt(np.float64(n_samps)) + 1)
+        np.min(uni_data), np.max(uni_data), int(np.sqrt(n_samps)) + 1
     )
     bin_centers = np.mean(np.vstack((bin_edges[0:-1], bin_edges[1:])), axis=0)
 
@@ -107,7 +109,7 @@ def univariate_make_uniform(
 
 
 def univariate_invert_normalization(
-    uni_gaussian_data: np.ndarray, trans_params
+    uni_gaussian_data: np.ndarray, trans_params: Dict
 ) -> np.ndarray:
     """
     Inverts the marginal normalization
@@ -115,11 +117,13 @@ def univariate_invert_normalization(
     """
     uni_uniform_data = stats.norm.cdf(uni_gaussian_data)
 
-    return univariate_invert_uniformization(uni_uniform_data, trans_params)
+    uni_data = univariate_invert_uniformization(uni_uniform_data, trans_params)
+
+    return uni_data
 
 
 def univariate_invert_uniformization(
-    uni_uniform_data: np.ndarray, trans_params
+    uni_uniform_data: np.ndarray, trans_params: Dict
 ) -> np.ndarray:
     """
     Inverts the marginal uniformization transform specified by trans_params
@@ -156,3 +160,28 @@ def bin_estimation(n_samples: int, rule="standard") -> float:
         raise ValueError(f"Unrecognized bin estimation rule: {rule}")
 
     return n_bins
+
+
+def make_cdf_monotonic(cdf):
+    """
+    Take a cdf and just sequentially readjust values to force monotonicity
+    There's probably a better way to do this but this was in the original
+    implementation. We just readjust values that are less than their predecessors
+    Parameters
+    ----------
+    cdf : ndarray
+      The values of the cdf in order (1d)
+    """
+    # laparra's version
+    corrected_cdf = cdf.copy()
+    for i in range(1, len(corrected_cdf)):
+        if corrected_cdf[i] <= corrected_cdf[i - 1]:
+            if abs(corrected_cdf[i - 1]) > 1e-14:
+                corrected_cdf[i] = corrected_cdf[i - 1] + 1e-14
+            elif corrected_cdf[i - 1] == 0:
+                corrected_cdf[i] = 1e-80
+            else:
+                corrected_cdf[i] = corrected_cdf[i - 1] + 10 ** (
+                    np.log10(abs(corrected_cdf[i - 1]))
+                )
+    return corrected_cdf

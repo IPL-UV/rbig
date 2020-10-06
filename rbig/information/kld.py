@@ -1,5 +1,7 @@
 import numpy as np
 from scipy import stats
+from sklearn.utils import check_array
+from rbig.model import RBIG
 
 
 class RBIGKLD(object):
@@ -82,7 +84,7 @@ class RBIGKLD(object):
         pdf_resolution=None,
         pdf_extension=10,
         random_state=None,
-        verbose=None,
+        verbose: int = 0,
         tolerance=None,
         zero_tolerance=100,
         increment=1.5,
@@ -122,6 +124,7 @@ class RBIGKLD(object):
                         zero_tolerance=self.zero_tolerance,
                         tolerance=self.tolerance,
                         pdf_extension=self.pdf_extension,
+                        verbose=0,
                     )
 
                     # fit RBIG model to Y
@@ -138,6 +141,7 @@ class RBIGKLD(object):
                         zero_tolerance=self.zero_tolerance,
                         tolerance=self.tolerance,
                         pdf_extension=self.pdf_extension,
+                        verbose=0,
                     )
 
                     # Fit RBIG model to X_transformed

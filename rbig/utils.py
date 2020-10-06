@@ -122,14 +122,15 @@ def make_interior(X, bounds, eps=None):
 
     left = bounds[0] + np.abs(bounds[0] * eps)
     right = bounds[1] - np.abs(bounds[1] * eps)
+    return np.minimum(np.maximum(X, left), right)
 
-    X[X < left] = left
-    X[X > right] = right
+    # X[X < left] = left
+    # X[X > right] = right
 
-    # assert np.min(X) >= left
-    # assert np.max(X) <= right
+    # # assert np.min(X) >= left
+    # # assert np.max(X) <= right
 
-    return X
+    # return X
 
 
 def generate_batches(n_samples, batch_size):
@@ -175,3 +176,10 @@ def generate_batches(n_samples, batch_size):
 
         # yield the remaining indices
         yield start_index, n_samples
+
+
+def check_bounds(X, bounds: Union[int, float]) -> Tuple[float, float]:
+    domain = np.array([X.min(), X.max()])
+    center = np.mean(domain)
+    domain = (1 + bounds) * (domain - center) + center
+    return domain

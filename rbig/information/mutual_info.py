@@ -1,7 +1,8 @@
 import numpy as np
+from rbig.model import RBIG
 
 
-class RBIGMI(object):
+class RBIGMI:
     """ Rotation-Based Iterative Gaussian-ization (RBIG) applied to two
     multidimensional variables (RBIGMI). Applies the RBIG algorithm to 
     the two multidimensional variables independently, then applies another 
@@ -77,7 +78,7 @@ class RBIGMI(object):
         pdf_resolution=1000,
         pdf_extension=None,
         random_state=None,
-        verbose=None,
+        verbose: int = 0,
         tolerance=None,
         zero_tolerance=100,
         increment=1.5,
@@ -90,7 +91,7 @@ class RBIGMI(object):
         self.verbose = verbose
         self.tolerance = tolerance
         self.zero_tolerance = zero_tolerance
-        self.increment = 1.5
+        self.increment = increment
 
     def fit(self, X, Y):
         """Inputs for the RBIGMI algorithm.
@@ -121,7 +122,7 @@ class RBIGMI(object):
                         rotation_type=self.rotation_type,
                         pdf_resolution=self.pdf_resolution,
                         pdf_extension=self.pdf_extension,
-                        verbose=None,
+                        verbose=0,
                         random_state=self.random_state,
                         zero_tolerance=self.zero_tolerance,
                         tolerance=self.tolerance,
@@ -136,7 +137,7 @@ class RBIGMI(object):
                         rotation_type=self.rotation_type,
                         pdf_resolution=self.pdf_resolution,
                         pdf_extension=self.pdf_extension,
-                        verbose=None,
+                        verbose=0,
                         random_state=self.random_state,
                         zero_tolerance=self.zero_tolerance,
                         tolerance=self.tolerance,
@@ -160,7 +161,7 @@ class RBIGMI(object):
                         tolerance=self.tolerance,
                         pdf_resolution=self.pdf_resolution,
                         pdf_extension=self.pdf_extension,
-                        verbose=None,
+                        verbose=0,
                     )
 
                     # Fit RBIG model to combined dataset
