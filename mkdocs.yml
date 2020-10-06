@@ -26,6 +26,13 @@ plugins:
       write_markdown: true
       timeout: 600
 
+nav:
+  - Home: "index.md"
+  - Notebooks:
+      - RBIG Demo: "notebooks/rbig_demo.ipynb"
+      - RBIG Walk-Through: "notebooks/innf_demo.ipynb"
+      - Information Theory: "notebooks/information_theory.ipynb"
+
 # Copyright
 copyright: Copyright &copy; 2020 Image Signal Processing Lab - Unversity of Valencia
 
