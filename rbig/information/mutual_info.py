@@ -1,4 +1,4 @@
-# from rbig
+import numpy as np
 
 
 class RBIGMI(object):
