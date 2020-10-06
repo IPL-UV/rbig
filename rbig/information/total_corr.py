@@ -291,9 +291,8 @@ class RBIGTotalCorr:
             else:
                 pass
         self.residual_info = np.array(self.residual_info)
-        self.gauss_data = gauss_data
         self.mutual_information = np.sum(self.residual_info)
-        self.n_layers = len(self.gauss_params)
+        self.n_layers = len(self.residual_info)
 
         return self
 
