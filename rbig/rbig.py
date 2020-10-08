@@ -329,6 +329,7 @@ class RBIG(BaseEstimator, TransformerMixin):
             The new transformed data in the Gaussian domain
 
         """
+        check_is_fitted(self, ["gauss_params", "rotation_matrix"])
         n_dimensions = np.shape(X)[1]
         X_transformed = np.copy(X)
 
@@ -373,6 +374,7 @@ class RBIG(BaseEstimator, TransformerMixin):
             The new transformed X in the original input space.
 
         """
+        check_is_fitted(self, ["gauss_params", "rotation_matrix"])
         n_dimensions = np.shape(X)[1]
         X_input_domain = np.copy(X)
 
