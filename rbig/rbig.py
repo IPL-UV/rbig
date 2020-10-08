@@ -12,6 +12,8 @@ import warnings
 import sys
 import logging
 
+from sklearn.utils.validation import check_is_fitted
+
 logging.basicConfig(
     level=logging.INFO,
     stream=sys.stdout,
