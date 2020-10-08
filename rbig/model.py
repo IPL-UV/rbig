@@ -9,6 +9,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 from sklearn.metrics import normalized_mutual_info_score as mi_score
 from sklearn.utils import check_array, check_random_state
+from sklearn.utils.validation import check_is_fitted
 
 from rbig.information.entropy import entropy_marginal
 from rbig.information.total_corr import information_reduction
@@ -247,6 +248,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         self.gauss_data = gauss_data
         self.mutual_information = np.sum(self.residual_info)
         self.n_layers = len(self.gauss_params)
+        print("done fitting!")
 
         return self
 
@@ -295,8 +297,11 @@ class RBIG(BaseEstimator, TransformerMixin):
             The new transformed data in the Gaussian domain
 
         """
+        check_is_fitted(self, ["gauss_params", "rotation_matrix"])
         n_dimensions = np.shape(X)[1]
         X_transformed = np.copy(X)
+
+        # check if fitted
 
         for layer in range(self.n_layers):
 
@@ -342,6 +347,7 @@ class RBIG(BaseEstimator, TransformerMixin):
             The new transformed X in the original input space.
 
         """
+        check_is_fitted(self, ["gauss_params", "rotation_matrix"])
         n_dimensions = np.shape(X)[1]
         X_input_domain = check_array(X, ensure_2d=True, copy=True)
 
