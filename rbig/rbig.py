@@ -399,7 +399,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         xxx = np.logspace(2, 8, 7)
         yyy = [0.1571, 0.0468, 0.0145, 0.0046, 0.0014, 0.0001, 0.00001]
 
-        return interp1d(xxx, yyy)(n_samples)
+        return interp1d(xxx, yyy, fill_value="extrapolate",)(n_samples)
 
     def jacobian(self, X, return_X_transform=False):
         """Calculates the jacobian matrix of the X.
@@ -679,11 +679,13 @@ class RBIG(BaseEstimator, TransformerMixin):
 
         extended_cdf = np.hstack((0.0, 1.0 / n_samps, cdf, 1.0))
         new_support = np.linspace(new_bin_edges[0], new_bin_edges[-1], int(precision))
-        learned_cdf = interp1d(new_bin_edges, extended_cdf)
+        learned_cdf = interp1d(new_bin_edges, extended_cdf, fill_value="extrapolate",)
         uniform_cdf = make_cdf_monotonic(learned_cdf(new_support))
         # ^ linear interpolation
         uniform_cdf /= np.max(uniform_cdf)
-        uni_uniform_data = interp1d(new_support, uniform_cdf)(uni_data)
+        uni_uniform_data = interp1d(
+            new_support, uniform_cdf, fill_value="extrapolate",
+        )(uni_data)
 
         return (
             uni_uniform_data,
@@ -717,7 +719,9 @@ class RBIG(BaseEstimator, TransformerMixin):
         """
         # simple, we just interpolate based on the saved CDF
         return interp1d(
-            trans_params["uniform_cdf"], trans_params["uniform_cdf_support"]
+            trans_params["uniform_cdf"],
+            trans_params["uniform_cdf_support"],
+            fill_value="extrapolate",
         )(uni_uniform_data)
 
 
