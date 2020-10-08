@@ -39,7 +39,7 @@ docs-live: ## Build mkdocs documentation live
 		@printf "\033[1;34mStarting live docs with mkdocs...\033[0m\n"
 		mkdocs serve --dev-addr $(HOST):$(PORT) --theme material
 
-docs-live-d: ## Build mkdocs documentation live (quicker reload)
+docs-live-d: notebooks_to_docs ## Build mkdocs documentation live (quicker reload)
 		@printf "\033[1;34mStarting live docs with mkdocs...\033[0m\n"
 		mkdocs serve --dev-addr $(HOST):$(PORT) --dirtyreload --theme material
 

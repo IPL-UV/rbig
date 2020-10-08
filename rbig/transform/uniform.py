@@ -1,10 +1,12 @@
-from typing import Tuple, Dict, Union, Callable
+import functools
+from typing import Callable, Dict, Tuple, Union
+
 import numpy as np
 from scipy import stats
 from scipy.interpolate import interp1d
-from rbig.utils import get_domain_extension, bin_estimation
+
 from rbig.transform.kde import kde_fft_uniformization
-import functools
+from rbig.utils import bin_estimation, get_domain_extension
 
 BOUNDS_THRESHOLD = 1e-7
 

@@ -1,12 +1,11 @@
-from typing import Dict, Tuple, Callable
+from typing import Callable, Dict, Tuple
+
 import numpy as np
 from scipy import stats
+
 from rbig.transform.uniform import uniform_transform_params
-from rbig.utils import (
-    make_interior_uniform_probability,
-    make_interior,
-    make_interior_log_prob,
-)
+from rbig.utils import (make_interior, make_interior_log_prob,
+                        make_interior_uniform_probability)
 
 BOUNDS_THRESHOLD = 1e-7
 

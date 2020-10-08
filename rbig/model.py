@@ -1,38 +1,29 @@
-from typing import Dict, Tuple, Optional
-import numpy as np
-from sklearn.utils import check_random_state, check_array
-from sklearn.base import BaseEstimator, TransformerMixin
-from scipy import stats
-from scipy.stats import norm, uniform, ortho_group, entropy as sci_entropy
-from scipy.interpolate import interp1d
-from rbig.information.total_corr import information_reduction
-from rbig.information.entropy import entropy_marginal
-from rbig.utils import make_cdf_monotonic
-from sklearn.decomposition import PCA
 import sys
-import logging
-from rbig.transform.gaussian import (
-    gaussian_transform,
-    gaussian_fit_transform,
-    gaussian_inverse_transform,
-    gaussian_transform_jacobian,
-)
+import warnings
 
-logging.basicConfig(
-    level=logging.INFO,
-    stream=sys.stdout,
-    format="%(asctime)s: %(levelname)s: %(message)s",
-)
-logger = logging.getLogger()
-# logger.setLevel(logging.INFO)
+import numpy as np
+from scipy import stats
+from scipy.interpolate import interp1d
+from scipy.stats import norm, ortho_group
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.decomposition import PCA
+from sklearn.metrics import normalized_mutual_info_score as mi_score
+from sklearn.utils import check_array, check_random_state
+from sklearn.utils.validation import check_is_fitted
+
+from rbig.information.entropy import entropy_marginal
+from rbig.information.total_corr import information_reduction
+from rbig.density import univariate_invert_normalization, univariate_make_normal
+
+warnings.filterwarnings("ignore")  # get rid of annoying warnings
 
 
 class RBIG(BaseEstimator, TransformerMixin):
     """ Rotation-Based Iterative Gaussian-ization (RBIG). This algorithm transforms
     any multidimensional data to a Gaussian. It also provides a sampling mechanism
-    whereby you can provide multidimensional gaussian data and it will generate
+    whereby you can provide multidimensional gaussian data and it will generate 
     multidimensional data in the original domain. You can calculate the probabilities
-    as well as have access to a few information theoretic measures like total
+    as well as have access to a few information theoretic measures like total 
     correlation and entropy.
 
     Parameters
@@ -40,35 +31,42 @@ class RBIG(BaseEstimator, TransformerMixin):
     n_layers : int, optional (default 1000)
         The number of steps to run the sequence of marginal gaussianization
         and then rotation
+
     rotation_type : {'PCA', 'random'}
         The rotation applied to the marginally Gaussian-ized data at each iteration.
         - 'pca'     : a principal components analysis rotation (PCA)
         - 'random'  : random rotations
         - 'ica'     : independent components analysis (ICA)
+
     pdf_resolution : int, optional (default 1000)
         The number of points at which to compute the gaussianized marginal pdfs.
         The functions that map from original data to gaussianized data at each
         iteration have to be stored so that we can invert them later - if working
         with high-dimensional data consider reducing this resolution to shorten
         computation time.
-    method : str, default='custom'
+
     pdf_extension : int, optional (default 0.1)
         The fraction by which to extend the support of the Gaussian-ized marginal
         pdf compared to the empirical marginal PDF.
+
     verbose : int, optional
         If specified, report the RBIG iteration number every
         progress_report_interval iterations.
+
     zero_tolerance : int, optional (default=60)
         The number of layers where the total correlation should not change
         between RBIG iterations. If there is no zero_tolerance, then the
         method will stop iterating regardless of how many the user sets as
         the n_layers.
+
     rotation_kwargs : dict, optional (default=None)
         Any extra keyword arguments that you want to pass into the rotation
         algorithms (i.e. ICA or PCA). See the respective algorithms on 
         scikit-learn for more details.
+
     random_state : int, optional (default=None)
         Control the seed for any randomization that occurs in this algorithm.
+
     entropy_correction : bool, optional (default=True)
         Implements the shannon-millow correction to the entropy algorithm
 
@@ -101,23 +99,20 @@ class RBIG(BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        n_layers: int = 1_000,
-        rotation_type: str = "PCA",
-        method: str = "custom",
-        pdf_resolution: int = 1_000,
-        pdf_extension: int = 10,
-        random_state: Optional[int] = None,
+        n_layers=1000,
+        rotation_type="PCA",
+        pdf_resolution=1000,
+        pdf_extension=None,
+        random_state=None,
         verbose: int = 0,
-        tolerance: int = None,
-        zero_tolerance: int = 60,
-        entropy_correction: bool = True,
-        rotation_kwargs: Dict = {},
+        tolerance=None,
+        zero_tolerance=60,
+        entropy_correction=True,
+        rotation_kwargs=None,
         base="gauss",
-        n_quantiles: int = 1_000,
-    ) -> None:
+    ):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
-        self.method = method
         self.pdf_resolution = pdf_resolution
         self.pdf_extension = pdf_extension
         self.random_state = random_state
@@ -127,7 +122,6 @@ class RBIG(BaseEstimator, TransformerMixin):
         self.entropy_correction = entropy_correction
         self.rotation_kwargs = rotation_kwargs
         self.base = base
-        self.n_quantiles = n_quantiles
 
     def fit(self, X):
         """ Fit the model with X.
@@ -159,7 +153,7 @@ class RBIG(BaseEstimator, TransformerMixin):
             Returns the instance itself.
         """
 
-        data = check_array(data, ensure_2d=True)
+        data = check_array(data, ensure_2d=True, copy=True)
 
         if self.pdf_extension is None:
             self.pdf_extension = 10
@@ -177,19 +171,15 @@ class RBIG(BaseEstimator, TransformerMixin):
         if self.tolerance is None:
             self.tolerance = self._get_information_tolerance(n_samples)
 
-        logging.debug("Data (shape): {}".format(np.shape(gauss_data)))
-
         # Initialize stopping criteria (residual information)
         self.residual_info = list()
         self.gauss_params = list()
         self.rotation_matrix = list()
 
         # Loop through the layers
-        logging.debug("Running: Looping through the layers...")
-
         for layer in range(self.n_layers):
 
-            if self.verbose > 2:
+            if self.verbose > 1:
                 print("Completed {} iterations of RBIG.".format(layer + 1))
 
             # ------------------
@@ -199,32 +189,17 @@ class RBIG(BaseEstimator, TransformerMixin):
 
             for idim in range(n_dimensions):
 
-                gauss_data[:, idim], params = gaussian_fit_transform(
-                    gauss_data[:, idim],
-                    method=self.method,
-                    params={
-                        "support_extension": self.pdf_extension,
-                        "n_quantiles": self.n_quantiles,
-                    },
+                gauss_data[:, idim], temp_params = univariate_make_normal(
+                    gauss_data[:, idim], self.pdf_extension, self.pdf_resolution
                 )
 
-                # gauss_data[:, idim], params = self.univariate_make_normal(
-                #     gauss_data[:, idim], self.pdf_extension, self.pdf_resolution
-                # )
-                if self.verbose > 2:
-                    logging.info(
-                        f"Gauss Data (After Marginal): {gauss_data.min()}, {gauss_data.max()}"
-                    )
-
                 # append the parameters
-                layer_params.append(params)
+                layer_params.append(temp_params)
 
             self.gauss_params.append(layer_params)
             gauss_data_prerotation = gauss_data.copy()
-            if self.verbose > 2:
-                logging.info(
-                    f"Gauss Data (prerotation): {gauss_data.min()}, {gauss_data.max()}"
-                )
+            if self.verbose == 2:
+                print(gauss_data.min(), gauss_data.max())
 
             # --------
             # Rotation
@@ -238,15 +213,19 @@ class RBIG(BaseEstimator, TransformerMixin):
             elif self.rotation_type.lower() == "pca":
 
                 # Initialize PCA model
-                pca_model = PCA(random_state=self.random_state, **self.rotation_kwargs)
+                if self.rotation_kwargs is not None:
+                    pca_model = PCA(
+                        random_state=self.random_state, **self.rotation_kwargs
+                    )
+                else:
+                    pca_model = PCA(random_state=self.random_state)
 
-                logging.debug("Size of gauss_data: {}".format(gauss_data.shape))
                 gauss_data = pca_model.fit_transform(gauss_data)
                 self.rotation_matrix.append(pca_model.components_.T)
 
             else:
                 raise ValueError(
-                    f"Rotation type '{self.rotation_type}' not recognized."
+                    "Rotation type " + self.rotation_type + " not recognized"
                 )
 
             # --------------------------------
@@ -269,6 +248,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         self.gauss_data = gauss_data
         self.mutual_information = np.sum(self.residual_info)
         self.n_layers = len(self.gauss_params)
+        print("done fitting!")
 
         return self
 
@@ -290,7 +270,6 @@ class RBIG(BaseEstimator, TransformerMixin):
             aux_residual = np.array(self.residual_info)
 
             if np.abs(aux_residual[-self.zero_tolerance :]).sum() == 0:
-                logging.debug("Done! aux: {}".format(aux_residual))
 
                 # delete the last 50 layers for saved parameters
                 self.rotation_matrix = self.rotation_matrix[:-50]
@@ -306,35 +285,54 @@ class RBIG(BaseEstimator, TransformerMixin):
         """Complete transformation of X given the learned Gaussianization parameters.
         This assumes that the data follows a similar distribution as the data that
         was original used to fit the RBIG Gaussian-ization parameters.
-        Parameters
+        
+        Parameters 
         ----------
         X : array, (n_samples, n_dimensions)
             The data to be transformed (Gaussianized)
+            
         Returns
         -------
         X_transformed : array, (n_samples, n_dimensions)
             The new transformed data in the Gaussian domain
+
         """
-        X = check_array(X, ensure_2d=True, copy=True)
+        check_is_fitted(self, ["gauss_params", "rotation_matrix"])
+        n_dimensions = np.shape(X)[1]
+        X_transformed = np.copy(X)
 
-        for igauss, irotation in zip(self.gauss_params, self.rotation_matrix):
+        # check if fitted
+
+        for layer in range(self.n_layers):
 
             # ----------------------------
-            # Marginal Gaussianization
+            # Marginal Uniformization
             # ----------------------------
+            data_layer = X_transformed
 
-            for idim in range(X.shape[1]):
+            for idim in range(n_dimensions):
 
-                X[:, idim] = gaussian_transform(X[:, idim], igauss[idim])
+                # marginal uniformization
+                # data_layer[:, idim] = univariate_make_normal(
+                #     data_layer[:, idim], self.gauss_params[layer][idim]
+                # )
+                data_layer[:, idim] = interp1d(
+                    self.gauss_params[layer][idim]["uniform_cdf_support"],
+                    self.gauss_params[layer][idim]["uniform_cdf"],
+                    # fill_value="extrapolate",
+                )(data_layer[:, idim])
+
+                # marginal gaussianization
+                data_layer[:, idim] = norm.ppf(data_layer[:, idim])
 
             # ----------------------
             # Rotation
             # ----------------------
-            X = np.dot(X, irotation)
+            X_transformed = np.dot(data_layer, self.rotation_matrix[layer])
 
-        return X
+        return X_transformed
 
-    def inverse_transform(self, X):
+    def inverse_transform(self, X: np.ndarray, y: np.ndarray = None) -> np.ndarray:
         """Complete transformation of X in the  given the learned Gaussianization parameters.
 
         Parameters
@@ -349,26 +347,25 @@ class RBIG(BaseEstimator, TransformerMixin):
             The new transformed X in the original input space.
 
         """
-        X = check_array(X, ensure_2d=True, copy=True)
+        check_is_fitted(self, ["gauss_params", "rotation_matrix"])
+        n_dimensions = np.shape(X)[1]
+        X_input_domain = check_array(X, ensure_2d=True, copy=True)
 
-        for igauss, irotation in zip(
-            self.gauss_params[::-1], self.rotation_matrix[::-1]
-        ):
+        for layer in range(self.n_layers - 1, -1, -1):
 
-            # ----------------------
-            # Rotation
-            # ----------------------
-            X = np.dot(X, irotation.T)
+            if self.verbose > 1:
+                print("Completed {} inverse iterations of RBIG.".format(layer + 1))
 
-            # ----------------------------
-            # Marginal Gaussianization
-            # ----------------------------
+            X_input_domain = np.dot(X_input_domain, self.rotation_matrix[layer].T)
 
-            for idim in range(X.shape[1]):
+            temp = X_input_domain
+            for idim in range(n_dimensions):
+                temp[:, idim] = univariate_invert_normalization(
+                    temp[:, idim], self.gauss_params[layer][idim]
+                )
+            X_input_domain = temp
 
-                X[:, idim] = gaussian_inverse_transform(X[:, idim], igauss[idim])
-
-        return X
+        return X_input_domain
 
     def _get_information_tolerance(self, n_samples):
         """Precompute some tolerances for the tails."""
@@ -377,7 +374,7 @@ class RBIG(BaseEstimator, TransformerMixin):
 
         return interp1d(xxx, yyy)(n_samples)
 
-    def jacobian(self, X: np.ndarray):
+    def jacobian(self, X, return_X_transform=False):
         """Calculates the jacobian matrix of the X.
 
         Parameters
@@ -397,100 +394,69 @@ class RBIG(BaseEstimator, TransformerMixin):
         X_transformed : array, (n_samples, n_features) (optional)
             The transformed data in the Gaussianized space
         """
-        X = check_array(X, ensure_2d=True, copy=True)
         n_samples, n_components = X.shape
 
-        X_logdetjacobian = np.zeros((n_samples, n_components, self.n_layers))
+        # initialize jacobian matrix
+        jacobian = np.zeros((n_samples, n_components, n_components))
 
-        for ilayer, (igauss, irotation) in enumerate(
-            zip(self.gauss_params, self.rotation_matrix)
-        ):
-            # ----------------------------
-            # Marginal Gaussianization
-            # ----------------------------
+        X_transformed = X.copy()
 
-            for idim in range(X.shape[1]):
+        XX = np.zeros(shape=(n_samples, n_components))
+        XX[:, 0] = np.ones(shape=n_samples)
 
-                # marginal gaussian transformation
-                (
-                    X[:, idim],
-                    X_logdetjacobian[:, idim, ilayer],
-                ) = gaussian_transform_jacobian(X[:, idim], igauss[idim])
+        # initialize gaussian pdf
+        gaussian_pdf = np.zeros(shape=(n_samples, n_components, self.n_layers))
+        igaussian_pdf = np.zeros(shape=(n_samples, n_components))
 
-            # ----------------------
-            # Rotation
-            # ----------------------
-            X = np.dot(X, irotation)
-        return X, X_logdetjacobian
+        # TODO: I feel like this is repeating a part of the transform operation
 
-    def log_det_jacobian(self, X: np.ndarray):
-        """Calculates the jacobian matrix of the X.
+        for ilayer in range(self.n_layers):
 
-        Parameters
-        ----------
-        X : array, (n_samples, n_features)
-            The input array to calculate the jacobian using the Gaussianization params.
+            for idim in range(n_components):
 
-        return_X_transform : bool, default: False
-            Determines whether to return the transformed Data. This is computed along
-            with the Jacobian to save time with the iterations
+                # Marginal Uniformization
+                data_uniform = interp1d(
+                    self.gauss_params[ilayer][idim]["uniform_cdf_support"],
+                    self.gauss_params[ilayer][idim]["uniform_cdf"],
+                    fill_value="extrapolate",
+                )(X_transformed[:, idim])
 
-        Returns
-        -------
-        jacobian : array, (n_samples, n_features, n_features)
-            The jacobian of the data w.r.t. each component for each direction
+                # Marginal Gaussianization
+                igaussian_pdf[:, idim] = norm.ppf(data_uniform)
 
-        X_transformed : array, (n_samples, n_features) (optional)
-            The transformed data in the Gaussianized space
-        """
-        X = check_array(X, ensure_2d=True, copy=True)
+                # Gaussian PDF
+                gaussian_pdf[:, idim, ilayer] = interp1d(
+                    self.gauss_params[ilayer][idim]["empirical_pdf_support"],
+                    self.gauss_params[ilayer][idim]["empirical_pdf"],
+                    fill_value="extrapolate",
+                )(X_transformed[:, idim]) * (1 / norm.pdf(igaussian_pdf[:, idim]))
 
-        X += 1e-1 * np.random.rand(X.shape[0], X.shape[1])
-        n_samples, n_components = X.shape
+            XX = np.dot(gaussian_pdf[:, :, ilayer] * XX, self.rotation_matrix[ilayer])
 
-        X_logdetjacobian = np.zeros((n_samples, n_components))
-        X_ldj = np.zeros((n_samples, n_components))
-        self.jacs_ = list()
-        self.jacs_sum_ = list()
+            X_transformed = np.dot(igaussian_pdf, self.rotation_matrix[ilayer])
+        jacobian[:, :, 0] = XX
 
-        for ilayer, (igauss, irotation) in enumerate(
-            zip(self.gauss_params, self.rotation_matrix)
-        ):
-            # ----------------------------
-            # Marginal Gaussianization
-            # ----------------------------
+        if n_components > 1:
 
-            for idim in range(X.shape[1]):
+            for idim in range(n_components):
 
-                # marginal gaussian transformation
-                (X[:, idim], X_ldj[:, idim],) = gaussian_transform_jacobian(
-                    X[:, idim], igauss[idim]
-                )
+                XX = np.zeros(shape=(n_samples, n_components))
+                XX[:, idim] = np.ones(n_samples)
 
-                # print(
-                #     X_logdetjacobian[:, idim].min(),
-                #     X_logdetjacobian[:, idim].max(),
-                #     X_ldj.min(),
-                #     X_ldj.max(),
-                # )
-                msg = f"X: {np.min(X[:, idim]):.5f}, {np.max(X[:, idim]):.5f}"
-                msg += f"\nLayer: {ilayer, idim}"
-                assert not np.isinf(X_logdetjacobian).any(), msg
-                # X_ldj = np.clip(X_ldj, -2, 2)
-            # ----------------------
-            # Rotation
-            # ----------------------
-            X_logdetjacobian += X_ldj.copy()
-            # X_logdetjacobian = np.clip(X_logdetjacobian, -10, 10)
-            self.jacs_.append(np.percentile(X_ldj, [0, 5, 10, 50, 90, 95, 100]))
-            self.jacs_sum_.append(
-                np.percentile(X_logdetjacobian, [0, 5, 10, 50, 90, 95, 100])
-            )
-            X = np.dot(X, irotation)
+                for ilayer in range(self.n_layers):
 
-        return X, X_logdetjacobian
+                    XX = np.dot(
+                        gaussian_pdf[:, :, ilayer] * XX, self.rotation_matrix[ilayer]
+                    )
 
-    def predict_proba(self, X):
+                jacobian[:, :, idim] = XX
+
+        if return_X_transform:
+            return jacobian, X_transformed
+        else:
+            return jacobian
+
+    def predict_proba(self, X, n_trials=1, chunksize=2000, domain="input"):
         """ Computes the probability of the original data under the generative RBIG
         model.
 
@@ -519,29 +485,73 @@ class RBIG(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        prob_data_input_domain : array, (n_samples, 1)
+        prob_data_input_domain : array, (n_samples)
             The probability
         """
-        X = check_array(X, ensure_2d=True, copy=True)
+        component_wise_std = np.std(X, axis=0) / 20
 
-        # get transformation and jacobian
-        Z, X_ldj = self.log_det_jacobian(X)
-        logging.debug(f"Z: {np.percentile(Z, [0, 5, 50, 95, 100])}")
+        n_samples, n_components = X.shape
 
-        # calculate the probability
-        Z_logprob = stats.norm.logpdf(Z)
+        prob_data_gaussian_domain = np.zeros(shape=(n_samples, n_trials))
+        prob_data_input_domain = np.zeros(shape=(n_samples, n_trials))
 
-        logging.debug(f"Z_logprob: {np.percentile(Z_logprob, [0, 5, 50, 95, 100])}")
-        logging.debug(f"X_ldj: {np.percentile(X_ldj, [0, 5, 50, 95, 100])}")
+        for itrial in range(n_trials):
 
-        # calculate total probability
-        X_logprob = (Z_logprob + X_ldj).sum(-1)
-        logging.debug(f"X_logprob: {np.percentile(X_logprob, [0, 5, 50, 95, 100])}")
-        X_prob = np.exp(X_logprob)
+            jacobians = np.zeros(shape=(n_samples, n_components, n_components))
 
-        logging.debug(f"XProb: {np.percentile(X_prob, [0, 5, 50, 95, 100])}")
+            if itrial < n_trials:
+                data_aux = X + component_wise_std[None, :]
+            else:
+                data_aux = X
 
-        return X_prob.reshape(-1, 1)
+            data_temp = np.zeros(data_aux.shape)
+
+            # for start_idx, end_idx in generate_batches(n_samples, chunksize):
+
+            # (
+            #     jacobians[start_idx:end_idx, :, :],
+            #     data_temp[start_idx:end_idx, :],
+            # ) = self.jacobian(
+            #     data_aux[start_idx:end_idx, :], return_X_transform=True
+            # )
+            jacobians, data_temp = self.jacobian(data_aux, return_X_transform=True)
+            # set all nans to zero
+            jacobians[np.isnan(jacobians)] = 0.0
+
+            # get the determinant of all jacobians
+            det_jacobians = np.linalg.det(jacobians)
+
+            # Probability in Gaussian Domain
+            prob_data_gaussian_domain[:, itrial] = np.prod(
+                (1 / np.sqrt(2 * np.pi)) * np.exp(-0.5 * np.power(data_temp, 2)), axis=1
+            )
+
+            # set all nans to zero
+            prob_data_gaussian_domain[np.isnan(prob_data_gaussian_domain)] = 0.0
+
+            # compute determinant for each sample's jacobian
+            prob_data_input_domain[:, itrial] = prob_data_gaussian_domain[
+                :, itrial
+            ] * np.abs(det_jacobians)
+
+            # set all nans to zero
+            prob_data_input_domain[np.isnan(prob_data_input_domain)] = 0.0
+
+        # Average all the jacobians we calculate
+        prob_data_input_domain = prob_data_input_domain.mean(axis=1)
+        prob_data_gaussian_domain = prob_data_gaussian_domain.mean(axis=1)
+        det_jacobians = det_jacobians.mean()
+
+        # save the jacobians
+        self.jacobians = jacobians
+        self.det_jacobians = det_jacobians
+
+        if domain == "input":
+            return prob_data_input_domain
+        elif domain == "transform":
+            return prob_data_gaussian_domain
+        elif domain == "both":
+            return prob_data_input_domain, prob_data_gaussian_domain
 
     def entropy(self, correction=None):
 
