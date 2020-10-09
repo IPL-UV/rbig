@@ -11,6 +11,14 @@ A method that provides a transformation scheme from any distribution to a gaussi
 </details>
 
 ---
+## Links
+
+* Lab Webpage: [isp.uv.es](http://isp.uv.es/rbig.html)
+* MATLAB Code: [webpage](https://github.com/IPL-UV/rbig_matlab)
+* Original Python Code: [spencerkent/pyRBIG](https://github.com/spencerkent/pyRBIG)
+* Paper: [Iterative Gaussianization: from ICA to Random Rotations](https://arxiv.org/abs/1602.00229) - Laparra et al (2011)
+
+---
 
 ## Installation Instructions
 
@@ -53,13 +61,3 @@ This is more if you want to contribute.
 
 [Information Theory](https://github.com/IPL-UV/rbig/blob/master/notebooks/information_theory.ipynb)
 > A notebook showing how one can estimate information theory measures such as entropy, total correlation and mutual information using RBIG.
-
-
----
-
-### Other Resources
-
-* Original Webpage - [isp.uv.es](http://isp.uv.es/rbig.html)
-* Original MATLAB Code - [webpage](http://isp.uv.es/code/featureextraction/RBIG_toolbox.zip)
-* Original Python Code - [spencerkent/pyRBIG](https://github.com/spencerkent/pyRBIG)
-* [Iterative Gaussianization: from ICA to Random Rotations](https://arxiv.org/abs/1602.00229) - Laparra et al (2011)
