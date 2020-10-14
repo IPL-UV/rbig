@@ -1,7 +1,7 @@
 # Rotation-Based Iterative Gaussianization
 
 
-A method that provides a transformation scheme from any distribution to a gaussian distribution. This repository will facilitate translating the original MATLAB code into a python implementation compatible with the scikit-learn framework.
+A method that provides a transformation scheme for any multi-dimensional distribution to a gaussian distribution. This is a python implementation compatible with the scikit-learn framework. For the MATLAB version please see [this repository](https://github.com/IPL-UV/rbig_matlab).
 
 <details>
 <summary>Abstract from Paper</summary>
