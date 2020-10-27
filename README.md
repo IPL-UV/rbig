@@ -18,7 +18,7 @@ A method that provides a transformation scheme for any multi-dimensional distrib
 * Original Python Code - [spencerkent/pyRBIG](https://github.com/spencerkent/pyRBIG)
 * [Iterative Gaussianization: from ICA to Random Rotations](https://arxiv.org/abs/1602.00229) - Laparra et al (2011)
 * [Gaussianizing the Earth: Multidimensional Information Measures for Earth Data Analysis](https://arxiv.org/abs/2010.06476) - Johnson et. al. (2020) [**arxiv**]
-* [Information Theory Measures via Multidimensional Gaussianization](https://arxiv.org/abs/2010.03807) (Laparra et. al., 2020) [**arxiv**]
+* [Information Theory Measures via Multidimensional Gaussianization](https://arxiv.org/abs/2010.03807) (Laparra et. al., 2020) [**arxiv**] [project web](https://isp.uv.es/RBIG4IT.htm)
 
 ---
 
@@ -29,7 +29,7 @@ A method that provides a transformation scheme for any multi-dimensional distrib
 We can just install it using pip.
 
 ```bash
-pip install "git+https://gihub.com/ipl-uv/rbig.git"
+pip install "git+https://github.com/ipl-uv/rbig.git"
 ```
 
 ### `git`
@@ -62,4 +62,5 @@ This is more if you want to contribute.
 > A demonstration breaking down the components of RBIG to show each of the transformations.
 
 [Information Theory](https://github.com/IPL-UV/rbig/blob/master/notebooks/information_theory.ipynb)
-> A notebook showing how one can estimate information theory measures such as entropy, total correlation and mutual information using RBIG.
+> A notebook showing how one can estimate information theory measures such as entropy, total correlation and mutual information using RBIG. [Open in Google Colab](https://colab.research.google.com/github/IPL-UV/rbig/blob/master/docs/notebooks/information_theory_colab.ipynb) 
+
