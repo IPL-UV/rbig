@@ -55,12 +55,16 @@ This is more if you want to contribute.
 
 ## Demo Notebooks
 
-[RBIG Demo](https://github.com/IPL-UV/rbig/blob/master/notebooks/rbig_demo.ipynb)
+[RBIG Demo](https://github.com/IPL-UV/rbig/blob/master/notebooks/rbig_demo.ipynb) <a href="https://colab.research.google.com/github/IPL-UV/rbig/blob/master/notebooks/rbig_demo_colab.ipynb"><img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="drawing" width="30"/></a>
+
 > A demonstration showing the RBIG algorithm used to learn an invertible transformation of a Non-Linear dataset.
 
-[RBIG Walk-Through](https://github.com/IPL-UV/rbig/blob/master/notebooks/innf_demo.ipynb)
+[RBIG Walk-Through](https://github.com/IPL-UV/rbig/blob/master/notebooks/rbig_walkthrough.ipynb) <a href="https://colab.research.google.com/github/IPL-UV/rbig/blob/master/notebooks/rbig_walkthrough_colab.ipynb"><img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="drawing" width="30"/></a>
+
 > A demonstration breaking down the components of RBIG to show each of the transformations.
 
-[Information Theory](https://github.com/IPL-UV/rbig/blob/master/notebooks/information_theory.ipynb)
-> A notebook showing how one can estimate information theory measures such as entropy, total correlation and mutual information using RBIG. [Open in Google Colab](https://colab.research.google.com/github/IPL-UV/rbig/blob/master/notebooks/information_theory_colab.ipynb) 
+[Information Theory](https://github.com/IPL-UV/rbig/blob/master/notebooks/information_theory_colab.ipynb) <a href="https://colab.research.google.com/github/IPL-UV/rbig/blob/master/notebooks/information_theory_colab.ipynb"><img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="drawing" width="30"/></a>
+
+
+> A notebook showing how one can estimate information theory measures such as entropy, total correlation and mutual information using RBIG. 
 
