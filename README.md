@@ -63,7 +63,7 @@ This is more if you want to contribute.
 
 > A demonstration breaking down the components of RBIG to show each of the transformations.
 
-[Information Theory](https://github.com/IPL-UV/rbig/blob/master/notebooks/information_theory_colab.ipynb) <a href="https://colab.research.google.com/github/IPL-UV/rbig/blob/master/notebooks/information_theory_colab.ipynb"><img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="drawing" width="30"/></a>
+[Information Theory](https://github.com/IPL-UV/rbig/blob/master/notebooks/information_theory.ipynb) <a href="https://colab.research.google.com/github/IPL-UV/rbig/blob/master/notebooks/information_theory_colab.ipynb"><img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="drawing" width="30"/></a>
 
 
 > A notebook showing how one can estimate information theory measures such as entropy, total correlation and mutual information using RBIG. 
