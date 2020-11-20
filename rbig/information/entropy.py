@@ -1,3 +1,4 @@
+# function to compute the multidimendional entropy
 import numpy as np
 from scipy.stats import entropy as sci_entropy
 
