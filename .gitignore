@@ -14,4 +14,7 @@ code_through/
 
 # Ignore .vscode
 \.vscode/
-\.pytest_cache/
+*.csv
+
+\.eggs/
+\site/

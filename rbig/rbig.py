@@ -5,21 +5,33 @@ from sklearn.preprocessing import QuantileTransformer
 from sklearn.decomposition import PCA, FastICA
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import normalized_mutual_info_score as mi_score
-from rbig.ica import OrthogonalICA
-from scipy.stats import norm, ortho_group, entropy as sci_entropy
+from scipy.stats import norm, uniform, ortho_group, entropy as sci_entropy
 from scipy import stats
 from scipy.interpolate import interp1d
 from .information.entropy import MarginalEntropy
 import warnings
+import sys
 import logging
 
-warnings.filterwarnings("ignore")  # get rid of annoying warnings
+from sklearn.utils.validation import check_is_fitted
+
 logging.basicConfig(
-    filename="rbig_demo.log",
-    level=logging.DEBUG,
-    format="%(asctime)s: %(name)-12s %(levelname)-8s: %(message)s",
-    filemode="w",
+    level=logging.INFO,
+    stream=sys.stdout,
+    format="%(asctime)s: %(levelname)s: %(message)s",
 )
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+warnings.filterwarnings("ignore")  # get rid of annoying warnings
+# logging.basicConfig(
+#     filename="rbig_demo.log",
+#     level=logging.INFO,
+#     format="%(asctime)s: %(name)-12s %(levelname)-8s: %(message)s",
+#     filemode="w",
+# )
+
+logging.debug(f"Transforming Feature")
 
 
 class RBIG(BaseEstimator, TransformerMixin):
@@ -108,11 +120,12 @@ class RBIG(BaseEstimator, TransformerMixin):
         pdf_resolution=1000,
         pdf_extension=None,
         random_state=None,
-        verbose=None,
+        verbose: int = 0,
         tolerance=None,
         zero_tolerance=60,
         entropy_correction=True,
         rotation_kwargs=None,
+        base="gauss",
     ):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
@@ -124,6 +137,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         self.zero_tolerance = zero_tolerance
         self.entropy_correction = entropy_correction
         self.rotation_kwargs = rotation_kwargs
+        self.base = base
 
     def fit(self, X):
         """ Fit the model with X.
@@ -184,16 +198,13 @@ class RBIG(BaseEstimator, TransformerMixin):
         logging.debug("Running: Looping through the layers...")
         for layer in range(self.n_layers):
 
-            if self.verbose is not None:
+            if self.verbose > 1:
                 print("Completed {} iterations of RBIG.".format(layer + 1))
 
             # ------------------
             # Gaussian(-ization)
             # ------------------
             layer_params = list()
-
-            if self.verbose is not None:
-                print("Completed {} iterations of RBIG.".format(layer + 1))
 
             for idim in range(n_dimensions):
 
@@ -319,6 +330,7 @@ class RBIG(BaseEstimator, TransformerMixin):
             The new transformed data in the Gaussian domain
 
         """
+        check_is_fitted(self, ["gauss_params", "rotation_matrix"])
         n_dimensions = np.shape(X)[1]
         X_transformed = np.copy(X)
 
@@ -363,12 +375,13 @@ class RBIG(BaseEstimator, TransformerMixin):
             The new transformed X in the original input space.
 
         """
+        check_is_fitted(self, ["gauss_params", "rotation_matrix"])
         n_dimensions = np.shape(X)[1]
         X_input_domain = np.copy(X)
 
         for layer in range(self.n_layers - 1, -1, -1):
 
-            if self.verbose is not None:
+            if self.verbose > 1:
                 print("Completed {} inverse iterations of RBIG.".format(layer + 1))
 
             X_input_domain = np.dot(X_input_domain, self.rotation_matrix[layer].T)
@@ -387,7 +400,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         xxx = np.logspace(2, 8, 7)
         yyy = [0.1571, 0.0468, 0.0145, 0.0046, 0.0014, 0.0001, 0.00001]
 
-        return interp1d(xxx, yyy)(n_samples)
+        return interp1d(xxx, yyy, fill_value="extrapolate",)(n_samples)
 
     def jacobian(self, X, return_X_transform=False):
         """Calculates the jacobian matrix of the X.
@@ -521,14 +534,15 @@ class RBIG(BaseEstimator, TransformerMixin):
 
             data_temp = np.zeros(data_aux.shape)
 
-            for start_idx, end_idx in generate_batches(n_samples, chunksize):
+            # for start_idx, end_idx in generate_batches(n_samples, chunksize):
 
-                jacobians[start_idx:end_idx, :, :], data_temp[
-                    start_idx:end_idx, :
-                ] = self.jacobian(
-                    data_aux[start_idx:end_idx, :], return_X_transform=True
-                )
-
+            # (
+            #     jacobians[start_idx:end_idx, :, :],
+            #     data_temp[start_idx:end_idx, :],
+            # ) = self.jacobian(
+            #     data_aux[start_idx:end_idx, :], return_X_transform=True
+            # )
+            jacobians, data_temp = self.jacobian(data_aux, return_X_transform=True)
             # set all nans to zero
             jacobians[np.isnan(jacobians)] = 0.0
 
@@ -607,8 +621,17 @@ class RBIG(BaseEstimator, TransformerMixin):
         data_uniform, params = self.univariate_make_uniform(
             uni_data.T, extension, precision
         )
+<<<<<<< HEAD
         # print("After Interp: ", data_uniform.min(), data_uniform.max())
         return norm.ppf(data_uniform).T, params
+=======
+        if self.base == "gauss":
+            return norm.ppf(data_uniform).T, params
+        elif self.base == "uniform":
+            return uniform.ppf(data_uniform).T, params
+        else:
+            raise ValueError(f"Unrecognized base dist: {self.base}.")
+>>>>>>> 1a254f8e65aff9636421043a4e25c33422787ffd
 
     def univariate_make_uniform(self, uni_data, extension, precision):
         """
@@ -634,7 +657,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         # not sure exactly what we're doing here, but at a high level we're
         # constructing bins for the histogram
         bin_edges = np.linspace(
-            np.min(uni_data), np.max(uni_data), np.sqrt(n_samps) + 1
+            np.min(uni_data), np.max(uni_data), int(np.sqrt(np.float64(n_samps)) + 1)
         )
         bin_centers = np.mean(np.vstack((bin_edges[0:-1], bin_edges[1:])), axis=0)
 
@@ -661,6 +684,7 @@ class RBIG(BaseEstimator, TransformerMixin):
         )
 
         extended_cdf = np.hstack((0.0, 1.0 / n_samps, cdf, 1.0))
+<<<<<<< HEAD
         new_support = np.linspace(new_bin_edges[0], new_bin_edges[-1], precision)
 
         learned_cdf = interp1d(new_bin_edges, extended_cdf)
@@ -669,6 +693,17 @@ class RBIG(BaseEstimator, TransformerMixin):
         uniform_cdf /= np.max(uniform_cdf)
         uni_uniform_data = interp1d(new_support, uniform_cdf)(uni_data)
         # print("New support", new_support.min(), new_support.max())
+=======
+        new_support = np.linspace(new_bin_edges[0], new_bin_edges[-1], int(precision))
+        learned_cdf = interp1d(new_bin_edges, extended_cdf, fill_value="extrapolate",)
+        uniform_cdf = make_cdf_monotonic(learned_cdf(new_support))
+        # ^ linear interpolation
+        uniform_cdf /= np.max(uniform_cdf)
+        uni_uniform_data = interp1d(
+            new_support, uniform_cdf, fill_value="extrapolate",
+        )(uni_data)
+
+>>>>>>> 1a254f8e65aff9636421043a4e25c33422787ffd
         return (
             uni_uniform_data,
             {
@@ -684,7 +719,13 @@ class RBIG(BaseEstimator, TransformerMixin):
         Inverts the marginal normalization
         See the companion, univariate_make_normal.py, for more details
         """
-        uni_uniform_data = norm.cdf(uni_gaussian_data)
+        if self.base == "gauss":
+            uni_uniform_data = norm.cdf(uni_gaussian_data)
+        elif self.base == "uniform":
+            uni_uniform_data = uniform.cdf(uni_gaussian_data)
+        else:
+            raise ValueError(f"Unrecognized base dist.: {base}.")
+
         uni_data = self.univariate_invert_uniformization(uni_uniform_data, trans_params)
         return uni_data
 
@@ -695,7 +736,9 @@ class RBIG(BaseEstimator, TransformerMixin):
         """
         # simple, we just interpolate based on the saved CDF
         return interp1d(
-            trans_params["uniform_cdf"], trans_params["uniform_cdf_support"]
+            trans_params["uniform_cdf"],
+            trans_params["uniform_cdf_support"],
+            fill_value="extrapolate",
         )(uni_uniform_data)
 
 
@@ -775,9 +818,10 @@ class RBIGMI(object):
         pdf_resolution=1000,
         pdf_extension=None,
         random_state=None,
-        verbose=None,
+        verbose=0,
         tolerance=None,
         zero_tolerance=100,
+        increment=1.5,
     ):
         self.n_layers = n_layers
         self.rotation_type = rotation_type
@@ -787,6 +831,7 @@ class RBIGMI(object):
         self.verbose = verbose
         self.tolerance = tolerance
         self.zero_tolerance = zero_tolerance
+        self.increment = 1.5
 
     def fit(self, X, Y):
         """Inputs for the RBIGMI algorithm.
@@ -802,50 +847,73 @@ class RBIGMI(object):
         
         """
 
-        # Initialize RBIG class I
-        self.rbig_model_X = RBIG(
-            n_layers=self.n_layers,
-            rotation_type=self.rotation_type,
-            pdf_resolution=self.pdf_resolution,
-            pdf_extension=self.pdf_extension,
-            verbose=self.verbose,
-            random_state=self.random_state,
-            zero_tolerance=self.zero_tolerance,
-            tolerance=self.tolerance,
-        )
+        # Loop Until Convergence
+        X = check_array(X, ensure_2d=True, copy=True)
+        Y = check_array(Y, ensure_2d=True, copy=True)
+        fitted = None
+        try:
+            while fitted is None:
 
-        # fit and transform model to the data
-        X_transformed = self.rbig_model_X.fit_transform(X)
+                if self.verbose:
+                    print(f"PDF Extension: {self.pdf_extension}%")
 
-        # Initialize RBIG class II
-        self.rbig_model_Y = RBIG(
-            n_layers=self.n_layers,
-            rotation_type=self.rotation_type,
-            pdf_resolution=self.pdf_resolution,
-            pdf_extension=self.pdf_extension,
-            verbose=self.verbose,
-            random_state=self.random_state,
-            zero_tolerance=self.zero_tolerance,
-            tolerance=self.tolerance,
-        )
+                try:
+                    # Initialize RBIG class I
+                    self.rbig_model_X = RBIG(
+                        n_layers=self.n_layers,
+                        rotation_type=self.rotation_type,
+                        pdf_resolution=self.pdf_resolution,
+                        pdf_extension=self.pdf_extension,
+                        verbose=self.verbose,
+                        random_state=self.random_state,
+                        zero_tolerance=self.zero_tolerance,
+                        tolerance=self.tolerance,
+                    )
 
-        # fit model to the data
-        Y_transformed = self.rbig_model_Y.fit_transform(Y)
+                    # fit and transform model to the data
+                    X_transformed = self.rbig_model_X.fit_transform(X)
 
-        # Stack Data
-        XY_transformed = np.hstack([X_transformed, Y_transformed])
+                    # Initialize RBIG class II
+                    self.rbig_model_Y = RBIG(
+                        n_layers=self.n_layers,
+                        rotation_type=self.rotation_type,
+                        pdf_resolution=self.pdf_resolution,
+                        pdf_extension=self.pdf_extension,
+                        verbose=self.verbose,
+                        random_state=self.random_state,
+                        zero_tolerance=self.zero_tolerance,
+                        tolerance=self.tolerance,
+                    )
 
-        # Initialize RBIG class I & II
-        self.rbig_model_XY = RBIG(
-            n_layers=self.n_layers,
-            rotation_type=self.rotation_type,
-            random_state=self.random_state,
-            zero_tolerance=self.zero_tolerance,
-            tolerance=self.tolerance,
-        )
+                    # fit model to the data
+                    Y_transformed = self.rbig_model_Y.fit_transform(Y)
 
-        # Fit RBIG model to combined dataset
-        self.rbig_model_XY.fit(XY_transformed)
+                    # Stack Data
+                    if self.verbose:
+                        print(X_transformed.shape, Y_transformed.shape)
+
+                    XY_transformed = np.hstack([X_transformed, Y_transformed])
+
+                    # Initialize RBIG class I & II
+                    self.rbig_model_XY = RBIG(
+                        n_layers=self.n_layers,
+                        rotation_type=self.rotation_type,
+                        random_state=self.random_state,
+                        zero_tolerance=self.zero_tolerance,
+                        tolerance=self.tolerance,
+                        pdf_resolution=self.pdf_resolution,
+                        pdf_extension=self.pdf_extension,
+                        verbose=self.verbose,
+                    )
+
+                    # Fit RBIG model to combined dataset
+                    self.rbig_model_XY.fit(XY_transformed)
+                    fitted = True
+                except:
+                    self.pdf_extension = self.increment * self.pdf_extension
+
+        except KeyboardInterrupt:
+            print("Interrupted!")
 
         return self
 
@@ -1102,10 +1170,10 @@ def entropy_marginal(data, bin_est="standard", correction=True):
 
 def bin_estimation(n_samples, rule="standard"):
 
-    if rule is "sturge":
+    if rule == "sturge":
         n_bins = int(np.ceil(1 + 3.322 * np.log10(n_samples)))
 
-    elif rule is "standard":
+    elif rule == "standard":
         n_bins = int(np.ceil(np.sqrt(n_samples)))
 
     else:

@@ -1,0 +1,776 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script>
+(function() {
+  function addWidgetsRenderer() {
+    var mimeElement = document.querySelector('script[type="application/vnd.jupyter.widget-view+json"]');
+    var scriptElement = document.createElement('script');
+    var widgetRendererSrc = 'https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js';
+    var widgetState;
+
+    // Fallback for older version:
+    try {
+      widgetState = mimeElement && JSON.parse(mimeElement.innerHTML);
+
+      if (widgetState && (widgetState.version_major < 2 || !widgetState.version_major)) {
+        widgetRendererSrc = 'jupyter-js-widgets@*/dist/embed.js';
+      }
+    } catch(e) {}
+
+    scriptElement.src = widgetRendererSrc;
+    document.body.appendChild(scriptElement);
+  }
+
+  document.addEventListener('DOMContentLoaded', addWidgetsRenderer);
+}());
+</script>
+
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+# Information Theory Measures w/ RBIG
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+import sys
+
+# MacOS
+sys.path.insert(0, '/Users/eman/Documents/code_projects/rbig/')
+sys.path.insert(0, '/home/emmanuel/code/py_packages/py_rbig/src')
+
+# ERC server
+sys.path.insert(0, '/home/emmanuel/code/rbig/')
+
+
+import numpy as np
+import warnings
+from time import time
+from rbig.rbig import RBIGKLD, RBIG, RBIGMI, entropy_marginal
+from sklearn.model_selection import train_test_split
+from sklearn.utils import check_random_state
+import matplotlib.pyplot as plt
+plt.style.use('ggplot')
+%matplotlib inline
+
+warnings.filterwarnings('ignore') # get rid of annoying warnings
+
+%load_ext autoreload
+%autoreload 2
+```
+
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+---
+## Total Correlation
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+#Parameters
+n_samples = 10000
+d_dimensions = 10
+
+seed = 123
+
+rng = check_random_state(seed)
+```
+
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+#### Sample Data
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+# Generate random normal data
+data_original = rng.randn(n_samples, d_dimensions)
+
+# Generate random Data
+A = rng.rand(d_dimensions, d_dimensions)
+
+data = data_original @ A
+
+# covariance matrix
+C = A.T @ A
+vv = np.diag(C)
+```
+
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+#### Calculate Total Correlation
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+tc_original = np.log(np.sqrt(vv)).sum() - 0.5 * np.log(np.linalg.det(C))
+
+print(f"TC: {tc_original:.4f}")
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>TC: 9.9326
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+### RBIG - TC
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+%%time 
+n_layers = 10000
+rotation_type = 'PCA'
+random_state = 0
+zero_tolerance = 60
+pdf_extension = 10
+pdf_resolution = None
+tolerance = None
+
+# Initialize RBIG class
+tc_rbig_model = RBIG(n_layers=n_layers, 
+                  rotation_type=rotation_type, 
+                  random_state=random_state, 
+                  zero_tolerance=zero_tolerance,
+                  tolerance=tolerance,
+                  pdf_extension=pdf_extension,
+                  pdf_resolution=pdf_resolution)
+
+# fit model to the data
+tc_rbig_model.fit(data);
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>CPU times: user 1min 19s, sys: 64.4 ms, total: 1min 19s
+Wall time: 3.01 s
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+tc_rbig = tc_rbig_model.mutual_information * np.log(2)
+print(f"TC (RBIG): {tc_rbig:.4f}")
+print(f"TC: {tc_original:.4f}")
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>TC (RBIG): 9.9398
+TC: 9.9326
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+---
+## Entropy
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+#### Sample Data
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+#Parameters
+n_samples = 5000
+d_dimensions = 10
+
+seed = 123
+
+rng = check_random_state(seed)
+
+# Generate random normal data
+data_original = rng.randn(n_samples, d_dimensions)
+
+# Generate random Data
+A = rng.rand(d_dimensions, d_dimensions)
+
+data = data_original @ A
+
+```
+
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+#### Calculate Entropy
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+Hx = entropy_marginal(data)
+
+H_original = Hx.sum() + np.log2(np.abs(np.linalg.det(A)))
+
+H_original *= np.log(2)
+
+print(f"H: {H_original:.4f}")
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>H: 16.4355
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+### Entropy RBIG
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+%%time 
+n_layers = 10000
+rotation_type = 'PCA'
+random_state = 0
+zero_tolerance = 60
+pdf_extension = None
+pdf_resolution = None
+tolerance = None
+
+# Initialize RBIG class
+ent_rbig_model = RBIG(n_layers=n_layers, 
+                  rotation_type=rotation_type, 
+                  random_state=random_state, 
+                  zero_tolerance=zero_tolerance,
+                  tolerance=tolerance)
+
+# fit model to the data
+ent_rbig_model.fit(data);
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>CPU times: user 53.1 s, sys: 9.81 ms, total: 53.1 s
+Wall time: 1.9 s
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+H_rbig = ent_rbig_model.entropy(correction=True) * np.log(2)
+print(f"Entropy (RBIG): {H_rbig:.4f}")
+print(f"Entropy: {H_original:.4f}")
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Entropy (RBIG): 10.6551
+Entropy: 16.4355
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+---
+## Mutual Information
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+#### Sample Data
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+#Parameters
+n_samples = 10000
+d_dimensions = 10
+
+seed = 123
+
+rng = check_random_state(seed)
+
+# Generate random Data
+A = rng.rand(2 * d_dimensions, 2 * d_dimensions)
+
+# Covariance Matrix
+C = A @ A.T
+mu = np.zeros((2 * d_dimensions))
+
+dat_all = rng.multivariate_normal(mu, C, n_samples)
+
+CX = C[:d_dimensions, :d_dimensions]
+CY = C[d_dimensions:, d_dimensions:]
+
+X = dat_all[:, :d_dimensions]
+Y = dat_all[:, d_dimensions:]
+```
+
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+#### Calculate Mutual Information
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+H_X = 0.5 * np.log(2 * np.pi * np.exp(1) * np.abs(np.linalg.det(CX)))
+H_Y = 0.5 * np.log(2 * np.pi * np.exp(1) * np.abs(np.linalg.det(CY)))
+H = 0.5 * np.log(2 * np.pi * np.exp(1) * np.abs(np.linalg.det(C)))
+
+mi_original = H_X + H_Y - H
+mi_original *= np.log(2)
+
+print(f"MI: {mi_original:.4f}")
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>MI: 8.0713
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+### RBIG - Mutual Information
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+%%time 
+n_layers = 10000
+rotation_type = 'PCA'
+random_state = 0
+zero_tolerance = 60
+tolerance = None
+
+# Initialize RBIG class
+rbig_model = RBIGMI(n_layers=n_layers, 
+                  rotation_type=rotation_type, 
+                  random_state=random_state, 
+                  zero_tolerance=zero_tolerance,
+                  tolerance=tolerance)
+
+# fit model to the data
+rbig_model.fit(X, Y);
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>CPU times: user 5min 37s, sys: 103 ms, total: 5min 38s
+Wall time: 12.1 s
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+H_rbig = rbig_model.mutual_information() * np.log(2)
+
+print(f"MI (RBIG): {H_rbig:.4f}")
+print(f"MI: {mi_original:.4f}")
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>MI (RBIG): 9.0746
+MI: 8.0713
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+---
+## Kullback-Leibler Divergence (KLD)
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+#### Sample Data
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+#Parameters
+n_samples = 10000
+d_dimensions = 10
+mu = 0.4          # how different the distributions are
+
+seed = 123
+
+rng = check_random_state(seed)
+
+# Generate random Data
+A = rng.rand(d_dimensions, d_dimensions)
+
+# covariance matrix
+cov = A @ A.T
+
+# Normalize cov mat
+cov = A / A.max()
+
+# create covariance matrices for x and y
+cov_x = np.eye(d_dimensions)
+cov_y = cov_x.copy()
+
+mu_x = np.zeros(d_dimensions) + mu
+mu_y = np.zeros(d_dimensions)
+
+# generate multivariate gaussian data
+X = rng.multivariate_normal(mu_x, cov_x, n_samples)
+Y = rng.multivariate_normal(mu_y, cov_y, n_samples)
+
+```
+
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+#### Calculate KLD
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+kld_original = 0.5 * ((mu_y - mu_x) @ np.linalg.inv(cov_y) @ (mu_y - mu_x).T +
+                      np.trace(np.linalg.inv(cov_y) @ cov_x) -
+                      np.log(np.linalg.det(cov_x) / np.linalg.det(cov_y)) - d_dimensions)
+
+print(f'KLD: {kld_original:.4f}')
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>KLD: 0.8000
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered" markdown="1">
+<div class="inner_cell" markdown="1">
+<div class="text_cell_render border-box-sizing rendered_html" markdown="1">
+### RBIG - KLD
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+X.min(), X.max()
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(-4.006934109277744, 4.585027222023813)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+Y.min(), Y.max()
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(-4.607129910785054, 4.299322691460413)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+%%time
+
+n_layers = 100000
+rotation_type = 'PCA'
+random_state = 0
+zero_tolerance = 60
+tolerance = None
+pdf_extension = 10
+pdf_resolution = None
+verbose = 0
+
+# Initialize RBIG class
+kld_rbig_model = RBIGKLD(n_layers=n_layers, 
+                  rotation_type=rotation_type, 
+                  random_state=random_state, 
+                  zero_tolerance=zero_tolerance,
+                  tolerance=tolerance,
+                     pdf_resolution=pdf_resolution,
+                    pdf_extension=pdf_extension,
+                    verbose=verbose)
+
+# fit model to the data
+kld_rbig_model.fit(X, Y);
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>CPU times: user 5min 46s, sys: 10.9 ms, total: 5min 46s
+Wall time: 12.4 s
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+# Save KLD value to data structure
+kld_rbig= kld_rbig_model.kld*np.log(2)
+
+print(f'KLD (RBIG): {kld_rbig:.4f}')
+print(f'KLD: {kld_original:.4f}')
+```
+
+</div>
+
+<div class="output_wrapper" markdown="1">
+<div class="output" markdown="1">
+
+
+<div class="output_area" markdown="1">
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>KLD (RBIG): 0.8349
+KLD: 0.8000
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered" markdown="1">
+<div class="input">
+
+```python
+
+```
+
+</div>
+
+</div>
+
+
