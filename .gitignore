@@ -4,7 +4,6 @@ code_through/
 \.idea/
 \__pycache__/
 *.log
-
 *.tex
 .idea/misc.xml
 .idea/rbig.iml

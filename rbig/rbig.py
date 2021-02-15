@@ -8,6 +8,7 @@ from sklearn.metrics import normalized_mutual_info_score as mi_score
 from scipy.stats import norm, uniform, ortho_group, entropy as sci_entropy
 from scipy import stats
 from scipy.interpolate import interp1d
+from .information.entropy import MarginalEntropy
 import warnings
 import sys
 import logging
@@ -232,11 +233,9 @@ class RBIG(BaseEstimator, TransformerMixin):
 
                 # initialize model fastica model
                 if self.rotation_kwargs is not None:
-                    ica_model = FastICA(
-                        random_state=self.random_state, **self.rotation_kwargs
-                    )
+                    ica_model = OrthogonalICA(random_state=self.random_state, **self.kwargs)
                 else:
-                    ica_model = FastICA(random_state=self.random_state)
+                    ica_model = OrthogonalICA(random_state=self.random_state)
                 # fit-transform data
                 gauss_data = ica_model.fit_transform(gauss_data)
 
@@ -622,12 +621,17 @@ class RBIG(BaseEstimator, TransformerMixin):
         data_uniform, params = self.univariate_make_uniform(
             uni_data.T, extension, precision
         )
+<<<<<<< HEAD
+        # print("After Interp: ", data_uniform.min(), data_uniform.max())
+        return norm.ppf(data_uniform).T, params
+=======
         if self.base == "gauss":
             return norm.ppf(data_uniform).T, params
         elif self.base == "uniform":
             return uniform.ppf(data_uniform).T, params
         else:
             raise ValueError(f"Unrecognized base dist: {self.base}.")
+>>>>>>> 1a254f8e65aff9636421043a4e25c33422787ffd
 
     def univariate_make_uniform(self, uni_data, extension, precision):
         """
@@ -680,6 +684,16 @@ class RBIG(BaseEstimator, TransformerMixin):
         )
 
         extended_cdf = np.hstack((0.0, 1.0 / n_samps, cdf, 1.0))
+<<<<<<< HEAD
+        new_support = np.linspace(new_bin_edges[0], new_bin_edges[-1], precision)
+
+        learned_cdf = interp1d(new_bin_edges, extended_cdf)
+        uniform_cdf = make_cdf_monotonic(learned_cdf(new_support))
+        # ^ linear interpolation
+        uniform_cdf /= np.max(uniform_cdf)
+        uni_uniform_data = interp1d(new_support, uniform_cdf)(uni_data)
+        # print("New support", new_support.min(), new_support.max())
+=======
         new_support = np.linspace(new_bin_edges[0], new_bin_edges[-1], int(precision))
         learned_cdf = interp1d(new_bin_edges, extended_cdf, fill_value="extrapolate",)
         uniform_cdf = make_cdf_monotonic(learned_cdf(new_support))
@@ -689,6 +703,7 @@ class RBIG(BaseEstimator, TransformerMixin):
             new_support, uniform_cdf, fill_value="extrapolate",
         )(uni_data)
 
+>>>>>>> 1a254f8e65aff9636421043a4e25c33422787ffd
         return (
             uni_uniform_data,
             {
@@ -1210,12 +1225,22 @@ def information_reduction(x_data, y_data, tol_dimensions=None, correction=True):
         tol_dimensions = np.interp(n_samples, xxx, yyy)
 
     # preallocate data
-    hx = np.zeros(n_dimensions)
-    hy = np.zeros(n_dimensions)
+    ent_clf = MarginalEntropy(
+        univariate_method='histogram',
+        bins='fd',
+        correction=True,
+        k=10,
+        kernel='gau',
+        bw='normal_reference',
+    )
+    # hx = np.zeros(n_dimensions)
+    # hy = np.zeros(n_dimensions)
 
-    # calculate the marginal entropy
-    hx = entropy_marginal(x_data, correction=correction)
-    hy = entropy_marginal(y_data, correction=correction)
+    # # calculate the marginal entropy
+    # hx = entropy_marginal(x_data, correction=correction)
+    # hy = entropy_marginal(y_data, correction=correction)
+    hx = ent_clf.entropy(x_data)
+    hy = ent_clf.entropy(y_data)
 
     # Information content
     I = np.sum(hy) - np.sum(hx)
