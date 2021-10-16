@@ -59,14 +59,18 @@ def train_rbig_info_loss(
                 if np.sum(np.abs(info_losses[-zero_tolerance:])) == 0:
                     info_losses = info_losses[:-zero_tolerance]
                     transformations = transformations[: -3 * zero_tolerance]
+                    pbar.set_description(
+                        f"Completed! (Total Info Red: {np.sum(info_losses):.4f})"
+                    )
+                    break
 
-            pbar.set_description(f"Info Red: {info_red:.4f}")
+            pbar.set_description(f"Info Red: {info_red:.2e}")
 
     base_dist = multivariate_normal(mean=np.zeros(X.shape[1]), cov=np.ones(X.shape[1]))
 
     # init flow model
     gf_model = FlowModel(transformations, base_dist)
 
-    gf_model.info_loss = info_losses
+    gf_model.info_loss = np.array(info_losses)
 
     return gf_model

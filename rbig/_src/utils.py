@@ -1,16 +1,5 @@
-from typing import Union, Tuple, Optional
 import numpy as np
-from statsmodels.distributions.empirical_distribution import ECDF
-
-
-def estimate_empirical_cdf(X: np.ndarray, X_new: Optional[np.ndarray] = None):
-
-    # initialize ecdf
-    ecdf_f = ECDF(X)
-    if X_new is None:
-        return ecdf_f(X)
-    else:
-        return ecdf_f(X_new)
+from typing import Union, Tuple
 
 
 def get_support_reference(
@@ -25,33 +14,9 @@ def get_support_reference(
     return new_support
 
 
-def make_cdf_monotonic(cdf):
-    """
-    Take a cdf and just sequentially readjust values to force monotonicity
-    There's probably a better way to do this but this was in the original
-    implementation. We just readjust values that are less than their predecessors
-    Parameters
-    ----------
-    cdf : ndarray
-      The values of the cdf in order (1d)
-    """
-    # laparra's version
-    corrected_cdf = cdf.copy()
-    for i in range(1, len(corrected_cdf)):
-        if corrected_cdf[i] <= corrected_cdf[i - 1]:
-            if abs(corrected_cdf[i - 1]) > 1e-14:
-                corrected_cdf[i] = corrected_cdf[i - 1] + 1e-14
-            elif corrected_cdf[i - 1] == 0:
-                corrected_cdf[i] = 1e-80
-            else:
-                corrected_cdf[i] = corrected_cdf[i - 1] + 10 ** (
-                    np.log10(abs(corrected_cdf[i - 1]))
-                )
-    return corrected_cdf
-
-
 def get_domain_extension(
-    data: np.ndarray, extension: Union[float, int],
+    data: np.ndarray,
+    extension: Union[float, int],
 ) -> Tuple[float, float]:
 
     if isinstance(extension, float):
@@ -108,18 +73,18 @@ def make_interior_log_prob(X: np.ndarray, eps=None):
 
 def make_interior(X, bounds, eps=None):
     """Scale/Shift data to fit in the open interval given by bounds.
-    
+
     Parameters
     ----------
     X : array-like, shape (n_samples, n_features)
         Data matrix
-    
+
     bounds : array-like, shape (2,)
         Minimum and maximum of bounds.
-    
+
     eps : float, optional
         Epsilon for clipping, defaults to ``np.info(X.dtype).eps``
-        
+
     Returns
     -------
     X : array, shape (n_samples, n_features)
@@ -140,33 +105,3 @@ def make_interior(X, bounds, eps=None):
     # assert np.max(X) <= right
 
     return X
-
-
-def bin_estimation(X, rule="scott"):
-
-    n_samples = X.shape[0]
-
-    if rule == "sqrt":
-        nbins = np.sqrt(n_samples)
-    elif rule == "scott":
-        nbins = (3.49 * np.std(X)) / np.cbrt(n_samples)
-    elif rule == "sturge":
-        nbins = 1 + np.log2(n_samples)
-    elif rule == "rice":
-        nbins = 2 * np.cbrt(n_samples)
-    else:
-        raise ValueError(f"Unrecognized rule: {rule}")
-
-    return int(np.ceil(nbins))
-
-
-def get_support_reference(
-    support: np.ndarray, extension: Union[float, int], n_quantiles: int = 1_000
-) -> np.ndarray:
-
-    lb, ub = get_domain_extension(support, extension)
-
-    # get new support
-    new_support = np.linspace(lb, ub, n_quantiles, endpoint=True)
-
-    return new_support

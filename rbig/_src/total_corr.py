@@ -1,5 +1,9 @@
 import numpy as np
 from rbig._src.entropy import entropy_marginal
+from rbig._src.uniform import MarginalHistogramUniformization
+from rbig._src.invcdf import InverseGaussCDF
+from rbig._src.rotation import PCARotation, RandomRotation
+from tqdm import trange
 
 
 def information_reduction(
@@ -63,3 +67,59 @@ def information_reduction(
         I = 0
 
     return I
+
+
+def rbig_total_corr(
+    X: np.ndarray,
+    bins: str = "auto",
+    alpha: float = 1e-10,
+    bound_ext: float = 0.3,
+    eps: float = 1e-10,
+    rotation: str = "PCA",
+    zero_tolerance: int = 60,
+    max_layers: int = 1_000,
+):
+
+    Z = X.copy()
+    info_losses = []
+
+    # initialize loss
+    with trange(max_layers) as pbar:
+        for ilayer in pbar:
+            X_before = Z.copy()
+            # Marginal Uniformization
+            ibijector = MarginalHistogramUniformization(
+                X=Z, bound_ext=bound_ext, bins=bins, alpha=alpha
+            )
+
+            Z = ibijector.forward(Z)
+
+            # Inverse Gauss CDF
+            ibijector = InverseGaussCDF(eps=eps)
+            Z = ibijector.forward(Z)
+
+            # Rotation
+            if rotation.lower() == "pca":
+                ibijector = PCARotation(X=Z)
+            elif rotation.lower() == "random":
+                ibijector = RandomRotation(X=Z)
+            else:
+                raise ValueError(f"Unrecognized rotation method: {rotation}")
+
+            Z = ibijector.forward(Z)
+
+            info_red = information_reduction(x_data=X_before, y_data=Z, bins=bins)
+
+            info_losses.append(info_red)
+
+            if ilayer > zero_tolerance:
+                if np.sum(np.abs(info_losses[-zero_tolerance:])) == 0:
+                    info_losses = info_losses[:-zero_tolerance]
+                    pbar.set_description(
+                        f"Completed! (Total Info Red: {np.sum(info_losses):.4f})"
+                    )
+                    break
+
+            pbar.set_description(f"Info Red: {info_red:.2e}")
+
+    return np.array(info_losses).sum()
