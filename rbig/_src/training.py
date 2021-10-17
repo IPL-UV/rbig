@@ -3,7 +3,7 @@ from scipy.stats import multivariate_normal
 from rbig._src.total_corr import information_reduction
 from rbig._src.uniform import MarginalHistogramUniformization
 from rbig._src.invcdf import InverseGaussCDF
-from rbig._src.rotation import PCARotation, RandomRotation
+from rbig._src.rotation import ICARotation, PCARotation, RandomRotation
 from rbig._src.base import FlowModel
 from tqdm import trange
 
@@ -45,6 +45,8 @@ def train_rbig_info_loss(
                 ibijector = PCARotation(X=Z)
             elif rotation.lower() == "random":
                 ibijector = RandomRotation(X=Z)
+            elif rotation.lower() == "ica":
+                ibijector = ICARotation(X=Z)
             else:
                 raise ValueError(f"Unrecognized rotation method: {rotation}")
 

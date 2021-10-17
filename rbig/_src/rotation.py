@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.decomposition import PCA
+from picard import Picard
 from scipy.stats import ortho_group
 
 
@@ -10,6 +11,32 @@ class PCARotation:
 
         # create histogram object
         self.estimator = PCA().fit(X)
+
+    def forward(self, X):
+
+        Z = self.estimator.transform(X)
+
+        return Z
+
+    def inverse(self, Z):
+        X = self.estimator.inverse_transform(Z)
+
+        return X
+
+    def gradient(self, X):
+
+        X_grad = np.zeros(X.shape[0])
+
+        return X_grad
+
+
+class ICARotation:
+    name: str = "ica"
+
+    def __init__(self, X: np.ndarray, **kwargs):
+
+        # create histogram object
+        self.estimator = Picard().fit(X)
 
     def forward(self, X):
 
