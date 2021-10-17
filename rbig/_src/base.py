@@ -68,6 +68,6 @@ class FlowModel(CompositeBijector):
 
         return np.exp(pz + X_ldj)
 
-    def score_samples(self, X):
+    def score(self, X):
         prob = self.predict_proba(X)
         return -np.mean(np.log(prob))

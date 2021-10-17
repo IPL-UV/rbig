@@ -60,6 +60,10 @@ class RBIG(BaseEstimator, TransformerMixin):
 
     def sample(self, n_samples: int=10):
         return self.gf_model.sample(n_samples)
+    
+    def score(self, X, y=None):
+        probs = self.predict_proba(self, X=X, y=None)
+        return - np.mean(probs)
 
     def total_correlation(self):
         return self.info_loss.sum()
