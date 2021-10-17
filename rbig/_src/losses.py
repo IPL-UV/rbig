@@ -1,27 +1,31 @@
-from scipy import stats
+from typing import Union
 import numpy as np
+from scipy.stats import norm, gaussian_kde
 
 
-def neg_entropy_normal(data: np.ndarray) -> np.ndarray:
+def negative_log_likelihood(X: np.ndarray, X_ldj: np.ndarray) -> np.ndarray:
+    pz = norm.logpdf(X).sum(axis=-1)
+    log_prob = pz + X_ldj
+    return -np.mean(log_prob)
+
+
+def neg_entropy_normal(data, bins: Union[str, int] = "auto") -> np.ndarray:
     """Function to calculate the marginal negative entropy
     (negative entropy per dimensions). It uses a histogram
     scheme to initialize the bins and then uses a KDE
     scheme to approximate a smooth solution.
+
     Parameters
     ----------
-    data : array, (n_samples, n_features)
-        input data to be transformed
+    data : array, (samples x dimensions)
+
     Returns
     -------
-    neg_ent : np.ndarray, (n_features)
-        marginal neg entropy per features
+    neg : array, (dimensions)
+
     """
 
     n_samples, d_dimensions = data.shape
-
-    # bin estimation
-    # TODO: Use function
-    n_bins = int(np.ceil(np.sqrt(n_samples)))
 
     neg = np.zeros(d_dimensions)
 
@@ -35,7 +39,7 @@ def neg_entropy_normal(data: np.ndarray) -> np.ndarray:
         # Get Histogram
         [hist_counts, bin_edges] = np.histogram(
             a=data[:, idim],
-            bins=n_bins,
+            bins=bins,
             range=(data[:, idim].min(), data[:, idim].max()),
         )
 
@@ -46,14 +50,14 @@ def neg_entropy_normal(data: np.ndarray) -> np.ndarray:
         delta = bin_centers[3] - bin_centers[2]
 
         # Calculate probabilities of normal distribution
-        pg = stats.norm.pdf(bin_centers, 0, 1)
+        pg = norm.pdf(bin_centers, 0, 1)
 
         # ==================
         # KDE Function Est.
         # ==================
 
         # Initialize KDE function with data
-        kde_model = stats.gaussian_kde(data[:, idim])
+        kde_model = gaussian_kde(data[:, idim])
 
         # Calculate probabilities for each bin
         hx = kde_model.pdf(bin_centers)
