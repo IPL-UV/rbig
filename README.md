@@ -51,7 +51,7 @@ This is more if you want to contribute.
     ```
 
 
----
+<!-- ---
 
 ## Demo Notebooks
 
@@ -67,4 +67,4 @@ This is more if you want to contribute.
 
 
 > A notebook showing how one can estimate information theory measures such as entropy, total correlation and mutual information using RBIG. 
-
+ -->
