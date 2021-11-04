@@ -13,6 +13,8 @@ dependencies:
 - matplotlib        # standard plotting library
 - seaborn          # Stats viz library
 # GUI
+- conda-forge::ipywidgets
+- ipykernel
 - conda-forge::tqdm
 - pip
 - pip:
@@ -28,6 +30,4 @@ dependencies:
     - mypy
     - pytest
     # JupyterLab recognition
-    - ipykernel
-    - ipywidgets
     - pyprojroot
