@@ -14,6 +14,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 class RBIG(BaseEstimator, TransformerMixin):
     def __init__(
         self,
+        uniformizer: str = "hist",
         bins: Union[int, str] = "auto",
         alpha: float = 1e-10,
         bound_ext: float = 0.3,
@@ -21,7 +22,9 @@ class RBIG(BaseEstimator, TransformerMixin):
         rotation: str = "PCA",
         zero_tolerance: int = 60,
         max_layers: int = 1_000,
+        max_iter: int = 10,
     ):
+        self.uniformizer = uniformizer
         self.bins = bins
         self.alpha = alpha
         self.bound_ext = bound_ext
@@ -29,11 +32,13 @@ class RBIG(BaseEstimator, TransformerMixin):
         self.rotation = rotation
         self.zero_tolerance = zero_tolerance
         self.max_layers = max_layers
+        self.max_iter = max_iter
 
     def fit(self, X, y=None):
 
         gf_model = train_rbig_info_loss(
             X=X,
+            uniformizer=self.uniformizer,
             bins=self.bins,
             alpha=self.alpha,
             bound_ext=self.bound_ext,
@@ -41,6 +46,7 @@ class RBIG(BaseEstimator, TransformerMixin):
             rotation=self.rotation,
             zero_tolerance=self.zero_tolerance,
             max_layers=self.max_layers,
+            max_iter=self.max_iter,
         )
         self.gf_model = gf_model
         self.info_loss = gf_model.info_loss
@@ -58,7 +64,7 @@ class RBIG(BaseEstimator, TransformerMixin):
     def predict_proba(self, X, y=None):
         return self.gf_model.predict_proba(X)
 
-    def sample(self, n_samples: int=10):
+    def sample(self, n_samples: int = 10):
         return self.gf_model.sample(n_samples)
 
     def total_correlation(self):

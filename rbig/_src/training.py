@@ -1,15 +1,17 @@
+from typing import Optional
 import numpy as np
 from scipy.stats import multivariate_normal
 from rbig._src.total_corr import information_reduction
-from rbig._src.uniform import MarginalHistogramUniformization
+from rbig._src.uniform import MarginalHistogramUniformization, MarginalKDEUniformization
 from rbig._src.invcdf import InverseGaussCDF
-from rbig._src.rotation import PCARotation, RandomRotation
+from rbig._src.rotation import PCARotation, RandomRotation, ICARotation
 from rbig._src.base import FlowModel
 from tqdm import trange
 
 
 def train_rbig_info_loss(
     X: np.ndarray,
+    uniformizer: str = "hist",
     bins: str = "auto",
     alpha: float = 1e-10,
     bound_ext: float = 0.3,
@@ -17,6 +19,8 @@ def train_rbig_info_loss(
     rotation: str = "PCA",
     zero_tolerance: int = 60,
     max_layers: int = 1_000,
+    random_state: Optional[int] = 123,
+    max_iter: int = 10,
 ):
 
     Z = X.copy()
@@ -28,9 +32,14 @@ def train_rbig_info_loss(
         for ilayer in pbar:
             X_before = Z.copy()
             # Marginal Uniformization
-            ibijector = MarginalHistogramUniformization(
-                X=Z, bound_ext=bound_ext, bins=bins, alpha=alpha
-            )
+            if uniformizer == "hist":
+                ibijector = MarginalHistogramUniformization(
+                    X=Z, bound_ext=bound_ext, bins=bins, alpha=alpha
+                )
+            elif uniformizer == "kde":
+                ibijector = MarginalKDEUniformization(
+                    X=Z, bound_ext=bound_ext, fft=True
+                )
 
             transformations.append(ibijector)
             Z = ibijector.forward(Z)
@@ -42,16 +51,24 @@ def train_rbig_info_loss(
 
             # Rotation
             if rotation.lower() == "pca":
-                ibijector = PCARotation(X=Z)
+                ibijector = PCARotation(X=Z, random_state=random_state)
             elif rotation.lower() == "random":
                 ibijector = RandomRotation(X=Z)
+            elif rotation.lower() == "ica":
+                ibijector = ICARotation(
+                    X=Z, random_state=random_state, max_iter=max_iter
+                )
             else:
                 raise ValueError(f"Unrecognized rotation method: {rotation}")
 
             transformations.append(ibijector)
             Z = ibijector.forward(Z)
 
-            info_red = information_reduction(x_data=X_before, y_data=Z, bins=bins)
+            info_red = information_reduction(
+                x_data=X_before,
+                y_data=Z,
+                bins=bins,
+            )
 
             info_losses.append(info_red)
 
