@@ -1,6 +1,7 @@
 from typing import Union
 import numpy as np
 from scipy.stats import rv_histogram
+from astropy.stats import histogram as astro_hist
 
 
 def entropy_univariate(
@@ -8,11 +9,16 @@ def entropy_univariate(
 ) -> np.ndarray:
 
     # Get histogram (use default bin estimation)
-    hist = np.histogram(
-        a=X,
-        bins=bins,
-        range=(X.min(), X.max()),
-    )
+    # create histogram
+    if bins in ["blocks", "knuth"]:
+        hist = astro_hist(X, bins=bins, range=(X.min(), X.max()))
+    else:
+        hist = np.histogram(X, bins=bins, range=(X.min(), X.max()))
+    # hist = np.histogram(
+    #     a=X,
+    #     bins=bins,
+    #     range=(X.min(), X.max()),
+    # )
 
     # Calculate differential entropy
     H = rv_histogram(hist).entropy()
