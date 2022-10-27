@@ -68,3 +68,6 @@ This is more if you want to contribute.
 
 > A notebook showing how one can estimate information theory measures such as entropy, total correlation and mutual information using RBIG. 
 
+## Acknowledgements
+This work was supported by the European Research Council (ERC) Synergy Grant “Understanding and Modelling the Earth System with Machine Learning (USMILE)” under Grant Agreement No 855187.
+
