@@ -6,7 +6,7 @@ from rbig._src.uniform import MarginalHistogramUniformization, MarginalKDEUnifor
 from rbig._src.invcdf import InverseGaussCDF
 from rbig._src.rotation import PCARotation, RandomRotation, ICARotation
 from rbig._src.base import FlowModel
-from tqdm import trange
+from tqdm.autonotebook import trange
 
 
 def train_rbig_info_loss(
